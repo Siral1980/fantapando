@@ -1,0 +1,970 @@
+"""
+League Manager for Fantacalcio Mantra.
+Universal, resilient parser for multi-team league exports from Fantacalcio.it.
+Supports:
+- Excel (.xlsx, .xls) and CSV (.csv, .tsv) files.
+- Any sheet name (auto-detects 'ROSE', 'Rose', 'Squadre', or falls back to first sheet).
+- Matrix layout (Team columns side-by-side with or without empty separator columns).
+- Tabular / Long layout (Squadra, Giocatore, Ruolo, Costo).
+- 3-tier fuzzy & normalized player name matching to guarantee official Mantra roles and stats from df_master.
+- Out of Serie A players flagged with '*' (to be released).
+- Free loan players flagged with Costo == 0.
+"""
+
+import os
+import sys
+import io
+import json
+import unicodedata
+import re
+import datetime
+import copy
+import pandas as pd
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from engine.roster_manager import save_user_roster, normalize_str, match_player_name
+
+DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
+LEAGUE_FILE = os.path.join(DATA_DIR, "league_rosters.json")
+CONFIG_FILE = os.path.join(DATA_DIR, "league_config.json")
+METADATA_FILE = os.path.join(DATA_DIR, "league_metadata.json")
+
+
+def clean_player_name(val):
+    if not val or pd.isna(val):
+        return ""
+    s = str(val).strip()
+    s = s.replace('*', '').strip()
+    return s
+
+
+def read_raw_league_file(file_or_path):
+    """
+    Reads an uploaded file buffer or path into a pandas DataFrame (without header).
+    Resilient to:
+    - BytesIO / Streamlit UploadedFile / filepath string
+    - .xlsx, .xls, .csv, .tsv
+    - Any sheet name
+    """
+    # 1. Determine if CSV or Excel
+    is_csv = False
+    filename = ""
+    if hasattr(file_or_path, 'name'):
+        filename = str(file_or_path.name).lower()
+    elif isinstance(file_or_path, str):
+        filename = file_or_path.lower()
+
+    if filename.endswith('.csv') or filename.endswith('.tsv') or filename.endswith('.txt'):
+        is_csv = True
+
+    if is_csv:
+        # Read CSV with separator sniffing
+        encodings = ['utf-8', 'latin-1', 'cp1252']
+        for enc in encodings:
+            try:
+                if hasattr(file_or_path, 'seek'):
+                    file_or_path.seek(0)
+                df = pd.read_csv(file_or_path, sep=None, engine='python', header=None, encoding=enc)
+                if not df.empty:
+                    return df
+            except Exception:
+                continue
+        # Fallback standard comma
+        if hasattr(file_or_path, 'seek'):
+            file_or_path.seek(0)
+        return pd.read_csv(file_or_path, header=None)
+
+    # 2. Excel reading (.xlsx, .xls)
+    try:
+        if hasattr(file_or_path, 'seek'):
+            file_or_path.seek(0)
+        xl = pd.ExcelFile(file_or_path)
+        sheet_names = xl.sheet_names
+        
+        # Pick best sheet
+        chosen_sheet = None
+        for s in sheet_names:
+            if s.strip().upper() == 'ROSE':
+                chosen_sheet = s
+                break
+        if not chosen_sheet:
+            for s in sheet_names:
+                s_lower = s.lower()
+                if any(kw in s_lower for kw in ['rose', 'squadr', 'lega', 'formaz', 'elenco']):
+                    chosen_sheet = s
+                    break
+        if not chosen_sheet and len(sheet_names) > 0:
+            chosen_sheet = sheet_names[0]
+
+        df = pd.read_excel(xl, sheet_name=chosen_sheet, header=None)
+        return df
+    except Exception as e:
+        # In case it's actually a CSV renamed to .xlsx or raw text
+        try:
+            if hasattr(file_or_path, 'seek'):
+                file_or_path.seek(0)
+            return pd.read_csv(file_or_path, sep=None, engine='python', header=None)
+        except Exception:
+            raise ValueError(f"Impossibile leggere il file delle rose: {e}")
+
+
+def parse_official_league_excel(file_or_path, df_master):
+    """
+    Parses multi-team league exports from Fantacalcio.it.
+    Supports:
+    - Multi-column matrix format (Team1, Costo, [empty], Team2, Costo, ...)
+    - Tabular long format (Squadra, Calciatore, Ruolo, Costo)
+    - 3-tier fuzzy & normalized matching with df_master
+    """
+    df_raw = read_raw_league_file(file_or_path)
+    if df_raw is None or df_raw.empty:
+        raise ValueError("Il file delle rose è vuoto.")
+
+    # Clean empty rows and ensure standard 0..N-1 integer column indexing
+    df_raw = df_raw.dropna(how='all').reset_index(drop=True)
+    df_raw.columns = range(df_raw.shape[1])
+
+    # Build 3-tier lookup dictionaries from df_master
+    stats_map = {}
+    norm_stats_map = {}
+    all_master_names = []
+    if df_master is not None and not df_master.empty and 'Giocatore' in df_master.columns:
+        for _, row in df_master.iterrows():
+            orig_name = str(row['Giocatore']).strip()
+            row_dict = row.to_dict()
+            stats_map[orig_name] = row_dict
+            norm_stats_map[normalize_str(orig_name)] = row_dict
+            all_master_names.append(orig_name)
+
+    def match_player_data(raw_name):
+        clean_name = raw_name.replace('*', '').strip()
+        # 1. Exact match
+        if clean_name in stats_map:
+            return stats_map[clean_name], clean_name
+        # 2. Normalized match (accents, punctuation, lower)
+        norm = normalize_str(clean_name)
+        if norm in norm_stats_map:
+            p_info = norm_stats_map[norm]
+            return p_info, p_info.get('Giocatore', clean_name)
+        # 3. Fuzzy / Token / Alias match
+        fuzzy = match_player_name(clean_name, all_master_names)
+        if fuzzy and fuzzy in stats_map:
+            return stats_map[fuzzy], fuzzy
+        # Fallback: unmatched player
+        return {}, clean_name
+
+    # Check if 3-column ID format (e.g. Squadra, Cod/ID, Costo)
+    is_id_format = False
+    if df_raw.shape[1] >= 3:
+        id_score = 0
+        for test_r in range(min(10, len(df_raw))):
+            row_v = df_raw.iloc[test_r]
+            c0 = str(row_v.iloc[0]).strip()
+            c1 = str(row_v.iloc[1]).strip()
+            c2 = str(row_v.iloc[2]).strip()
+            if c0 and c0 not in ['$', '$,$,$'] and c1.isdigit() and len(c1) >= 1 and (c2.isdigit() or c2.replace('.', '', 1).isdigit()):
+                id_score += 1
+        if id_score >= 3:
+            is_id_format = True
+
+    if is_id_format:
+        league_data = {}
+        id_master_map = {}
+        if df_master is not None and not df_master.empty and 'Cod' in df_master.columns:
+            id_master_map = {int(r['Cod']): r.to_dict() for _, r in df_master.iterrows() if pd.notna(r['Cod'])}
+
+        for r in range(len(df_raw)):
+            row_v = df_raw.iloc[r]
+            t_name = str(row_v.iloc[0]).strip()
+            if not t_name or t_name in ['$', '$,$,$', 'nan']:
+                continue
+            try:
+                cid = int(float(str(row_v.iloc[1]).strip()))
+                cost = int(float(str(row_v.iloc[2]).strip()))
+            except (ValueError, TypeError):
+                continue
+
+            p_info = id_master_map.get(cid, {})
+            p_name = p_info.get('Giocatore', f"Calciatore_{cid}")
+            
+            p_entry = {
+                'Cod': cid,
+                'Giocatore': p_name,
+                'NomeGrezzo': p_name,
+                'Squadra': p_info.get('Squadra', 'Serie A'),
+                'RuoloClassic': p_info.get('RuoloClassic', 'C'),
+                'RuoloMantra': p_info.get('RuoloMantra', 'C'),
+                'Costo': cost,
+                'InPrestito': (cost == 0),
+                'FuoriSerieA': bool(p_info.get('FuoriSerieA', False)),
+                'Presenze': p_info.get('Presenze', 0),
+                'MV_Stagione': p_info.get('MV_Stagione', 0.0),
+                'FM_Stagione': p_info.get('FM_Stagione', 0.0),
+                'GF': p_info.get('GF', 0),
+                'GS': p_info.get('GS', 0),
+                'ASS': p_info.get('ASS', 0),
+                'AMM': p_info.get('AMM', 0),
+                'ESP': p_info.get('ESP', 0)
+            }
+            if t_name not in league_data:
+                league_data[t_name] = []
+            league_data[t_name].append(p_entry)
+
+        # Deduplicate inside same team keeping highest cost
+        for t_name, pls in league_data.items():
+            uniq = {}
+            for p in pls:
+                cid = p['Cod']
+                if cid not in uniq or p['Costo'] > uniq[cid]['Costo']:
+                    uniq[cid] = p
+            league_data[t_name] = list(uniq.values())
+
+        if league_data:
+            return league_data
+
+    # Check if Tabular Long Format (e.g. Columns: Squadra, Giocatore/Calciatore, Ruolo, Costo)
+    is_tabular = False
+    col_map = {}
+    for r_idx in range(min(5, len(df_raw))):
+        row_vals = [str(x).strip().lower() for x in df_raw.iloc[r_idx] if pd.notna(x)]
+        has_sq = any(any(k in v for k in ['squadra', 'fantasquadra', 'team']) for v in row_vals)
+        has_gioc = any(any(k in v for k in ['calciatore', 'giocatore', 'nome']) for v in row_vals)
+        if has_sq and has_gioc:
+            is_tabular = True
+            for c_idx, val in enumerate(df_raw.iloc[r_idx]):
+                v_str = str(val).strip().lower() if pd.notna(val) else ""
+                if 'fantasquadra' in v_str:
+                    col_map['squadra'] = c_idx
+                elif 'squadra' in v_str and 'squadra' not in col_map:
+                    col_map['squadra'] = c_idx
+                elif any(k in v_str for k in ['calciatore', 'giocatore', 'nome']):
+                    col_map['giocatore'] = c_idx
+                elif any(k in v_str for k in ['costo', 'prezzo', 'spesa']):
+                    col_map['costo'] = c_idx
+                elif 'mantra' in v_str:
+                    col_map['ruolo_mantra'] = c_idx
+                elif v_str in ['r.', 'r', 'ruolo']:
+                    col_map['ruolo_classic'] = c_idx
+                elif v_str in ['sq.', 'sq']:
+                    col_map['squadra_serie_a'] = c_idx
+                elif v_str in ['#', 'id', 'cod']:
+                    col_map['cod'] = c_idx
+                elif v_str in ['pgv', 'pg', 'presenze']:
+                    col_map['presenze'] = c_idx
+                elif v_str in ['mv']:
+                    col_map['mv'] = c_idx
+                elif v_str in ['fm']:
+                    col_map['fm'] = c_idx
+                elif 'fuori lista' in v_str:
+                    col_map['fuori_lista'] = c_idx
+            tabular_header_row = r_idx
+            break
+
+    league_data = {}
+
+    if is_tabular and 'squadra' in col_map and 'giocatore' in col_map:
+        # PARSE TABULAR FORMAT
+        for r in range(tabular_header_row + 1, len(df_raw)):
+            sq_val = df_raw.iloc[r, col_map['squadra']]
+            p_val = df_raw.iloc[r, col_map['giocatore']]
+            if pd.isna(sq_val) or pd.isna(p_val):
+                continue
+            team_name = str(sq_val).strip()
+            p_str = str(p_val).strip()
+            if not team_name or not p_str or p_str.lower() in ['totale', 'nan']:
+                continue
+
+            cost = 1
+            if 'costo' in col_map:
+                c_val = df_raw.iloc[r, col_map['costo']]
+                if pd.notna(c_val):
+                    try:
+                        cost = int(float(str(c_val).strip()))
+                    except Exception:
+                        cost = 1
+
+            p_info, matched_name = match_player_data(p_str)
+
+            # Ruolo Mantra: prioritize raw value from file if present (e.g. 'B/Dd/E')
+            ruolo_mantra = p_info.get('RuoloMantra', 'C')
+            if 'ruolo_mantra' in col_map and pd.notna(df_raw.iloc[r, col_map['ruolo_mantra']]):
+                raw_rm = str(df_raw.iloc[r, col_map['ruolo_mantra']]).strip()
+                if raw_rm:
+                    ruolo_mantra = raw_rm.replace('/', ';').replace(',', ';').strip()
+
+            # Ruolo Classic:
+            ruolo_classic = p_info.get('RuoloClassic', 'C')
+            if 'ruolo_classic' in col_map and pd.notna(df_raw.iloc[r, col_map['ruolo_classic']]):
+                raw_rc = str(df_raw.iloc[r, col_map['ruolo_classic']]).strip()
+                if raw_rc:
+                    ruolo_classic = raw_rc
+
+            # Serie A Team:
+            sq_sa = p_info.get('Squadra', 'Serie A')
+            if 'squadra_serie_a' in col_map and pd.notna(df_raw.iloc[r, col_map['squadra_serie_a']]):
+                raw_sa = str(df_raw.iloc[r, col_map['squadra_serie_a']]).strip()
+                if raw_sa:
+                    sq_sa = raw_sa
+
+            # Fuori serie A:
+            is_out = ('*' in p_str)
+            if 'fuori_lista' in col_map and pd.notna(df_raw.iloc[r, col_map['fuori_lista']]):
+                fl_val = str(df_raw.iloc[r, col_map['fuori_lista']]).strip().lower()
+                if fl_val in ['si', 'sì', 'true', '1', '*']:
+                    is_out = True
+
+            # Cod:
+            cod = p_info.get('Cod', 0)
+            if 'cod' in col_map and pd.notna(df_raw.iloc[r, col_map['cod']]):
+                try:
+                    cod = int(float(str(df_raw.iloc[r, col_map['cod']]).strip()))
+                except Exception:
+                    pass
+
+            player_entry = {
+                'Cod': cod,
+                'Giocatore': matched_name,
+                'NomeGrezzo': p_str,
+                'Squadra': sq_sa,
+                'RuoloClassic': ruolo_classic,
+                'RuoloMantra': ruolo_mantra,
+                'Costo': cost,
+                'InPrestito': (cost == 0),
+                'FuoriSerieA': is_out,
+                'Presenze': p_info.get('Presenze', 0),
+                'MV_Stagione': p_info.get('MV_Stagione', 0.0),
+                'FM_Stagione': p_info.get('FM_Stagione', 0.0),
+                'GF': p_info.get('GF', 0),
+                'GS': p_info.get('GS', 0),
+                'ASS': p_info.get('ASS', 0),
+                'AMM': p_info.get('AMM', 0),
+                'ESP': p_info.get('ESP', 0)
+            }
+            if team_name not in league_data:
+                league_data[team_name] = []
+            league_data[team_name].append(player_entry)
+
+    else:
+        # PARSE MULTI-COLUMN MATRIX FORMAT
+        # Step 1: Detect header row (scanning first 6 rows)
+        header_row_idx = 0
+        best_team_count = 0
+        for r in range(min(6, len(df_raw))):
+            row_items = df_raw.iloc[r]
+            # Count candidates for team names in this row
+            t_candidates = sum(1 for x in row_items if pd.notna(x) and str(x).strip().lower() not in ['costo', 'totale', '', 'nan'])
+            cost_count = sum(1 for x in row_items if pd.notna(x) and str(x).strip().lower() == 'costo')
+            if cost_count >= 1 and t_candidates > best_team_count:
+                best_team_count = t_candidates
+                header_row_idx = r
+
+        header_row = df_raw.iloc[header_row_idx]
+        num_cols = df_raw.shape[1]
+        col_idx = 0
+
+        while col_idx < num_cols:
+            raw_team = header_row.iloc[col_idx]
+            if pd.isna(raw_team):
+                col_idx += 1
+                continue
+            
+            t_str = str(raw_team).strip()
+            if t_str.lower() in ['costo', 'totale', '', 'nan']:
+                col_idx += 1
+                continue
+
+            team_name = t_str
+            # Detect cost column: check adjacent col_idx + 1
+            cost_col_idx = None
+            if col_idx + 1 < num_cols:
+                adj_header = str(header_row.iloc[col_idx + 1]).strip().lower() if pd.notna(header_row.iloc[col_idx + 1]) else ""
+                if adj_header == 'costo':
+                    cost_col_idx = col_idx + 1
+                else:
+                    # Check if sample values in col_idx + 1 are numeric costs
+                    sample_numeric = 0
+                    for check_r in range(header_row_idx + 1, min(header_row_idx + 6, len(df_raw))):
+                        val_chk = df_raw.iloc[check_r, col_idx + 1]
+                        if pd.notna(val_chk):
+                            try:
+                                float(str(val_chk).strip())
+                                sample_numeric += 1
+                            except ValueError:
+                                pass
+                    if sample_numeric >= 2:
+                        cost_col_idx = col_idx + 1
+
+            players = []
+            for r in range(header_row_idx + 1, len(df_raw)):
+                raw_player = df_raw.iloc[r, col_idx]
+                if pd.isna(raw_player):
+                    continue
+                p_str = str(raw_player).strip()
+                if not p_str or p_str.lower() in ['totale', 'nan']:
+                    continue
+
+                is_out_of_serie_a = ('*' in p_str)
+                cost = 1
+                if cost_col_idx is not None:
+                    c_val = df_raw.iloc[r, cost_col_idx]
+                    if pd.notna(c_val):
+                        try:
+                            cost = int(float(str(c_val).strip()))
+                        except Exception:
+                            cost = 1
+
+                p_info, matched_name = match_player_data(p_str)
+
+                players.append({
+                    'Cod': p_info.get('Cod', 0),
+                    'Giocatore': matched_name,
+                    'NomeGrezzo': p_str,
+                    'Squadra': p_info.get('Squadra', 'Serie A'),
+                    'RuoloClassic': p_info.get('RuoloClassic', 'C'),
+                    'RuoloMantra': p_info.get('RuoloMantra', 'C'),
+                    'Costo': cost,
+                    'InPrestito': (cost == 0),
+                    'FuoriSerieA': is_out_of_serie_a,
+                    'Presenze': p_info.get('Presenze', 0),
+                    'MV_Stagione': p_info.get('MV_Stagione', 0.0),
+                    'FM_Stagione': p_info.get('FM_Stagione', 0.0),
+                    'GF': p_info.get('GF', 0),
+                    'GS': p_info.get('GS', 0),
+                    'ASS': p_info.get('ASS', 0),
+                    'AMM': p_info.get('AMM', 0),
+                    'ESP': p_info.get('ESP', 0)
+                })
+
+            # Deduplicate inside same team keeping highest cost
+            unique_players = {}
+            for p in players:
+                g = p['Giocatore']
+                if g not in unique_players or p['Costo'] > unique_players[g]['Costo']:
+                    unique_players[g] = p
+
+            if unique_players:
+                league_data[team_name] = list(unique_players.values())
+
+            # Advance col_idx dynamically
+            if cost_col_idx is not None:
+                col_idx = cost_col_idx + 1
+            else:
+                col_idx += 1
+
+            # Skip empty separator columns
+            while col_idx < num_cols and pd.isna(header_row.iloc[col_idx]):
+                col_idx += 1
+
+    if not league_data:
+        raise ValueError("Nessuna squadra o calciatore riconosciuto nel file caricato. Verifica che il file contenga le colonne delle squadre.")
+
+    return league_data
+
+
+# Backwards compatibility alias
+parse_multi_column_league_csv = parse_official_league_excel
+
+
+def save_league_rosters(league_data):
+    """Saves parsed league rosters into league_rosters.json."""
+    os.makedirs(DATA_DIR, exist_ok=True)
+    with open(LEAGUE_FILE, 'w', encoding='utf-8') as f:
+        json.dump(league_data, f, indent=2, ensure_ascii=False)
+    return league_data
+
+
+def load_league_rosters():
+    """Loads league data from JSON if present."""
+    if os.path.exists(LEAGUE_FILE):
+        try:
+            with open(LEAGUE_FILE, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                if isinstance(data, dict) and len(data) > 0:
+                    return data
+        except Exception as e:
+            print(f"Error loading league data: {e}")
+    return {}
+
+
+def get_active_my_team():
+    """
+    Returns the user's selected team for their specific session.
+    Prioritizes:
+    1. Streamlit URL query parameter: ?team=TeamName
+    2. Streamlit session_state: st.session_state['active_my_team']
+    3. File on disk (default fallback): data/league_config.json
+    4. Default: 'Bluelock'
+    """
+    try:
+        import streamlit as st
+        # 1. URL Query Parameter (allows direct links for each manager)
+        if hasattr(st, 'query_params') and 'team' in st.query_params:
+            url_team = st.query_params.get('team')
+            if url_team:
+                st.session_state['active_my_team'] = url_team
+                return url_team
+        # 2. Session State (isolated per user)
+        if 'active_my_team' in st.session_state and st.session_state['active_my_team']:
+            return st.session_state['active_my_team']
+    except Exception:
+        pass
+
+    # 3. Disk fallback (default team when server boots up)
+    if os.path.exists(CONFIG_FILE):
+        try:
+            with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
+                cfg = json.load(f)
+                return cfg.get('my_team', 'Bluelock')
+        except Exception:
+            pass
+    return 'Bluelock'
+
+
+def set_active_my_team(team_name, persist_disk=False):
+    """
+    Sets the active team for the user's current session in st.session_state.
+    Does NOT overwrite other users' sessions!
+    """
+    try:
+        import streamlit as st
+        st.session_state['active_my_team'] = team_name
+        if hasattr(st, 'query_params'):
+            st.query_params['team'] = team_name
+    except Exception:
+        pass
+
+    if persist_disk:
+        os.makedirs(DATA_DIR, exist_ok=True)
+        with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
+            json.dump({'my_team': team_name}, f, indent=2)
+
+    return team_name
+
+
+def save_league_metadata(source="File Excel Fantacalcio.it", filename=None):
+    """Stores provenance timestamp and source of the current rosters."""
+    os.makedirs(DATA_DIR, exist_ok=True)
+    meta = {
+        'last_updated': datetime.datetime.now().strftime("%d/%m/%Y alle ore %H:%M"),
+        'source': source,
+        'filename': filename or "Rose_Lega_Ufficiale"
+    }
+    with open(METADATA_FILE, 'w', encoding='utf-8') as f:
+        json.dump(meta, f, indent=2, ensure_ascii=False)
+    return meta
+
+
+def get_league_metadata():
+    """Returns provenance and freshness info of current rosters."""
+    if os.path.exists(METADATA_FILE):
+        try:
+            with open(METADATA_FILE, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception:
+            pass
+    if os.path.exists(LEAGUE_FILE):
+        mtime = datetime.datetime.fromtimestamp(os.path.getmtime(LEAGUE_FILE))
+        return {
+            'last_updated': mtime.strftime("%d/%m/%Y alle ore %H:%M"),
+            'source': "File Excel/JSON su disco",
+            'filename': "league_rosters.json"
+        }
+    return {
+        'last_updated': "Non disponibile",
+        'source': "Non configurato",
+        'filename': ""
+    }
+
+
+def terminate_loan(player_name, borrower_team, owner_team=None):
+    """
+    Terminates a loan: removes the loan entry (Costo == 0) from borrower_team.
+    The player remains strictly owned by owner_team (where Costo > 0).
+    Saves the updated rosters immediately.
+    """
+    rosters = load_league_rosters()
+    if borrower_team in rosters:
+        orig_len = len(rosters[borrower_team])
+        rosters[borrower_team] = [
+            p for p in rosters[borrower_team]
+            if not (p['Giocatore'] == player_name and p.get('Costo', 0) == 0)
+        ]
+        if len(rosters[borrower_team]) < orig_len:
+            save_league_rosters(rosters)
+            save_league_metadata(source=f"Risoluzione prestito manuale: {player_name}")
+            active_team = get_active_my_team()
+            if active_team in rosters:
+                sync_user_roster_from_league(rosters, active_team)
+            return True, f"Prestito di {player_name} a {borrower_team} risolto con successo! Il calciatore rimane al 100% di proprietà."
+    return False, f"Calciatore {player_name} a costo 0 non trovato in {borrower_team}."
+
+
+def add_or_update_loan(player_name, owner_team, borrower_team):
+    """
+    Registers or updates a loan: creates an entry with Costo == 0 in borrower_team
+    referencing player from owner_team.
+    """
+    rosters = load_league_rosters()
+    if owner_team not in rosters or borrower_team not in rosters:
+        return False, "Una o entrambe le squadre non esistono nella lega."
+    
+    owner_pls = rosters[owner_team]
+    target_p = next((p for p in owner_pls if p['Giocatore'] == player_name and p.get('Costo', 0) > 0), None)
+    if not target_p:
+        target_p = next((p for p in owner_pls if p['Giocatore'] == player_name), None)
+    if not target_p:
+        return False, f"Calciatore '{player_name}' non trovato nella rosa di '{owner_team}'."
+    
+    # Check if already present in borrower_team
+    if any(p['Giocatore'] == player_name for p in rosters[borrower_team]):
+        return False, f"'{player_name}' è già presente nella rosa di '{borrower_team}'."
+    
+    loan_entry = copy.deepcopy(target_p)
+    loan_entry['Costo'] = 0
+    loan_entry['InPrestito'] = True
+    rosters[borrower_team].append(loan_entry)
+    save_league_rosters(rosters)
+    save_league_metadata(source=f"Nuovo prestito manuale: {player_name} ({owner_team} -> {borrower_team})")
+    active_team = get_active_my_team()
+    if active_team in rosters:
+        sync_user_roster_from_league(rosters, active_team)
+    return True, f"Prestito di {player_name} da {owner_team} a {borrower_team} registrato con successo!"
+
+
+def sync_user_roster_from_league(league_data=None, team_name='Bluelock'):
+    """Synchronizes user_roster.json directly from the specified team in league_data."""
+    if league_data is None:
+        league_data = load_league_rosters()
+    if team_name in league_data:
+        pnames = [p['Giocatore'] for p in league_data[team_name]]
+        save_user_roster(pnames)
+        set_active_my_team(team_name)
+        return pnames
+    return []
+
+
+def build_loan_registry(league_data=None):
+    """
+    Identifies all loans across the league:
+    Where player has Costo == 0 in team A and Costo > 0 in team B.
+    """
+    if league_data is None:
+        league_data = load_league_rosters()
+
+    all_player_appearances = {}
+    for team, players in league_data.items():
+        for p in players:
+            name = p['Giocatore']
+            if name not in all_player_appearances:
+                all_player_appearances[name] = []
+            all_player_appearances[name].append({
+                'team': team,
+                'cost': p['Costo'],
+                'fuori_serie_a': p.get('FuoriSerieA', False),
+                'ruolo_mantra': p.get('RuoloMantra', 'C'),
+                'squadra_serie_a': p.get('Squadra', '')
+            })
+
+    loan_map = {}
+    loan_summary_list = []
+
+    for name, appearances in all_player_appearances.items():
+        if len(appearances) > 1:
+            owner_entry = next((a for a in appearances if a['cost'] > 0), appearances[0])
+            borrower_entries = [a for a in appearances if a['cost'] == 0]
+
+            for b in borrower_entries:
+                borrower_team = b['team']
+                owner_team = owner_entry['team']
+
+                loan_summary_list.append({
+                    'Calciatore': name,
+                    'Ruolo': owner_entry['ruolo_mantra'],
+                    'Squadra': owner_entry['squadra_serie_a'],
+                    'Proprietario': owner_team,
+                    'In_Prestito_A': borrower_team,
+                    'Costo_Asta': owner_entry['cost'],
+                    'Tipo': 'Prestito Gratuito (Costo 0)'
+                })
+
+                # Mapping for borrower
+                loan_map[(borrower_team, name)] = {
+                    'Stato_Prestito': 'Prestito IN',
+                    'Badge_Prestito': f"📥 IN PRESTITO (da {owner_team})",
+                    'Dettaglio_Prestito': f"In prestito temporaneo da {owner_team} (costo d'asta originale: {owner_entry['cost']} cr.)",
+                    'Controparte': owner_team,
+                    'Schierabile': True,
+                    'Da_Svincolare': b['fuori_serie_a']
+                }
+
+                # Mapping for owner
+                loan_map[(owner_team, name)] = {
+                    'Stato_Prestito': 'Prestito OUT',
+                    'Badge_Prestito': f"📤 PRESTITO CEDUTO (a {borrower_team})",
+                    'Dettaglio_Prestito': f"Cartellino di proprietà prestato gratuitamente a {borrower_team}",
+                    'Controparte': borrower_team,
+                    'Schierabile': False,
+                    'Da_Svincolare': owner_entry['fuori_serie_a']
+                }
+
+    if loan_summary_list:
+        df_loans = pd.DataFrame(loan_summary_list)
+    else:
+        df_loans = pd.DataFrame(columns=['Calciatore', 'Ruolo', 'Squadra', 'Proprietario', 'In_Prestito_A', 'Costo_Asta', 'Tipo'])
+
+    return loan_map, df_loans
+
+
+def get_out_of_serie_a_summary(league_data=None):
+    """Returns a DataFrame of all players marked with '*' (out of Serie A / to be released)."""
+    if league_data is None:
+        league_data = load_league_rosters()
+
+    out_list = []
+    for team, players in league_data.items():
+        for p in players:
+            if p.get('FuoriSerieA', False):
+                out_list.append({
+                    'Calciatore': p['Giocatore'],
+                    'NomeGrezzo': p.get('NomeGrezzo', p['Giocatore']),
+                    'Squadra_Lega': team,
+                    'Ruolo': p.get('RuoloMantra', 'N/D'),
+                    'Costo_Asta': p.get('Costo', 0),
+                    'Stato': '🚫 Fuori Serie A (*)',
+                    'Consiglio': 'Svincolare al prossimo mercato per recuperare crediti'
+                })
+
+    if out_list:
+        return pd.DataFrame(out_list)
+    return pd.DataFrame(columns=['Calciatore', 'NomeGrezzo', 'Squadra_Lega', 'Ruolo', 'Costo_Asta', 'Stato', 'Consiglio'])
+
+
+def get_team_roster_df(team_name, league_data_or_master=None, df_master=None):
+    """
+    Returns a enriched DataFrame for a specific team, incorporating loan status and out-of-Serie A flags.
+    Accepts either (team_name, df_master) or (team_name, league_data, df_master).
+    """
+    if df_master is None:
+        if isinstance(league_data_or_master, pd.DataFrame):
+            df_master = league_data_or_master
+            league_data = load_league_rosters()
+        else:
+            league_data = league_data_or_master if isinstance(league_data_or_master, dict) else load_league_rosters()
+            df_master = pd.DataFrame()
+    else:
+        league_data = league_data_or_master if isinstance(league_data_or_master, dict) else load_league_rosters()
+
+    if not league_data or team_name not in league_data:
+        return pd.DataFrame()
+
+    players = league_data[team_name]
+    loan_map, _ = build_loan_registry(league_data)
+
+    stats_map = {}
+    if df_master is not None and not df_master.empty and 'Giocatore' in df_master.columns:
+        stats_map = {str(row['Giocatore']).strip(): row.to_dict() for _, row in df_master.iterrows()}
+
+    rows = []
+    for p in players:
+        p_name = p['Giocatore']
+        cost = p['Costo']
+        is_out = p.get('FuoriSerieA', False)
+
+        m_info = stats_map.get(p_name, {})
+        loan_info = loan_map.get((team_name, p_name), None)
+
+        if loan_info:
+            stato_prestito = loan_info['Stato_Prestito']
+            badge_prestito = loan_info['Badge_Prestito']
+            dettaglio_prestito = loan_info['Dettaglio_Prestito']
+            schierabile = loan_info['Schierabile'] and not is_out
+        else:
+            stato_prestito = 'Proprietà'
+            badge_prestito = '-'
+            dettaglio_prestito = f"Cartellino di proprietà (acquistato per {cost} cr.)"
+            schierabile = not is_out
+
+        disp_status = 'Disponibile'
+        badge_disp = '✅ DISPONIBILE'
+        det_disp = ''
+        if is_out:
+            disp_status = 'Fuori Serie A'
+            badge_disp = '⚠️ DA SVINCOLARE'
+            det_disp = 'Fuori dalla Serie A - da svincolare al prossimo mercato'
+
+        row_dict = {
+            'Cod': p.get('Cod', m_info.get('Cod', 0)),
+            'Giocatore': p_name,
+            'NomeGrezzo': p.get('NomeGrezzo', p_name),
+            'Squadra': m_info.get('Squadra', p.get('Squadra', 'Serie A')),
+            'RuoloClassic': m_info.get('RuoloClassic', p.get('RuoloClassic', 'C')),
+            'RuoloMantra': m_info.get('RuoloMantra', p.get('RuoloMantra', 'C')),
+            'Costo': cost,
+            'Stato_Prestito': stato_prestito,
+            'Badge_Prestito': badge_prestito,
+            'Dettaglio_Prestito': dettaglio_prestito,
+            'Stato_Disponibilita': disp_status,
+            'Badge_Disponibilita': badge_disp,
+            'Dettaglio_Disponibilita': det_disp,
+            'Schierabile': schierabile,
+            'Da_Svincolare': is_out,
+            'Presenze': m_info.get('Presenze', p.get('Presenze', 0)),
+            'MV_Stagione': m_info.get('MV_Stagione', p.get('MV_Stagione', 0.0)),
+            'Pct_Sufficienza': m_info.get('Pct_Sufficienza', 0.0),
+            'FM_Stagione': m_info.get('FM_Stagione', p.get('FM_Stagione', 0.0)),
+            'MV_Ultime3': m_info.get('MV_Ultime3', 0.0),
+            'Pct_Parate': m_info.get('Pct_Parate', 0.0),
+            'Goals_Prevented': m_info.get('Goals_Prevented', 0.0),
+            'Errors_Leading_To_Goal': m_info.get('Errors_Leading_To_Goal', 0),
+            'GF': m_info.get('GF', p.get('GF', 0)),
+            'ASS': m_info.get('ASS', p.get('ASS', 0)),
+            'Tiri_90': m_info.get('Tiri_90', 0.0),
+            'xG_90': m_info.get('xG_90', 0.0),
+            'Delta_xG': m_info.get('Delta_xG', 0.0),
+            'Key_Passes_90': m_info.get('Key_Passes_90', 0.0),
+            'xA_90': m_info.get('xA_90', 0.0),
+            'Delta_xA': m_info.get('Delta_xA', 0.0),
+            'Signal': m_info.get('Signal', 'NEUTRAL')
+        }
+        rows.append(row_dict)
+
+    df_res = pd.DataFrame(rows)
+    return df_res
+
+
+def get_league_summary(league_data_or_master=None, df_master=None):
+    """Returns a league summary DataFrame comparing all teams (credits, player count, loans, etc.)."""
+    if df_master is None:
+        if isinstance(league_data_or_master, pd.DataFrame):
+            df_master = league_data_or_master
+            league_data = load_league_rosters()
+        else:
+            league_data = league_data_or_master if isinstance(league_data_or_master, dict) else load_league_rosters()
+            df_master = pd.DataFrame()
+    else:
+        league_data = league_data_or_master if isinstance(league_data_or_master, dict) else load_league_rosters()
+
+    if not league_data:
+        return pd.DataFrame()
+
+    loan_map, _ = build_loan_registry(league_data)
+    summary_rows = []
+
+    for team, players in league_data.items():
+        n_players = len(players)
+        tot_cost = sum(p.get('Costo', 0) for p in players)
+        n_loans_in = sum(1 for p in players if p.get('Costo', 0) == 0)
+        n_loans_out = sum(1 for p in players if loan_map.get((team, p['Giocatore']), {}).get('Stato_Prestito') == 'Prestito OUT')
+        n_out_serie_a = sum(1 for p in players if p.get('FuoriSerieA', False))
+
+        summary_rows.append({
+            'Squadra': team,
+            'Tot_Calciatori': n_players,
+            'Crediti_Spesi': tot_cost,
+            'Prestiti_IN': n_loans_in,
+            'Prestiti_OUT': n_loans_out,
+            'Fuori_Serie_A': n_out_serie_a
+        })
+
+    return pd.DataFrame(summary_rows)
+
+
+def render_league_upload_section(key_prefix, df_master, label_title="📥 Carica / Aggiorna File delle Rose (.xlsx, .xls, .csv)"):
+    """
+    Renders an interactive, foolproof upload and confirmation widget for league rosters.
+    """
+    import streamlit as st
+    with st.expander(label_title, expanded=False):
+        st.markdown("""
+        **Formati supportati**: File Excel (`.xlsx`, `.xls`) o CSV (`.csv`) esportato da **Fantacalcio.it**.  
+        Supporta sia layout a colonne multiple (squadre affiancate con colonna costo) che layout tabellare ad elenco.  
+        Gestisce automaticamente i **prestiti gratuiti (costo 0)** e rileva i **calciatori fuori dalla Serie A (`*`) da svincolare**.
+        """)
+        
+        uploaded_file = st.file_uploader(
+            "Trascina o carica il file delle rose (.xlsx, .xls, .csv):",
+            type=['xlsx', 'xls', 'csv'],
+            key=f"{key_prefix}_league_uploader"
+        )
+        
+        if uploaded_file is not None:
+            try:
+                parsed_data = parse_official_league_excel(uploaded_file, df_master)
+                if parsed_data:
+                    tot_teams = len(parsed_data)
+                    tot_players = sum(len(p) for p in parsed_data.values())
+                    st.success(f"✅ File analizzato con successo! Rilevate **{tot_teams} squadre** e **{tot_players} calciatori**.")
+                    
+                    teams_found = list(parsed_data.keys())
+                    current_active = get_active_my_team()
+                    
+                    # Choose default index (prefer 'Bluelock' if present, or current_active)
+                    def_idx = 0
+                    if 'Bluelock' in teams_found:
+                        def_idx = teams_found.index('Bluelock')
+                    elif current_active in teams_found:
+                        def_idx = teams_found.index(current_active)
+                        
+                    sel_col1, sel_col2 = st.columns([1.5, 1])
+                    with sel_col1:
+                        target_team = st.selectbox(
+                            "👉 Seleziona quale di queste squadre è la TUA SQUADRA (La Mia Rosa):",
+                            options=teams_found,
+                            index=def_idx,
+                            key=f"{key_prefix}_select_my_team"
+                        )
+                    with sel_col2:
+                        st.markdown("<br>", unsafe_allow_html=True)
+                        apply_btn = st.button(
+                            f"🚀 Applica e Salva Rose (Mia Rosa: {target_team})",
+                            type="primary",
+                            key=f"{key_prefix}_apply_btn",
+                            use_container_width=True
+                        )
+
+                    # AUTO-SAVE on new upload: immediately persist to disk
+                    file_sig = f"{getattr(uploaded_file, 'name', '')}_{getattr(uploaded_file, 'size', 0)}"
+                    saved_sig_key = f"{key_prefix}_saved_file_sig"
+                    if st.session_state.get(saved_sig_key) != file_sig:
+                        save_league_rosters(parsed_data)
+                        fname = getattr(uploaded_file, 'name', 'File_Rose_Lega')
+                        save_league_metadata(source=f"File caricato ({fname})", filename=fname)
+                        set_active_my_team(target_team)
+                        sync_user_roster_from_league(parsed_data, target_team)
+                        st.session_state[saved_sig_key] = file_sig
+                        st.toast(f"✅ File '{fname}' importato e salvato automaticamente!", icon="🏆")
+                        st.rerun()
+                        
+                    # Preview of the chosen team
+                    if target_team in parsed_data:
+                        team_pls = parsed_data[target_team]
+                        tot_c = sum(p.get('Costo', 0) for p in team_pls)
+                        st.markdown(f"**Anteprima Rosa di {target_team}** (`{len(team_pls)} calciatori`, `{tot_c} crediti spesi`):")
+                        preview_df = pd.DataFrame([
+                            {
+                                'Giocatore': p['Giocatore'],
+                                'Ruolo': p.get('RuoloMantra', 'C'),
+                                'Squadra': p.get('Squadra', ''),
+                                'Costo': p.get('Costo', 1),
+                                'FM': p.get('FM_Stagione', 0.0),
+                                'Stato': '🔄 Prestito' if p.get('InPrestito') else ('⚠️ Svincolo' if p.get('FuoriSerieA') else '✅ Proprietà')
+                            }
+                            for p in team_pls[:10]
+                        ])
+                        st.dataframe(preview_df, use_container_width=True, hide_index=True)
+                        if len(team_pls) > 10:
+                            st.caption(f"...e altri {len(team_pls) - 10} calciatori.")
+                            
+                    if apply_btn:
+                        save_league_rosters(parsed_data)
+                        fname = getattr(uploaded_file, 'name', 'File_Rose_Lega')
+                        save_league_metadata(source=f"File caricato ({fname})", filename=fname)
+                        set_active_my_team(target_team)
+                        sync_user_roster_from_league(parsed_data, target_team)
+                        st.session_state[saved_sig_key] = file_sig
+                        st.toast(f"✅ Rosa '{target_team}' salvata e attivata!", icon="🏆")
+                        st.success(f"🏆 Rose di lega salvate con successo! La tua squadra attiva è ora **{target_team}** ({len(parsed_data[target_team])} calciatori).")
+                        st.rerun()
+            except Exception as e:
+                st.error(f"❌ Errore durante l'elaborazione del file: {e}")
+                st.info("💡 **Consiglio:** Assicurati di esportare il file direttamente da Fantacalcio.it in formato Excel (.xlsx) o CSV con l'elenco delle rose della tua lega.")

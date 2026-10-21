@@ -1,0 +1,1598 @@
+{
+  "1": [
+    {
+      "home": "Inter",
+      "away": "Sassuolo"
+    },
+    {
+      "home": "Frosinone",
+      "away": "Juventus"
+    },
+    {
+      "home": "Milan",
+      "away": "Venezia"
+    },
+    {
+      "home": "Cagliari",
+      "away": "Napoli"
+    },
+    {
+      "home": "Atalanta",
+      "away": "Udinese"
+    },
+    {
+      "home": "Como",
+      "away": "Roma"
+    },
+    {
+      "home": "Lazio",
+      "away": "Parma"
+    },
+    {
+      "home": "Lecce",
+      "away": "Fiorentina"
+    },
+    {
+      "home": "Bologna",
+      "away": "Monza"
+    },
+    {
+      "home": "Genoa",
+      "away": "Torino"
+    }
+  ],
+  "2": [
+    {
+      "home": "Frosinone",
+      "away": "Inter"
+    },
+    {
+      "home": "Sassuolo",
+      "away": "Venezia"
+    },
+    {
+      "home": "Cagliari",
+      "away": "Juventus"
+    },
+    {
+      "home": "Milan",
+      "away": "Udinese"
+    },
+    {
+      "home": "Como",
+      "away": "Napoli"
+    },
+    {
+      "home": "Atalanta",
+      "away": "Parma"
+    },
+    {
+      "home": "Lecce",
+      "away": "Roma"
+    },
+    {
+      "home": "Lazio",
+      "away": "Monza"
+    },
+    {
+      "home": "Genoa",
+      "away": "Fiorentina"
+    },
+    {
+      "home": "Bologna",
+      "away": "Torino"
+    }
+  ],
+  "3": [
+    {
+      "home": "Inter",
+      "away": "Venezia"
+    },
+    {
+      "home": "Cagliari",
+      "away": "Frosinone"
+    },
+    {
+      "home": "Sassuolo",
+      "away": "Udinese"
+    },
+    {
+      "home": "Como",
+      "away": "Juventus"
+    },
+    {
+      "home": "Milan",
+      "away": "Parma"
+    },
+    {
+      "home": "Lecce",
+      "away": "Napoli"
+    },
+    {
+      "home": "Atalanta",
+      "away": "Monza"
+    },
+    {
+      "home": "Genoa",
+      "away": "Roma"
+    },
+    {
+      "home": "Lazio",
+      "away": "Torino"
+    },
+    {
+      "home": "Bologna",
+      "away": "Fiorentina"
+    }
+  ],
+  "4": [
+    {
+      "home": "Cagliari",
+      "away": "Inter"
+    },
+    {
+      "home": "Venezia",
+      "away": "Udinese"
+    },
+    {
+      "home": "Como",
+      "away": "Frosinone"
+    },
+    {
+      "home": "Sassuolo",
+      "away": "Parma"
+    },
+    {
+      "home": "Lecce",
+      "away": "Juventus"
+    },
+    {
+      "home": "Milan",
+      "away": "Monza"
+    },
+    {
+      "home": "Genoa",
+      "away": "Napoli"
+    },
+    {
+      "home": "Atalanta",
+      "away": "Torino"
+    },
+    {
+      "home": "Bologna",
+      "away": "Roma"
+    },
+    {
+      "home": "Lazio",
+      "away": "Fiorentina"
+    }
+  ],
+  "5": [
+    {
+      "home": "Inter",
+      "away": "Udinese"
+    },
+    {
+      "home": "Como",
+      "away": "Cagliari"
+    },
+    {
+      "home": "Venezia",
+      "away": "Parma"
+    },
+    {
+      "home": "Lecce",
+      "away": "Frosinone"
+    },
+    {
+      "home": "Sassuolo",
+      "away": "Monza"
+    },
+    {
+      "home": "Genoa",
+      "away": "Juventus"
+    },
+    {
+      "home": "Milan",
+      "away": "Torino"
+    },
+    {
+      "home": "Bologna",
+      "away": "Napoli"
+    },
+    {
+      "home": "Atalanta",
+      "away": "Fiorentina"
+    },
+    {
+      "home": "Lazio",
+      "away": "Roma"
+    }
+  ],
+  "6": [
+    {
+      "home": "Como",
+      "away": "Inter"
+    },
+    {
+      "home": "Udinese",
+      "away": "Parma"
+    },
+    {
+      "home": "Lecce",
+      "away": "Cagliari"
+    },
+    {
+      "home": "Venezia",
+      "away": "Monza"
+    },
+    {
+      "home": "Genoa",
+      "away": "Frosinone"
+    },
+    {
+      "home": "Sassuolo",
+      "away": "Torino"
+    },
+    {
+      "home": "Bologna",
+      "away": "Juventus"
+    },
+    {
+      "home": "Milan",
+      "away": "Fiorentina"
+    },
+    {
+      "home": "Lazio",
+      "away": "Napoli"
+    },
+    {
+      "home": "Atalanta",
+      "away": "Roma"
+    }
+  ],
+  "7": [
+    {
+      "home": "Inter",
+      "away": "Parma"
+    },
+    {
+      "home": "Lecce",
+      "away": "Como"
+    },
+    {
+      "home": "Udinese",
+      "away": "Monza"
+    },
+    {
+      "home": "Genoa",
+      "away": "Cagliari"
+    },
+    {
+      "home": "Venezia",
+      "away": "Torino"
+    },
+    {
+      "home": "Bologna",
+      "away": "Frosinone"
+    },
+    {
+      "home": "Sassuolo",
+      "away": "Fiorentina"
+    },
+    {
+      "home": "Lazio",
+      "away": "Juventus"
+    },
+    {
+      "home": "Milan",
+      "away": "Roma"
+    },
+    {
+      "home": "Atalanta",
+      "away": "Napoli"
+    }
+  ],
+  "8": [
+    {
+      "home": "Lecce",
+      "away": "Inter"
+    },
+    {
+      "home": "Parma",
+      "away": "Monza"
+    },
+    {
+      "home": "Genoa",
+      "away": "Como"
+    },
+    {
+      "home": "Udinese",
+      "away": "Torino"
+    },
+    {
+      "home": "Bologna",
+      "away": "Cagliari"
+    },
+    {
+      "home": "Venezia",
+      "away": "Fiorentina"
+    },
+    {
+      "home": "Lazio",
+      "away": "Frosinone"
+    },
+    {
+      "home": "Sassuolo",
+      "away": "Roma"
+    },
+    {
+      "home": "Atalanta",
+      "away": "Juventus"
+    },
+    {
+      "home": "Milan",
+      "away": "Napoli"
+    }
+  ],
+  "9": [
+    {
+      "home": "Inter",
+      "away": "Monza"
+    },
+    {
+      "home": "Genoa",
+      "away": "Lecce"
+    },
+    {
+      "home": "Parma",
+      "away": "Torino"
+    },
+    {
+      "home": "Bologna",
+      "away": "Como"
+    },
+    {
+      "home": "Udinese",
+      "away": "Fiorentina"
+    },
+    {
+      "home": "Lazio",
+      "away": "Cagliari"
+    },
+    {
+      "home": "Venezia",
+      "away": "Roma"
+    },
+    {
+      "home": "Atalanta",
+      "away": "Frosinone"
+    },
+    {
+      "home": "Sassuolo",
+      "away": "Napoli"
+    },
+    {
+      "home": "Milan",
+      "away": "Juventus"
+    }
+  ],
+  "10": [
+    {
+      "home": "Genoa",
+      "away": "Inter"
+    },
+    {
+      "home": "Monza",
+      "away": "Torino"
+    },
+    {
+      "home": "Bologna",
+      "away": "Lecce"
+    },
+    {
+      "home": "Parma",
+      "away": "Fiorentina"
+    },
+    {
+      "home": "Lazio",
+      "away": "Como"
+    },
+    {
+      "home": "Udinese",
+      "away": "Roma"
+    },
+    {
+      "home": "Atalanta",
+      "away": "Cagliari"
+    },
+    {
+      "home": "Venezia",
+      "away": "Napoli"
+    },
+    {
+      "home": "Milan",
+      "away": "Frosinone"
+    },
+    {
+      "home": "Sassuolo",
+      "away": "Juventus"
+    }
+  ],
+  "11": [
+    {
+      "home": "Inter",
+      "away": "Torino"
+    },
+    {
+      "home": "Bologna",
+      "away": "Genoa"
+    },
+    {
+      "home": "Monza",
+      "away": "Fiorentina"
+    },
+    {
+      "home": "Lazio",
+      "away": "Lecce"
+    },
+    {
+      "home": "Parma",
+      "away": "Roma"
+    },
+    {
+      "home": "Atalanta",
+      "away": "Como"
+    },
+    {
+      "home": "Udinese",
+      "away": "Napoli"
+    },
+    {
+      "home": "Milan",
+      "away": "Cagliari"
+    },
+    {
+      "home": "Venezia",
+      "away": "Juventus"
+    },
+    {
+      "home": "Sassuolo",
+      "away": "Frosinone"
+    }
+  ],
+  "12": [
+    {
+      "home": "Bologna",
+      "away": "Inter"
+    },
+    {
+      "home": "Torino",
+      "away": "Fiorentina"
+    },
+    {
+      "home": "Lazio",
+      "away": "Genoa"
+    },
+    {
+      "home": "Monza",
+      "away": "Roma"
+    },
+    {
+      "home": "Atalanta",
+      "away": "Lecce"
+    },
+    {
+      "home": "Parma",
+      "away": "Napoli"
+    },
+    {
+      "home": "Milan",
+      "away": "Como"
+    },
+    {
+      "home": "Udinese",
+      "away": "Juventus"
+    },
+    {
+      "home": "Sassuolo",
+      "away": "Cagliari"
+    },
+    {
+      "home": "Venezia",
+      "away": "Frosinone"
+    }
+  ],
+  "13": [
+    {
+      "home": "Inter",
+      "away": "Fiorentina"
+    },
+    {
+      "home": "Lazio",
+      "away": "Bologna"
+    },
+    {
+      "home": "Torino",
+      "away": "Roma"
+    },
+    {
+      "home": "Atalanta",
+      "away": "Genoa"
+    },
+    {
+      "home": "Monza",
+      "away": "Napoli"
+    },
+    {
+      "home": "Milan",
+      "away": "Lecce"
+    },
+    {
+      "home": "Parma",
+      "away": "Juventus"
+    },
+    {
+      "home": "Sassuolo",
+      "away": "Como"
+    },
+    {
+      "home": "Udinese",
+      "away": "Frosinone"
+    },
+    {
+      "home": "Venezia",
+      "away": "Cagliari"
+    }
+  ],
+  "14": [
+    {
+      "home": "Lazio",
+      "away": "Inter"
+    },
+    {
+      "home": "Fiorentina",
+      "away": "Roma"
+    },
+    {
+      "home": "Atalanta",
+      "away": "Bologna"
+    },
+    {
+      "home": "Torino",
+      "away": "Napoli"
+    },
+    {
+      "home": "Milan",
+      "away": "Genoa"
+    },
+    {
+      "home": "Monza",
+      "away": "Juventus"
+    },
+    {
+      "home": "Sassuolo",
+      "away": "Lecce"
+    },
+    {
+      "home": "Parma",
+      "away": "Frosinone"
+    },
+    {
+      "home": "Venezia",
+      "away": "Como"
+    },
+    {
+      "home": "Udinese",
+      "away": "Cagliari"
+    }
+  ],
+  "15": [
+    {
+      "home": "Inter",
+      "away": "Roma"
+    },
+    {
+      "home": "Atalanta",
+      "away": "Lazio"
+    },
+    {
+      "home": "Fiorentina",
+      "away": "Napoli"
+    },
+    {
+      "home": "Milan",
+      "away": "Bologna"
+    },
+    {
+      "home": "Torino",
+      "away": "Juventus"
+    },
+    {
+      "home": "Sassuolo",
+      "away": "Genoa"
+    },
+    {
+      "home": "Monza",
+      "away": "Frosinone"
+    },
+    {
+      "home": "Venezia",
+      "away": "Lecce"
+    },
+    {
+      "home": "Parma",
+      "away": "Cagliari"
+    },
+    {
+      "home": "Udinese",
+      "away": "Como"
+    }
+  ],
+  "16": [
+    {
+      "home": "Atalanta",
+      "away": "Inter"
+    },
+    {
+      "home": "Roma",
+      "away": "Napoli"
+    },
+    {
+      "home": "Milan",
+      "away": "Lazio"
+    },
+    {
+      "home": "Fiorentina",
+      "away": "Juventus"
+    },
+    {
+      "home": "Sassuolo",
+      "away": "Bologna"
+    },
+    {
+      "home": "Torino",
+      "away": "Frosinone"
+    },
+    {
+      "home": "Venezia",
+      "away": "Genoa"
+    },
+    {
+      "home": "Monza",
+      "away": "Cagliari"
+    },
+    {
+      "home": "Udinese",
+      "away": "Lecce"
+    },
+    {
+      "home": "Parma",
+      "away": "Como"
+    }
+  ],
+  "17": [
+    {
+      "home": "Inter",
+      "away": "Napoli"
+    },
+    {
+      "home": "Milan",
+      "away": "Atalanta"
+    },
+    {
+      "home": "Roma",
+      "away": "Juventus"
+    },
+    {
+      "home": "Sassuolo",
+      "away": "Lazio"
+    },
+    {
+      "home": "Fiorentina",
+      "away": "Frosinone"
+    },
+    {
+      "home": "Venezia",
+      "away": "Bologna"
+    },
+    {
+      "home": "Torino",
+      "away": "Cagliari"
+    },
+    {
+      "home": "Udinese",
+      "away": "Genoa"
+    },
+    {
+      "home": "Monza",
+      "away": "Como"
+    },
+    {
+      "home": "Parma",
+      "away": "Lecce"
+    }
+  ],
+  "18": [
+    {
+      "home": "Milan",
+      "away": "Inter"
+    },
+    {
+      "home": "Napoli",
+      "away": "Juventus"
+    },
+    {
+      "home": "Sassuolo",
+      "away": "Atalanta"
+    },
+    {
+      "home": "Roma",
+      "away": "Frosinone"
+    },
+    {
+      "home": "Venezia",
+      "away": "Lazio"
+    },
+    {
+      "home": "Fiorentina",
+      "away": "Cagliari"
+    },
+    {
+      "home": "Udinese",
+      "away": "Bologna"
+    },
+    {
+      "home": "Torino",
+      "away": "Como"
+    },
+    {
+      "home": "Parma",
+      "away": "Genoa"
+    },
+    {
+      "home": "Monza",
+      "away": "Lecce"
+    }
+  ],
+  "19": [
+    {
+      "home": "Inter",
+      "away": "Juventus"
+    },
+    {
+      "home": "Sassuolo",
+      "away": "Milan"
+    },
+    {
+      "home": "Napoli",
+      "away": "Frosinone"
+    },
+    {
+      "home": "Venezia",
+      "away": "Atalanta"
+    },
+    {
+      "home": "Roma",
+      "away": "Cagliari"
+    },
+    {
+      "home": "Udinese",
+      "away": "Lazio"
+    },
+    {
+      "home": "Fiorentina",
+      "away": "Como"
+    },
+    {
+      "home": "Parma",
+      "away": "Bologna"
+    },
+    {
+      "home": "Torino",
+      "away": "Lecce"
+    },
+    {
+      "home": "Monza",
+      "away": "Genoa"
+    }
+  ],
+  "20": [
+    {
+      "home": "Sassuolo",
+      "away": "Inter"
+    },
+    {
+      "home": "Juventus",
+      "away": "Frosinone"
+    },
+    {
+      "home": "Venezia",
+      "away": "Milan"
+    },
+    {
+      "home": "Napoli",
+      "away": "Cagliari"
+    },
+    {
+      "home": "Udinese",
+      "away": "Atalanta"
+    },
+    {
+      "home": "Roma",
+      "away": "Como"
+    },
+    {
+      "home": "Parma",
+      "away": "Lazio"
+    },
+    {
+      "home": "Fiorentina",
+      "away": "Lecce"
+    },
+    {
+      "home": "Monza",
+      "away": "Bologna"
+    },
+    {
+      "home": "Torino",
+      "away": "Genoa"
+    }
+  ],
+  "21": [
+    {
+      "home": "Inter",
+      "away": "Frosinone"
+    },
+    {
+      "home": "Venezia",
+      "away": "Sassuolo"
+    },
+    {
+      "home": "Juventus",
+      "away": "Cagliari"
+    },
+    {
+      "home": "Udinese",
+      "away": "Milan"
+    },
+    {
+      "home": "Napoli",
+      "away": "Como"
+    },
+    {
+      "home": "Parma",
+      "away": "Atalanta"
+    },
+    {
+      "home": "Roma",
+      "away": "Lecce"
+    },
+    {
+      "home": "Monza",
+      "away": "Lazio"
+    },
+    {
+      "home": "Fiorentina",
+      "away": "Genoa"
+    },
+    {
+      "home": "Torino",
+      "away": "Bologna"
+    }
+  ],
+  "22": [
+    {
+      "home": "Venezia",
+      "away": "Inter"
+    },
+    {
+      "home": "Frosinone",
+      "away": "Cagliari"
+    },
+    {
+      "home": "Udinese",
+      "away": "Sassuolo"
+    },
+    {
+      "home": "Juventus",
+      "away": "Como"
+    },
+    {
+      "home": "Parma",
+      "away": "Milan"
+    },
+    {
+      "home": "Napoli",
+      "away": "Lecce"
+    },
+    {
+      "home": "Monza",
+      "away": "Atalanta"
+    },
+    {
+      "home": "Roma",
+      "away": "Genoa"
+    },
+    {
+      "home": "Torino",
+      "away": "Lazio"
+    },
+    {
+      "home": "Fiorentina",
+      "away": "Bologna"
+    }
+  ],
+  "23": [
+    {
+      "home": "Inter",
+      "away": "Cagliari"
+    },
+    {
+      "home": "Udinese",
+      "away": "Venezia"
+    },
+    {
+      "home": "Frosinone",
+      "away": "Como"
+    },
+    {
+      "home": "Parma",
+      "away": "Sassuolo"
+    },
+    {
+      "home": "Juventus",
+      "away": "Lecce"
+    },
+    {
+      "home": "Monza",
+      "away": "Milan"
+    },
+    {
+      "home": "Napoli",
+      "away": "Genoa"
+    },
+    {
+      "home": "Torino",
+      "away": "Atalanta"
+    },
+    {
+      "home": "Roma",
+      "away": "Bologna"
+    },
+    {
+      "home": "Fiorentina",
+      "away": "Lazio"
+    }
+  ],
+  "24": [
+    {
+      "home": "Udinese",
+      "away": "Inter"
+    },
+    {
+      "home": "Cagliari",
+      "away": "Como"
+    },
+    {
+      "home": "Parma",
+      "away": "Venezia"
+    },
+    {
+      "home": "Frosinone",
+      "away": "Lecce"
+    },
+    {
+      "home": "Monza",
+      "away": "Sassuolo"
+    },
+    {
+      "home": "Juventus",
+      "away": "Genoa"
+    },
+    {
+      "home": "Torino",
+      "away": "Milan"
+    },
+    {
+      "home": "Napoli",
+      "away": "Bologna"
+    },
+    {
+      "home": "Fiorentina",
+      "away": "Atalanta"
+    },
+    {
+      "home": "Roma",
+      "away": "Lazio"
+    }
+  ],
+  "25": [
+    {
+      "home": "Inter",
+      "away": "Como"
+    },
+    {
+      "home": "Parma",
+      "away": "Udinese"
+    },
+    {
+      "home": "Cagliari",
+      "away": "Lecce"
+    },
+    {
+      "home": "Monza",
+      "away": "Venezia"
+    },
+    {
+      "home": "Frosinone",
+      "away": "Genoa"
+    },
+    {
+      "home": "Torino",
+      "away": "Sassuolo"
+    },
+    {
+      "home": "Juventus",
+      "away": "Bologna"
+    },
+    {
+      "home": "Fiorentina",
+      "away": "Milan"
+    },
+    {
+      "home": "Napoli",
+      "away": "Lazio"
+    },
+    {
+      "home": "Roma",
+      "away": "Atalanta"
+    }
+  ],
+  "26": [
+    {
+      "home": "Parma",
+      "away": "Inter"
+    },
+    {
+      "home": "Como",
+      "away": "Lecce"
+    },
+    {
+      "home": "Monza",
+      "away": "Udinese"
+    },
+    {
+      "home": "Cagliari",
+      "away": "Genoa"
+    },
+    {
+      "home": "Torino",
+      "away": "Venezia"
+    },
+    {
+      "home": "Frosinone",
+      "away": "Bologna"
+    },
+    {
+      "home": "Fiorentina",
+      "away": "Sassuolo"
+    },
+    {
+      "home": "Juventus",
+      "away": "Lazio"
+    },
+    {
+      "home": "Roma",
+      "away": "Milan"
+    },
+    {
+      "home": "Napoli",
+      "away": "Atalanta"
+    }
+  ],
+  "27": [
+    {
+      "home": "Inter",
+      "away": "Lecce"
+    },
+    {
+      "home": "Monza",
+      "away": "Parma"
+    },
+    {
+      "home": "Como",
+      "away": "Genoa"
+    },
+    {
+      "home": "Torino",
+      "away": "Udinese"
+    },
+    {
+      "home": "Cagliari",
+      "away": "Bologna"
+    },
+    {
+      "home": "Fiorentina",
+      "away": "Venezia"
+    },
+    {
+      "home": "Frosinone",
+      "away": "Lazio"
+    },
+    {
+      "home": "Roma",
+      "away": "Sassuolo"
+    },
+    {
+      "home": "Juventus",
+      "away": "Atalanta"
+    },
+    {
+      "home": "Napoli",
+      "away": "Milan"
+    }
+  ],
+  "28": [
+    {
+      "home": "Monza",
+      "away": "Inter"
+    },
+    {
+      "home": "Lecce",
+      "away": "Genoa"
+    },
+    {
+      "home": "Torino",
+      "away": "Parma"
+    },
+    {
+      "home": "Como",
+      "away": "Bologna"
+    },
+    {
+      "home": "Fiorentina",
+      "away": "Udinese"
+    },
+    {
+      "home": "Cagliari",
+      "away": "Lazio"
+    },
+    {
+      "home": "Roma",
+      "away": "Venezia"
+    },
+    {
+      "home": "Frosinone",
+      "away": "Atalanta"
+    },
+    {
+      "home": "Napoli",
+      "away": "Sassuolo"
+    },
+    {
+      "home": "Juventus",
+      "away": "Milan"
+    }
+  ],
+  "29": [
+    {
+      "home": "Inter",
+      "away": "Genoa"
+    },
+    {
+      "home": "Torino",
+      "away": "Monza"
+    },
+    {
+      "home": "Lecce",
+      "away": "Bologna"
+    },
+    {
+      "home": "Fiorentina",
+      "away": "Parma"
+    },
+    {
+      "home": "Como",
+      "away": "Lazio"
+    },
+    {
+      "home": "Roma",
+      "away": "Udinese"
+    },
+    {
+      "home": "Cagliari",
+      "away": "Atalanta"
+    },
+    {
+      "home": "Napoli",
+      "away": "Venezia"
+    },
+    {
+      "home": "Frosinone",
+      "away": "Milan"
+    },
+    {
+      "home": "Juventus",
+      "away": "Sassuolo"
+    }
+  ],
+  "30": [
+    {
+      "home": "Torino",
+      "away": "Inter"
+    },
+    {
+      "home": "Genoa",
+      "away": "Bologna"
+    },
+    {
+      "home": "Fiorentina",
+      "away": "Monza"
+    },
+    {
+      "home": "Lecce",
+      "away": "Lazio"
+    },
+    {
+      "home": "Roma",
+      "away": "Parma"
+    },
+    {
+      "home": "Como",
+      "away": "Atalanta"
+    },
+    {
+      "home": "Napoli",
+      "away": "Udinese"
+    },
+    {
+      "home": "Cagliari",
+      "away": "Milan"
+    },
+    {
+      "home": "Juventus",
+      "away": "Venezia"
+    },
+    {
+      "home": "Frosinone",
+      "away": "Sassuolo"
+    }
+  ],
+  "31": [
+    {
+      "home": "Inter",
+      "away": "Bologna"
+    },
+    {
+      "home": "Fiorentina",
+      "away": "Torino"
+    },
+    {
+      "home": "Genoa",
+      "away": "Lazio"
+    },
+    {
+      "home": "Roma",
+      "away": "Monza"
+    },
+    {
+      "home": "Lecce",
+      "away": "Atalanta"
+    },
+    {
+      "home": "Napoli",
+      "away": "Parma"
+    },
+    {
+      "home": "Como",
+      "away": "Milan"
+    },
+    {
+      "home": "Juventus",
+      "away": "Udinese"
+    },
+    {
+      "home": "Cagliari",
+      "away": "Sassuolo"
+    },
+    {
+      "home": "Frosinone",
+      "away": "Venezia"
+    }
+  ],
+  "32": [
+    {
+      "home": "Fiorentina",
+      "away": "Inter"
+    },
+    {
+      "home": "Bologna",
+      "away": "Lazio"
+    },
+    {
+      "home": "Roma",
+      "away": "Torino"
+    },
+    {
+      "home": "Genoa",
+      "away": "Atalanta"
+    },
+    {
+      "home": "Napoli",
+      "away": "Monza"
+    },
+    {
+      "home": "Lecce",
+      "away": "Milan"
+    },
+    {
+      "home": "Juventus",
+      "away": "Parma"
+    },
+    {
+      "home": "Como",
+      "away": "Sassuolo"
+    },
+    {
+      "home": "Frosinone",
+      "away": "Udinese"
+    },
+    {
+      "home": "Cagliari",
+      "away": "Venezia"
+    }
+  ],
+  "33": [
+    {
+      "home": "Inter",
+      "away": "Lazio"
+    },
+    {
+      "home": "Roma",
+      "away": "Fiorentina"
+    },
+    {
+      "home": "Bologna",
+      "away": "Atalanta"
+    },
+    {
+      "home": "Napoli",
+      "away": "Torino"
+    },
+    {
+      "home": "Genoa",
+      "away": "Milan"
+    },
+    {
+      "home": "Juventus",
+      "away": "Monza"
+    },
+    {
+      "home": "Lecce",
+      "away": "Sassuolo"
+    },
+    {
+      "home": "Frosinone",
+      "away": "Parma"
+    },
+    {
+      "home": "Como",
+      "away": "Venezia"
+    },
+    {
+      "home": "Cagliari",
+      "away": "Udinese"
+    }
+  ],
+  "34": [
+    {
+      "home": "Roma",
+      "away": "Inter"
+    },
+    {
+      "home": "Lazio",
+      "away": "Atalanta"
+    },
+    {
+      "home": "Napoli",
+      "away": "Fiorentina"
+    },
+    {
+      "home": "Bologna",
+      "away": "Milan"
+    },
+    {
+      "home": "Juventus",
+      "away": "Torino"
+    },
+    {
+      "home": "Genoa",
+      "away": "Sassuolo"
+    },
+    {
+      "home": "Frosinone",
+      "away": "Monza"
+    },
+    {
+      "home": "Lecce",
+      "away": "Venezia"
+    },
+    {
+      "home": "Cagliari",
+      "away": "Parma"
+    },
+    {
+      "home": "Como",
+      "away": "Udinese"
+    }
+  ],
+  "35": [
+    {
+      "home": "Inter",
+      "away": "Atalanta"
+    },
+    {
+      "home": "Napoli",
+      "away": "Roma"
+    },
+    {
+      "home": "Lazio",
+      "away": "Milan"
+    },
+    {
+      "home": "Juventus",
+      "away": "Fiorentina"
+    },
+    {
+      "home": "Bologna",
+      "away": "Sassuolo"
+    },
+    {
+      "home": "Frosinone",
+      "away": "Torino"
+    },
+    {
+      "home": "Genoa",
+      "away": "Venezia"
+    },
+    {
+      "home": "Cagliari",
+      "away": "Monza"
+    },
+    {
+      "home": "Lecce",
+      "away": "Udinese"
+    },
+    {
+      "home": "Como",
+      "away": "Parma"
+    }
+  ],
+  "36": [
+    {
+      "home": "Napoli",
+      "away": "Inter"
+    },
+    {
+      "home": "Atalanta",
+      "away": "Milan"
+    },
+    {
+      "home": "Juventus",
+      "away": "Roma"
+    },
+    {
+      "home": "Lazio",
+      "away": "Sassuolo"
+    },
+    {
+      "home": "Frosinone",
+      "away": "Fiorentina"
+    },
+    {
+      "home": "Bologna",
+      "away": "Venezia"
+    },
+    {
+      "home": "Cagliari",
+      "away": "Torino"
+    },
+    {
+      "home": "Genoa",
+      "away": "Udinese"
+    },
+    {
+      "home": "Como",
+      "away": "Monza"
+    },
+    {
+      "home": "Lecce",
+      "away": "Parma"
+    }
+  ],
+  "37": [
+    {
+      "home": "Inter",
+      "away": "Milan"
+    },
+    {
+      "home": "Juventus",
+      "away": "Napoli"
+    },
+    {
+      "home": "Atalanta",
+      "away": "Sassuolo"
+    },
+    {
+      "home": "Frosinone",
+      "away": "Roma"
+    },
+    {
+      "home": "Lazio",
+      "away": "Venezia"
+    },
+    {
+      "home": "Cagliari",
+      "away": "Fiorentina"
+    },
+    {
+      "home": "Bologna",
+      "away": "Udinese"
+    },
+    {
+      "home": "Como",
+      "away": "Torino"
+    },
+    {
+      "home": "Genoa",
+      "away": "Parma"
+    },
+    {
+      "home": "Lecce",
+      "away": "Monza"
+    }
+  ],
+  "38": [
+    {
+      "home": "Juventus",
+      "away": "Inter"
+    },
+    {
+      "home": "Milan",
+      "away": "Sassuolo"
+    },
+    {
+      "home": "Frosinone",
+      "away": "Napoli"
+    },
+    {
+      "home": "Atalanta",
+      "away": "Venezia"
+    },
+    {
+      "home": "Cagliari",
+      "away": "Roma"
+    },
+    {
+      "home": "Lazio",
+      "away": "Udinese"
+    },
+    {
+      "home": "Como",
+      "away": "Fiorentina"
+    },
+    {
+      "home": "Bologna",
+      "away": "Parma"
+    },
+    {
+      "home": "Lecce",
+      "away": "Torino"
+    },
+    {
+      "home": "Genoa",
+      "away": "Monza"
+    }
+  ]
+}
