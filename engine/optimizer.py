@@ -34,7 +34,7 @@ MANTRA_FORMATIONS = {
     },
     '4-4-2': {
         'def_type': '4-def',
-        'slots': ['Por', 'Dd', 'Ds', 'Dc', 'Dc', 'E/W', 'E/W', 'M/C', 'M/C', 'A/Pc', 'A/Pc'],
+        'slots': ['Por', 'Dd', 'Ds', 'Dc', 'Dc', 'E', 'E/W', 'M/C', 'M/C', 'A/Pc', 'A/Pc'],
         'max_pc': 2
     },
     '4-4-1-1': {
