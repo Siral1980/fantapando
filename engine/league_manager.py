@@ -474,7 +474,18 @@ def save_league_rosters(league_data):
 
 
 def load_league_rosters():
-    """Loads league data from JSON if present."""
+    """
+    Loads league data. Prioritizes session-specific custom league data
+    (allowing friends from other leagues to upload their own file in their session
+    without overwriting the shared server league).
+    """
+    try:
+        import streamlit as st
+        if 'custom_league_data' in st.session_state and st.session_state['custom_league_data']:
+            return st.session_state['custom_league_data']
+    except Exception:
+        pass
+
     if os.path.exists(LEAGUE_FILE):
         try:
             with open(LEAGUE_FILE, 'r', encoding='utf-8') as f:
@@ -490,22 +501,25 @@ def get_active_my_team():
     """
     Returns the user's selected team for their specific session.
     Prioritizes:
-    1. Streamlit URL query parameter: ?team=TeamName
-    2. Streamlit session_state: st.session_state['active_my_team']
+    1. Streamlit session_state: st.session_state['active_my_team'] (user's explicit selection)
+    2. Streamlit URL query parameter: ?team=TeamName (on initial load)
     3. File on disk (default fallback): data/league_config.json
     4. Default: 'Bluelock'
     """
     try:
         import streamlit as st
-        # 1. URL Query Parameter (allows direct links for each manager)
-        if hasattr(st, 'query_params') and 'team' in st.query_params:
-            url_team = st.query_params.get('team')
-            if url_team:
-                st.session_state['active_my_team'] = url_team
-                return url_team
-        # 2. Session State (isolated per user)
+        # 1. Session State has TOP priority (user's active choice during session)
         if 'active_my_team' in st.session_state and st.session_state['active_my_team']:
             return st.session_state['active_my_team']
+
+        # 2. URL Query Parameter (initial load if session state not set yet)
+        if hasattr(st, 'query_params') and 'team' in st.query_params:
+            url_team = st.query_params.get('team')
+            if isinstance(url_team, list) and len(url_team) > 0:
+                url_team = url_team[0]
+            if url_team and isinstance(url_team, str):
+                st.session_state['active_my_team'] = url_team
+                return url_team
     except Exception:
         pass
 
@@ -514,7 +528,9 @@ def get_active_my_team():
         try:
             with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
                 cfg = json.load(f)
-                return cfg.get('my_team', 'Bluelock')
+                val = cfg.get('my_team', 'Bluelock')
+                if val:
+                    return val
         except Exception:
             pass
     return 'Bluelock'
@@ -523,13 +539,28 @@ def get_active_my_team():
 def set_active_my_team(team_name, persist_disk=False):
     """
     Sets the active team for the user's current session in st.session_state.
-    Does NOT overwrite other users' sessions!
+    Cleans up any stale widget state across tabs so all tabs immediately sync to the new team.
     """
     try:
         import streamlit as st
         st.session_state['active_my_team'] = team_name
         if hasattr(st, 'query_params'):
             st.query_params['team'] = team_name
+
+        # Reset any cached widget keys from previous team across all tabs
+        stale_keys = [
+            'diag_team_select',
+            'inspect_team_select',
+            'sim_multiselect_give_league',
+            'sim_selectbox_opp',
+            'sim_multiselect_receive_league',
+            'sim_multiselect_give_all',
+            'roster_player_card_select',
+            'override_sel_p',
+            'bl_rival_sel'
+        ]
+        for k in stale_keys:
+            st.session_state.pop(k, None)
     except Exception:
         pass
 
@@ -556,6 +587,13 @@ def save_league_metadata(source="File Excel Fantacalcio.it", filename=None):
 
 def get_league_metadata():
     """Returns provenance and freshness info of current rosters."""
+    try:
+        import streamlit as st
+        if 'custom_league_meta' in st.session_state and st.session_state['custom_league_meta']:
+            return st.session_state['custom_league_meta']
+    except Exception:
+        pass
+
     if os.path.exists(METADATA_FILE):
         try:
             with open(METADATA_FILE, 'r', encoding='utf-8') as f:
@@ -905,6 +943,17 @@ def render_league_upload_section(key_prefix, df_master, label_title="📥 Carica
                     elif current_active in teams_found:
                         def_idx = teams_found.index(current_active)
                         
+                    scope_choice = st.radio(
+                        "Ambito di applicazione del file:",
+                        options=[
+                            "👤 Solo per questa mia sessione (ideale se sei di un'altra lega o per fare prove)",
+                            "💾 Salva come lega principale (aggiorna i dati per tutti gli utenti)"
+                        ],
+                        index=0 if 'custom_league_data' in st.session_state else 1,
+                        key=f"{key_prefix}_scope_choice",
+                        help="Se scegli 'Solo per questa mia sessione', potrai usare l'intera app con la tua lega senza sovrascrivere i dati della lega principale."
+                    )
+
                     sel_col1, sel_col2 = st.columns([1.5, 1])
                     with sel_col1:
                         target_team = st.selectbox(
@@ -916,23 +965,36 @@ def render_league_upload_section(key_prefix, df_master, label_title="📥 Carica
                     with sel_col2:
                         st.markdown("<br>", unsafe_allow_html=True)
                         apply_btn = st.button(
-                            f"🚀 Applica e Salva Rose (Mia Rosa: {target_team})",
+                            f"🚀 Applica Rose (Mia Rosa: {target_team})",
                             type="primary",
                             key=f"{key_prefix}_apply_btn",
                             use_container_width=True
                         )
 
-                    # AUTO-SAVE on new upload: immediately persist to disk
-                    file_sig = f"{getattr(uploaded_file, 'name', '')}_{getattr(uploaded_file, 'size', 0)}"
+                    is_session_only = scope_choice.startswith("👤")
+
+                    # Handle upload save
+                    file_sig = f"{getattr(uploaded_file, 'name', '')}_{getattr(uploaded_file, 'size', 0)}_{scope_choice}"
                     saved_sig_key = f"{key_prefix}_saved_file_sig"
-                    if st.session_state.get(saved_sig_key) != file_sig:
-                        save_league_rosters(parsed_data)
+                    if st.session_state.get(saved_sig_key) != file_sig or apply_btn:
                         fname = getattr(uploaded_file, 'name', 'File_Rose_Lega')
-                        save_league_metadata(source=f"File caricato ({fname})", filename=fname)
-                        set_active_my_team(target_team)
+                        if is_session_only:
+                            st.session_state['custom_league_data'] = parsed_data
+                            set_active_my_team(target_team, persist_disk=False)
+                            st.session_state['custom_league_meta'] = {
+                                'last_updated': datetime.datetime.now().strftime("%d/%m/%Y alle ore %H:%M"),
+                                'source': f"Lega Ospite in Sessione ({fname})",
+                                'filename': fname
+                            }
+                            st.toast(f"✅ Lega ospite '{fname}' attivata per questa sessione!", icon="🏆")
+                        else:
+                            save_league_rosters(parsed_data)
+                            save_league_metadata(source=f"File caricato ({fname})", filename=fname)
+                            set_active_my_team(target_team, persist_disk=True)
+                            st.toast(f"✅ File '{fname}' salvato come lega principale!", icon="🏆")
+
                         sync_user_roster_from_league(parsed_data, target_team)
                         st.session_state[saved_sig_key] = file_sig
-                        st.toast(f"✅ File '{fname}' importato e salvato automaticamente!", icon="🏆")
                         st.rerun()
                         
                     # Preview of the chosen team

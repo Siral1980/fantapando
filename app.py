@@ -369,12 +369,15 @@ if league_teams:
     if current_active_team in league_dict:
         league_players = [p['Giocatore'] for p in league_dict[current_active_team]]
         user_squad_names = league_players
+    else:
+        user_squad_names = load_user_roster()
 
     idx_team = league_teams.index(current_active_team) if current_active_team in league_teams else 0
     selected_my_team = st.sidebar.selectbox(
         "Squadra Attiva:",
         options=league_teams,
         index=idx_team,
+        key=f"sb_team_select_{current_active_team}",
         help="Imposta quale delle squadre della lega è la tua squadra."
     )
     if selected_my_team != current_active_team:
@@ -385,11 +388,20 @@ if league_teams:
         st.session_state['setup_mode'] = True
         st.rerun()
 
-st.sidebar.markdown(f"**Rosa Attuale**: `{len(user_squad_names)} calciatori`")
+    if 'custom_league_data' in st.session_state:
+        st.sidebar.info("👤 **Lega Ospite in Sessione** (privata)")
+        if st.sidebar.button("🔄 Torna alla Lega Principale", use_container_width=True):
+            del st.session_state['custom_league_data']
+            st.session_state.pop('custom_league_meta', None)
+            st.session_state.pop('active_my_team', None)
+            st.rerun()
+
+st.sidebar.markdown(f"**Rosa Attuale ({current_active_team})**: `{len(user_squad_names)} calciatori`")
 meta_sidebar = get_league_metadata()
 st.sidebar.caption(f"📅 **Rose di Lega:** {meta_sidebar.get('last_updated')}")
 
-
+# Top-level calculation of df_my_roster so all tabs immediately inherit the active team
+df_my_roster = get_roster_dataframe(df_master, user_squad_names)
 
 # -------------------------------------------------------------
 # MAIN APP TABS
@@ -407,10 +419,23 @@ tab_rosa, tab_formazione, tab_scambi, tab_lega, tab_stats, tab_calendario = st.t
 # TAB 1: LA MIA ROSA
 # =============================================================
 with tab_rosa:
-    st.header("📋 Gestione della Mia Rosa Mantra")
-    st.markdown("Visualizza, analizza e modifica la tua rosa. I ruoli e le metriche avanzate sono calcolati automaticamente.")
-    
-    df_my_roster = get_roster_dataframe(df_master, user_squad_names)
+    t_head_col1, t_head_col2 = st.columns([2, 1.2])
+    with t_head_col1:
+        st.header("📋 Gestione della Mia Rosa Mantra")
+        st.markdown(f"Visualizza, analizza e modifica la tua rosa. Attualmente stai gestendo: <b style='color:#00f0ff; font-size:1.15rem;'>{current_active_team}</b>", unsafe_allow_html=True)
+    with t_head_col2:
+        if league_teams:
+            cur_idx = league_teams.index(current_active_team) if current_active_team in league_teams else 0
+            main_team_choice = st.selectbox(
+                "🏆 Seleziona Squadra da Gestire:",
+                options=league_teams,
+                index=cur_idx,
+                key=f"main_team_picker_{current_active_team}",
+                help="Seleziona quale squadra della lega visualizzare e ottimizzare in tutti i tab."
+            )
+            if main_team_choice != current_active_team:
+                set_active_my_team(main_team_choice)
+                st.rerun()
     
     # Prestiti, Infortuni & Svincoli Breakdown
     num_tot = len(df_my_roster)
@@ -751,7 +776,8 @@ with tab_rosa:
 # TAB 2: FORMAZIONE CONSIGLIATA
 # =============================================================
 with tab_formazione:
-    st.header(f"🏆 Formazione Consigliata per la Giornata {selected_giornata}")
+    st.header(f"🏆 Formazione Consigliata per la Giornata {selected_giornata} — {current_active_team}")
+    st.caption(f"💡 Formazione e modulo ottimizzati in tempo reale per la rosa di **{current_active_team}** ({len(df_my_roster)} calciatori).")
     st.markdown(
         "L'algoritmo valuta **tutti i 10 moduli ufficiali Mantra**, rispetta i vincoli di ruolo e massimizza la "
         "somma di $xFV$ + il **D-Factor Mantra con Portiere compreso** e bonus imbattibilità."
@@ -1333,7 +1359,7 @@ with tab_scambi:
                 "Squadra da Analizzare:",
                 options=diag_teams,
                 index=diag_teams.index(my_team) if my_team in diag_teams else 0,
-                key="diag_team_select"
+                key=f"diag_team_select_{my_team}"
             )
         with col_sel_d2:
             st.write("")
@@ -1681,7 +1707,7 @@ with tab_scambi:
                     f"Calciatori di {my_team} che proponi di Cedere:",
                     options=my_team_players,
                     default=valid_prefill_give,
-                    key="sim_multiselect_give_league"
+                    key=f"sim_multiselect_give_{my_team}"
                 )
             with col_sc2:
                 opp_teams = [t for t in league_teams if t != my_team]
@@ -1690,7 +1716,7 @@ with tab_scambi:
                     "Seleziona Squadra della Lega con cui trattare:",
                     options=opp_teams,
                     index=opp_index,
-                    key="sim_selectbox_opp"
+                    key=f"sim_selectbox_opp_{my_team}"
                 )
                 st.subheader(f"🟢 Rosa Avversaria ({selected_opp})")
                 opp_team_df = get_team_roster_df(selected_opp, df_master)
@@ -1702,7 +1728,7 @@ with tab_scambi:
                     f"Calciatori di {selected_opp} che chiedi in cambio:",
                     options=opp_team_players,
                     default=valid_prefill_rec,
-                    key="sim_multiselect_receive_league"
+                    key=f"sim_multiselect_receive_{my_team}"
                 )
         else:
             col_sc1, col_sc2 = st.columns(2)
@@ -1982,11 +2008,12 @@ with tab_lega:
         st.markdown("---")
 
     st.subheader("🔍 Ispezione Rosa Completa di una Squadra")
+    cur_insp_idx = league_teams.index(current_active_team) if current_active_team in league_teams else 0
     selected_inspect_team = st.selectbox(
         "Seleziona quale squadra della lega visualizzare:",
         options=league_teams,
-        index=0,
-        key="inspect_team_select"
+        index=cur_insp_idx,
+        key=f"inspect_team_select_{current_active_team}"
     )
     df_inspect = get_team_roster_df(selected_inspect_team, df_master)
     if not df_inspect.empty:
