@@ -195,12 +195,37 @@ def predict_player_xfv(player_row, matchday=6, calendar=None, ratings_cache=None
     home_bonus = 0.12 if is_home else -0.06
     fdr_map = {1: 0.18, 2: 0.08, 3: 0.00, 4: -0.15, 5: -0.32}
     fdr_penalty = fdr_map.get(int(fdr), -0.08 * (fdr - 3.0))
+
+    # 2. Minute Volume & Quality Weighting
+    if raw_presenze <= 0:
+        f_vol = 0.35
+    elif min_per_app >= 68.0:
+        # Full-time Starter: receives stability reward for playing full 90
+        f_vol = 1.00 + min(0.04, (min_per_app - 68.0) / 100.0)
+    elif min_per_app >= 52.0:
+        # Regular starter substituted around 60-70th minute
+        f_vol = 0.94 + 0.06 * ((min_per_app - 52.0) / 16.0)
+    elif min_per_app >= 36.0:
+        # Co-starter / Half-game rotation
+        f_vol = 0.80 + 0.14 * ((min_per_app - 36.0) / 16.0)
+    elif min_per_app >= 20.0:
+        # Frequent substitute (20-35 mins): volume is severely curtailed
+        f_vol = 0.62 + 0.18 * ((min_per_app - 20.0) / 16.0)
+    else:
+        # Garbage-time / late sub (< 20 mins)
+        f_vol = 0.38 + 0.24 * (min_per_app / 20.0)
+
+    # Minute Quality: rewards super-subs with high per-90 creation/finishing or elite sufficiency
+    q_att = float(np.clip((xg_90 + xa_90 - 0.20) * 0.22, -0.06, 0.12))
+    q_suff = float(np.clip((pct_suff - 60.0) / 100.0 * 0.12, -0.06, 0.08))
+    minute_quality_factor = float(np.clip(f_vol + q_att + q_suff, 0.35, 1.06))
+    vote_mins_delta = (min(1.0, minute_quality_factor) - 1.0) * 0.35
     
     if is_por:
         # Goalkeeper pure vote reflects save capability and match reliability (no double FDR penalty)
         pred_voto = round(max(5.1, min(7.8, base_mv + suff_impact + home_bonus)), 2)
     else:
-        pred_voto = round(max(5.1, min(7.8, base_mv + action_delta + home_bonus + fdr_penalty)), 2)
+        pred_voto = round(max(5.0, min(7.8, base_mv + action_delta + home_bonus + fdr_penalty + vote_mins_delta)), 2)
     
     # Opponent defense scaling and venue multiplier
     opp_factor = opp_xga / 1.30
@@ -314,6 +339,7 @@ def predict_player_xfv(player_row, matchday=6, calendar=None, ratings_cache=None
             'P_Voto': round(p_voto, 2),
             'Status_Titolarita': status_titolarita,
             'Min_Per_App': int(min_per_app),
+            'Minute_Quality_Factor': round(minute_quality_factor, 2),
             'Presenze_Tot': int(raw_presenze),
             'SV_Penalty': sv_penalty,
             'xFV_Raw': raw_xfv,
@@ -357,7 +383,7 @@ def predict_player_xfv(player_row, matchday=6, calendar=None, ratings_cache=None
             regressed_xa = max(0.01, (0.60 * shrunk_ass_rate) + (0.40 * role_base_ass))
             
         # Expected minutes scaling on attacking output (smooth scaling for active rotation players)
-        min_factor = float(np.clip(min_per_app / 75.0, 0.15, 1.0)) if raw_presenze > 0 else 0.10
+        min_factor = float(np.clip(min_per_app / 75.0, 0.10, 1.0)) if raw_presenze > 0 else 0.05
         exp_gf = round(max(0.0, regressed_xg * opp_factor * venue_factor * min_factor), 3)
         exp_ass = round(max(0.0, regressed_xa * opp_factor * venue_factor * min_factor), 3)
         exp_cards = round(amm_rate, 2)
@@ -372,6 +398,11 @@ def predict_player_xfv(player_row, matchday=6, calendar=None, ratings_cache=None
             dfactor_val_add,
             2
         )
+
+        # Scale marginal fantasy value (above baseline 5.0) by the Minute Quality Factor
+        # A 70m starter keeps full expected score; a 30m sub is scaled down in proportion to real on-pitch minutes
+        marginal_xfv = max(0.0, raw_xfv - 5.0)
+        scaled_xfv = 5.0 + (marginal_xfv * minute_quality_factor)
         
         # Progressive Titolarità / Senza Voto (S.V.) penalty
         # Nailed starters (p_voto >= 0.85) have minimal risk penalty;
@@ -383,9 +414,9 @@ def predict_player_xfv(player_row, matchday=6, calendar=None, ratings_cache=None
             xfv = 0.0
         elif p_voto <= 0.15 or (raw_presenze == 0 and p_voto <= 0.35):
             # Non-playing reserves are scaled directly by their playing probability
-            xfv = round(p_voto * max(0.0, raw_xfv), 2)
+            xfv = round(p_voto * max(0.0, scaled_xfv), 2)
         else:
-            xfv = round(raw_xfv - sv_penalty, 2)
+            xfv = round(max(0.0, scaled_xfv - sv_penalty), 2)
         
         # D-Factor contribution
         dfactor_val = round(pred_voto, 2) if is_dfactor_role else 0.0
@@ -420,6 +451,7 @@ def predict_player_xfv(player_row, matchday=6, calendar=None, ratings_cache=None
             'P_Voto': round(p_voto, 2),
             'Status_Titolarita': status_titolarita,
             'Min_Per_App': int(min_per_app),
+            'Minute_Quality_Factor': round(minute_quality_factor, 2),
             'Presenze_Tot': int(raw_presenze),
             'SV_Penalty': sv_penalty,
             'xFV_Raw': raw_xfv,

@@ -830,7 +830,8 @@ def get_team_roster_df(team_name, league_data_or_master=None, df_master=None):
             badge_disp = '⚠️ DA SVINCOLARE'
             det_disp = 'Fuori dalla Serie A - da svincolare al prossimo mercato'
 
-        row_dict = {
+        row_dict = dict(m_info) if m_info else {}
+        row_dict.update({
             'Cod': p.get('Cod', m_info.get('Cod', 0)),
             'Giocatore': p_name,
             'NomeGrezzo': p.get('NomeGrezzo', p_name),
@@ -847,12 +848,14 @@ def get_team_roster_df(team_name, league_data_or_master=None, df_master=None):
             'Schierabile': schierabile,
             'Da_Svincolare': is_out,
             'Presenze': m_info.get('Presenze', p.get('Presenze', 0)),
+            'Minuti_Reali': m_info.get('Minuti_Reali', 0),
             'MV_Stagione': m_info.get('MV_Stagione', p.get('MV_Stagione', 0.0)),
             'Pct_Sufficienza': m_info.get('Pct_Sufficienza', 0.0),
             'FM_Stagione': m_info.get('FM_Stagione', p.get('FM_Stagione', 0.0)),
             'MV_Ultime3': m_info.get('MV_Ultime3', 0.0),
             'Pct_Parate': m_info.get('Pct_Parate', 0.0),
             'Goals_Prevented': m_info.get('Goals_Prevented', 0.0),
+            'Goals_Prevented_90': m_info.get('Goals_Prevented_90', 0.0),
             'Errors_Leading_To_Goal': m_info.get('Errors_Leading_To_Goal', 0),
             'GF': m_info.get('GF', p.get('GF', 0)),
             'ASS': m_info.get('ASS', p.get('ASS', 0)),
@@ -863,7 +866,7 @@ def get_team_roster_df(team_name, league_data_or_master=None, df_master=None):
             'xA_90': m_info.get('xA_90', 0.0),
             'Delta_xA': m_info.get('Delta_xA', 0.0),
             'Signal': m_info.get('Signal', 'NEUTRAL')
-        }
+        })
         rows.append(row_dict)
 
     df_res = pd.DataFrame(rows)

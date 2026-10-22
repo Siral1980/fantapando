@@ -1090,7 +1090,8 @@ with tab_formazione:
                     p_voto_val = int(float(t.get('P_Voto', 0.90)) * 100)
                     pres_tot = t.get('Presenze_Tot', t.get('Presenze', 0))
                     stat_tit = t.get('Status_Titolarita', '🟢 TITOLARE')
-                    tit_display = f"{p_voto_val}% ({pres_tot}/7)"
+                    mins_avg = int(t.get('Min_Per_App', 0))
+                    tit_display = f"{p_voto_val}% ({pres_tot}/7) | ⏱️ {mins_avg}'/g"
 
                     analysis_rows.append({
                         'Slot': slot_n,

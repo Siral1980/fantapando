@@ -214,8 +214,16 @@ def solve_lineup_for_formation(formation_name, df_projected_roster):
                         xg_val = float(p['Raw'].get('xG_90', 0.0))
                         xa_val = float(p['Raw'].get('xA_90', 0.0))
                         mins_val = float(p['Raw'].get('Min_Per_App', 60.0))
-                        mins_factor = 0.001 if mins_val >= 55.0 else (-0.002 if mins_val < 35.0 else 0.0)
-                        tie_breaker += (xg_val * 0.001) + (xa_val * 0.001) + mins_factor
+                        # Explicit Starter XI Volume Preference:
+                        # Starting 11 strongly favors full-game starters (>= 65 mins);
+                        # Substitutes (< 45 mins) receive an explicit starting penalty, pushing them to the bench
+                        if mins_val >= 65.0:
+                            mins_bias = 0.06 + min(0.06, (mins_val - 65.0) * 0.002)
+                        elif mins_val < 45.0:
+                            mins_bias = -0.22 - ((45.0 - mins_val) * 0.015)
+                        else:
+                            mins_bias = 0.0
+                        tie_breaker += (xg_val * 0.001) + (xa_val * 0.001) + mins_bias
                     
                     cost_matrix[i, j] = - (p['xFV'] + tie_breaker)
                     
