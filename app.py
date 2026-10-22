@@ -29,8 +29,12 @@ from engine.optimizer import (
     parse_mantra_roles
 )
 from engine.trade_evaluator import evaluate_trade
+import importlib
+import engine.trade_finder
+importlib.reload(engine.trade_finder)
 from engine.trade_finder import (
-    analyze_squad_weaknesses, find_win_win_trades, find_trades_for_target_players, RECOMMENDED_QUOTAS
+    analyze_squad_weaknesses, find_win_win_trades, find_trades_for_target_players, RECOMMENDED_QUOTAS,
+    safe_float, safe_int
 )
 from engine.roster_manager import (
     load_user_roster, save_user_roster, add_player_to_roster,
@@ -1613,18 +1617,43 @@ with tab_scambi:
             
         # Run search
         with st.spinner("Scansione rose avversarie e calcolo scambi Win-Win in corso..."):
-            proposals = find_win_win_trades(
-                my_team_name=my_team,
-                league_data=league_dict,
-                df_master=df_master,
-                matchday=selected_giornata,
-                target_role_filter=selected_target_role,
-                give_player_filter=selected_give_player,
-                opp_team_filter=selected_opp_team,
-                min_starter_filter=selected_starter_filter,
-                trade_format_filter=selected_format_filter,
-                max_proposals=30
-            )
+            try:
+                proposals = find_win_win_trades(
+                    my_team_name=my_team,
+                    league_data=league_dict,
+                    df_master=df_master,
+                    matchday=selected_giornata,
+                    target_role_filter=selected_target_role,
+                    give_player_filter=selected_give_player,
+                    opp_team_filter=selected_opp_team,
+                    min_starter_filter=selected_starter_filter,
+                    trade_format_filter=selected_format_filter,
+                    max_proposals=30
+                )
+            except TypeError:
+                # Fallback for cached or legacy function signatures
+                try:
+                    proposals = find_win_win_trades(
+                        my_team_name=my_team,
+                        league_data=league_dict,
+                        df_master=df_master,
+                        matchday=selected_giornata,
+                        target_role_filter=selected_target_role,
+                        give_player_filter=selected_give_player,
+                        opp_team_filter=selected_opp_team,
+                        min_starter_filter=selected_starter_filter,
+                        max_proposals=30
+                    )
+                except Exception as inner_e:
+                    import traceback
+                    st.error(f"Errore durante l'elaborazione degli scambi: {inner_e}")
+                    st.code(traceback.format_exc())
+                    proposals = []
+            except Exception as e:
+                import traceback
+                st.error(f"Errore durante l'elaborazione degli scambi: {e}")
+                st.code(traceback.format_exc())
+                proposals = []
             
         if not proposals:
             st.warning("Nessuna proposta Win-Win trovata con i filtri correnti. Prova a impostare 'TUTTI' nei filtri per allargare la ricerca.")
@@ -1638,10 +1667,10 @@ with tab_scambi:
                 rec_list = prop.get('Tu_Ricevi_List', [prop['Tu_Ricevi']])
                 label_tipo = prop.get('Label_Tipo', '⚖️ Scambio Diretto (1x1)')
                 tipo_scambio = prop.get('Tipo_Scambio', '1x1')
-                tot_c_give = prop.get('Tot_Costo_Cedi', sum(p.get('Costo', 0) for p in give_list))
-                tot_c_rec = prop.get('Tot_Costo_Ricevi', sum(p.get('Costo', 0) for p in rec_list))
-                tot_x_give = prop.get('Tot_xFV_Cedi', round(sum(p.get('xFV', 0.0) for p in give_list), 2))
-                tot_x_rec = prop.get('Tot_xFV_Ricevi', round(sum(p.get('xFV', 0.0) for p in rec_list), 2))
+                tot_c_give = prop.get('Tot_Costo_Cedi', sum(safe_int(p.get('Costo', 0)) for p in give_list))
+                tot_c_rec = prop.get('Tot_Costo_Ricevi', sum(safe_int(p.get('Costo', 0)) for p in rec_list))
+                tot_x_give = prop.get('Tot_xFV_Cedi', round(sum(safe_float(p.get('xFV', 0.0)) for p in give_list), 2))
+                tot_x_rec = prop.get('Tot_xFV_Ricevi', round(sum(safe_float(p.get('xFV', 0.0)) for p in rec_list), 2))
                 delta_xfv = prop.get('Delta_xFV', round(tot_x_rec - tot_x_give, 2))
                 
                 with st.container():
@@ -1655,7 +1684,7 @@ with tab_scambi:
                             </div>
                             <div>
                                 <span style="background: #10b981; color: white; padding: 4px 10px; border-radius: 12px; font-weight: 700; font-size: 0.85rem;">
-                                    Win-Win Index: {int(score)} / 200
+                                    Win-Win Index: {int(safe_float(score, 50.0))} / 200
                                 </span>
                             </div>
                         </div>

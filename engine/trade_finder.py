@@ -57,13 +57,15 @@ def compute_real_starter_status(row, tot_matchdays=7):
     - SUBENTRANTE: Late substitute / bench warmer (< 45 min/app or < 28% team minutes, e.g. Lucca, Nzola, Kevin Carlos, Beto)
     - MARGINALE: Rare or zero appearances (< 2 apps or < 70 min total)
     """
-    pres = float(row.get('Presenze', 0))
-    mins = float(row.get('Minuti_Reali', 0))
+    if not isinstance(row, dict):
+        row = {}
+    pres = safe_float(row.get('Presenze', 0))
+    mins = safe_float(row.get('Minuti_Reali', 0))
     tot_mins = tot_matchdays * 90.0
     
     m_per_app = (mins / pres) if pres > 0 else 0.0
     pct_mins = (mins / tot_mins * 100.0) if tot_mins > 0 else 0.0
-    pct_suff = float(row.get('Pct_Sufficienza', 50.0))
+    pct_suff = safe_float(row.get('Pct_Sufficienza', 50.0))
     
     xg_90 = safe_float(row.get('xG_90_Regressed', row.get('xG_90', 0.0)))
     xa_90 = safe_float(row.get('xA_90_Regressed', row.get('xA_90', 0.0)))
@@ -394,7 +396,7 @@ def analyze_squad_weaknesses(team_name, league_data, df_master, matchday=8):
     if df_squad.empty:
         return {'error': "Nessun calciatore della squadra trovato nel database master."}
 
-    cost_lookup = {p['Giocatore']: int(p.get('Costo', 1) or 1) for p in team_players if 'Giocatore' in p}
+    cost_lookup = {p['Giocatore']: safe_int(p.get('Costo', 1), default=1) for p in team_players if isinstance(p, dict) and 'Giocatore' in p}
     df_squad['Costo'] = df_squad['Giocatore'].map(cost_lookup).fillna(1).astype(int)
 
     # Project squad performance for the target matchday
@@ -427,7 +429,7 @@ def analyze_squad_weaknesses(team_name, league_data, df_master, matchday=8):
     por_starters = [p for p in pors if p.get('Presenze', 0) >= 3]
     teams_with_gk = set(p.get('Squadra') for p in pors)
     has_paired_gk = any(sum(1 for p in pors if p.get('Squadra') == sq) >= 2 for sq in teams_with_gk)
-    top_gk = max(pors, key=lambda p: float(p.get('Presenze', 0))) if pors else None
+    top_gk = max(pors, key=lambda p: safe_float(p.get('Presenze', 0))) if pors else None
     
     if len(pors) < 3:
         weaknesses.append({
@@ -451,7 +453,7 @@ def analyze_squad_weaknesses(team_name, league_data, df_master, matchday=8):
         strengths.append(f"Porta blindata: hai la coppia di portieri dello stesso club.")
 
     # Advanced Goalkeeper Performance & Blunder Diagnostic
-    if top_gk is not None and float(top_gk.get('Presenze', 0)) >= 2:
+    if top_gk is not None and safe_float(top_gk.get('Presenze', 0)) >= 2:
         gk_name = top_gk['Giocatore']
         gk_gp = safe_float(top_gk.get('Goals_Prevented', 0.0))
         gk_gp90 = safe_float(top_gk.get('Goals_Prevented_90', 0.0))
@@ -628,10 +630,10 @@ def analyze_squad_weaknesses(team_name, league_data, df_master, matchday=8):
     t_s = role_roster_active['T']
     
     if len(ws) >= 4:
-        top_w_names = ', '.join(p['Giocatore'] for p in sorted(ws, key=lambda x: float(x.get('xFV', 0)), reverse=True)[:4])
+        top_w_names = ', '.join(p['Giocatore'] for p in sorted(ws, key=lambda x: safe_float(x.get('xFV', 0)), reverse=True)[:4])
         strengths.append(f"Arsenale ali offensive: {len(ws)} W attive ad alto potenziale ({top_w_names}).")
     if len(a_s) >= 3:
-        top_a_names = ', '.join(p['Giocatore'] for p in sorted(a_s, key=lambda x: float(x.get('xFV', 0)), reverse=True)[:3])
+        top_a_names = ', '.join(p['Giocatore'] for p in sorted(a_s, key=lambda x: safe_float(x.get('xFV', 0)), reverse=True)[:3])
         strengths.append(f"Profondità di seconde punte: {len(a_s)} A a disposizione ({top_a_names}), eccellente moneta di scambio sul mercato.")
 
     # 3. Identify Surplus Trade Assets (Calciatori spendibili sul mercato)
@@ -655,10 +657,10 @@ def analyze_squad_weaknesses(team_name, league_data, df_master, matchday=8):
             continue
             
         roles_str = b_row.get('RuoloMantra', '')
-        xfv = float(b_row.get('xFV', 0))
+        xfv = safe_float(b_row.get('xFV', 0))
         sig = str(b_row.get('Signal', 'NEUTRO'))
         roles = parse_mantra_roles(roles_str)
-        presenze = int(b_row.get('Presenze', 0))
+        presenze = safe_int(b_row.get('Presenze', 0))
         
         # Consider players with real presence and trade value
         if presenze < 2 and xfv < 5.4:
@@ -736,12 +738,15 @@ def _get_department_name(roles):
 def _format_trade_player(p, is_opponent=False):
     """Formats player dictionary for trade proposals with full stats and starter status."""
     from engine.injuries_manager import classify_injury_status
+    if not isinstance(p, dict):
+        p = {}
     status_info = compute_real_starter_status(p)
-    inj_info = classify_injury_status(p['Giocatore']) if is_opponent else {}
+    p_name = p.get('Giocatore', '')
+    inj_info = classify_injury_status(p_name) if (is_opponent and p_name) else {}
     is_buy_low = ('BUY-LOW' in str(p.get('Signal', '')))
     
     return {
-        'Giocatore': p['Giocatore'],
+        'Giocatore': p_name,
         'Squadra': p.get('Squadra', ''),
         'RuoloMantra': p.get('RuoloMantra', ''),
         'Costo': safe_int(p.get('Costo', 0)),
@@ -749,19 +754,19 @@ def _format_trade_player(p, is_opponent=False):
         'FM': round(safe_float(p.get('FM', p.get('FM_Stagione', 0.0))), 2),
         'Signal': str(p.get('Signal', 'NEUTRO')),
         'Tier': p.get('Tier', 'TITOLARE'),
-        'Status_Titolarita': status_info['Status'],
-        'Badge_Titolarita': status_info['Badge'],
-        'Label_Titolarita': status_info['Label'],
-        'Min_Per_Pres': status_info['Min_Per_Pres'],
-        'Pct_Minuti': status_info['Pct_Minuti'],
+        'Status_Titolarita': status_info.get('Status', 'TITOLARE'),
+        'Badge_Titolarita': status_info.get('Badge', '🟢 TITOLARE FISSO'),
+        'Label_Titolarita': status_info.get('Label', '🟢 Titolare'),
+        'Min_Per_Pres': safe_float(status_info.get('Min_Per_Pres', 0.0)),
+        'Pct_Minuti': safe_float(status_info.get('Pct_Minuti', 0.0)),
         'Pct_Sufficienza': round(safe_float(p.get('Pct_Sufficienza', 50.0)), 1),
-        'Is_Subentrante': not status_info['Is_Real_Starter'],
+        'Is_Subentrante': not status_info.get('Is_Real_Starter', True),
         'Is_Buy_Low': is_buy_low,
-        'Is_Injured': inj_info.get('Is_Injured', False),
-        'Is_Stash_Injury': inj_info.get('Is_Injured', False) and not inj_info.get('Is_Long_Term', False),
-        'Injury_Detail': inj_info.get('Dettaglio', ''),
-        'Injury_Severity': inj_info.get('Severity_Label', 'DISPONIBILE'),
-        'Is_Bench_In_Opponent': p.get('Is_Bench_In_Opponent', False),
+        'Is_Injured': bool(inj_info.get('Is_Injured', False)),
+        'Is_Stash_Injury': bool(inj_info.get('Is_Injured', False) and not inj_info.get('Is_Long_Term', False)),
+        'Injury_Detail': str(inj_info.get('Dettaglio', '')),
+        'Injury_Severity': str(inj_info.get('Severity_Label', 'DISPONIBILE')),
+        'Is_Bench_In_Opponent': bool(p.get('Is_Bench_In_Opponent', False)),
         'Goals_Prevented': safe_float(p.get('Goals_Prevented', 0.0)),
         'Goals_Prevented_90': safe_float(p.get('Goals_Prevented_90', 0.0)),
         'Errors_Leading_To_Goal': safe_int(p.get('Errors_Leading_To_Goal', 0)),
@@ -804,14 +809,14 @@ def is_trade_role_parity_credible(give_dict, receive_dict):
     is_rec_gk = 'Por' in rec_roles
     is_give_gk = 'Por' in give_roles
 
-    give_fm = float(give_dict.get('FM', give_dict.get('FM_Stagione', 0)) or 0)
-    give_xfv = float(give_dict.get('xFV', 0) or 0)
+    give_fm = safe_float(give_dict.get('FM', give_dict.get('FM_Stagione', 0)))
+    give_xfv = safe_float(give_dict.get('xFV', 0))
     give_gf = safe_int(give_dict.get('GF', 0))
     give_costo = safe_int(give_dict.get('Costo', 0))
     give_pres = safe_int(give_dict.get('Presenze', 0))
 
-    rec_fm = float(receive_dict.get('FM', receive_dict.get('FM_Stagione', 0)) or 0)
-    rec_xfv = float(receive_dict.get('xFV', 0) or 0)
+    rec_fm = safe_float(receive_dict.get('FM', receive_dict.get('FM_Stagione', 0)))
+    rec_xfv = safe_float(receive_dict.get('xFV', 0))
     rec_gf = safe_int(receive_dict.get('GF', 0))
     rec_costo = safe_int(receive_dict.get('Costo', 0))
     rec_pres = safe_int(receive_dict.get('Presenze', 0))
@@ -928,8 +933,10 @@ def find_win_win_trades(
     my_team_name, league_data, df_master, matchday=8, 
     target_role_filter=None, give_player_filter=None, opp_team_filter=None, 
     min_starter_filter='TITOLARI_E_CO', trade_format_filter='TUTTI',
-    df_all_proj=None, max_proposals=30
+    df_all_proj=None, max_proposals=30, **kwargs
 ):
+    if 'trade_format_filter' in kwargs:
+        trade_format_filter = kwargs['trade_format_filter']
     """
     Automated Win-Win Trade Finder (Radar Scambi Intelligenti):
     Scans opponent teams in the fantasy league.
@@ -961,12 +968,14 @@ def find_win_win_trades(
 
     # Build league auction cost lookup (taking max cost to ensure true ownership cost)
     costo_map = {}
-    for t_players in league_data.values():
-        for p in t_players:
-            if 'Giocatore' in p and 'Costo' in p:
-                name = p['Giocatore']
-                cost = safe_int(p.get('Costo', 0))
-                costo_map[name] = max(costo_map.get(name, 0), cost)
+    if isinstance(league_data, dict):
+        for t_players in league_data.values():
+            if isinstance(t_players, list):
+                for p in t_players:
+                    if isinstance(p, dict) and 'Giocatore' in p:
+                        name = p['Giocatore']
+                        cost = safe_int(p.get('Costo', 0))
+                        costo_map[name] = max(costo_map.get(name, 0), cost)
 
     for name, p_data in proj_map.items():
         if name in costo_map:
@@ -1261,7 +1270,7 @@ def find_win_win_trades(
 
                             rec_pkg = [t1, t2]
 
-                            sig_key = (opp_team, tuple(sorted([g1_name, g2_name])), tuple(sorted([t1_name, t2_name])))
+                            sig_key = (opp_team, tuple(sorted([str(g1_name), str(g2_name)])), tuple(sorted([str(t1_name), str(t2_name)])))
                             if sig_key in seen_trade_signatures:
                                 continue
 
@@ -1378,7 +1387,7 @@ def find_win_win_trades(
                     give_pkg = [g1, g2]
                     rec_pkg = [t1]
 
-                    sig_key = (opp_team, tuple(sorted([g1_name, g2_name])), (t1_name,))
+                    sig_key = (opp_team, tuple(sorted([str(g1_name), str(g2_name)])), (str(t1_name),))
                     if sig_key in seen_trade_signatures:
                         continue
 
@@ -1462,7 +1471,7 @@ def find_win_win_trades(
                     give_pkg = [g1]
                     rec_pkg = [t1, t2]
 
-                    sig_key = (opp_team, (g1_name,), tuple(sorted([t1_name, t2_name])))
+                    sig_key = (opp_team, (str(g1_name),), tuple(sorted([str(t1_name), str(t2_name)])))
                     if sig_key in seen_trade_signatures:
                         continue
 
@@ -1510,7 +1519,7 @@ def find_win_win_trades(
                         'Tot_xFV_Cedi': tot_x_give,
                         'Tot_xFV_Ricevi': tot_x_rec,
                         'Delta_xFV': round(tot_x_rec - tot_x_give, 2),
-                        'Ruolo_Target': list(parse_mantra_roles(t1.get('RuoloMantra', '')))[0] if t1.get('RuoloMantra') else 'N/D',
+                        'Ruolo_Target': (list(parse_mantra_roles(t1.get('RuoloMantra', ''))) or ['N/D'])[0],
                         'Motivazioni': reasons,
                         'Messaggio_Trattativa': pitch,
                         'Simulazione_Payload': {
@@ -1523,22 +1532,25 @@ def find_win_win_trades(
     # Balance proposals across opponent teams so no single rival monopolizes the list
     team_counts = {}
     balanced_proposals = []
-    sorted_proposals = sorted(trade_proposals, key=lambda x: x['Score'], reverse=True)
+    seen_indices = set()
+    sorted_proposals = sorted(trade_proposals, key=lambda x: safe_float(x.get('Score', 0.0)), reverse=True)
     
     # Pass 1: take up to 2-3 proposals per rival team to guarantee diverse league options
-    for p in sorted_proposals:
-        t = p['Squadra_Avversaria']
+    for idx, p in enumerate(sorted_proposals):
+        t = p.get('Squadra_Avversaria', '')
         if team_counts.get(t, 0) < 3:
             balanced_proposals.append(p)
+            seen_indices.add(idx)
             team_counts[t] = team_counts.get(t, 0) + 1
         if len(balanced_proposals) >= max_proposals:
             break
             
     # Pass 2: if still under max_proposals, fill remaining spots
     if len(balanced_proposals) < max_proposals:
-        for p in sorted_proposals:
-            if p not in balanced_proposals:
+        for idx, p in enumerate(sorted_proposals):
+            if idx not in seen_indices:
                 balanced_proposals.append(p)
+                seen_indices.add(idx)
                 if len(balanced_proposals) >= max_proposals:
                     break
                     
