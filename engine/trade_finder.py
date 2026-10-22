@@ -196,6 +196,7 @@ def evaluate_pairwise_trade_balance(give_pkg, target_pkg, tot_matchdays=7):
     surplus_pool = 0.0
     is_valid = True
     rejection_reason = ""
+    has_primary_starter = any(p['i_tit'] >= 0.65 for p in give_sorted)
 
     for i in range(min_len):
         g = give_sorted[i]
@@ -213,30 +214,31 @@ def evaluate_pairwise_trade_balance(give_pkg, target_pkg, tot_matchdays=7):
             'delta': round(d, 2)
         })
         
-        # Check Titolarità Asymmetry & Vasi Comunicanti
-        if t['i_tit'] >= 0.70 and g['i_tit'] < 0.55:
-            needed_compensation = t['effective_val'] - g['effective_val']
-            extra_give_avail = sum(p['effective_val'] for p in give_sorted[min_len:]) if n_give > n_target else 0.0
-            tot_surplus_avail = surplus_pool + extra_give_avail
-            if tot_surplus_avail < (needed_compensation * 0.80):
-                is_valid = False
-                rejection_reason = (
-                    f"Squilibrio di titolarità sul {i+1}° slot: offri {g['Giocatore']} (riserva/subentrante, "
-                    f"titolarità {int(g['i_tit']*100)}%) per {t['Giocatore']} (titolare fisso, "
-                    f"titolarità {int(t['i_tit']*100)}%) senza sufficiente surplus di compensazione."
-                )
-                break
+        # Titolarità Asymmetry check:
+        # If user offers ONLY benchwarmers/subentranti (no starting-caliber player at all) for top starters:
+        if not has_primary_starter and t['i_tit'] >= 0.70:
+            is_valid = False
+            rejection_reason = (
+                f"Nessun titolare offerto: proponi solo riserve/subentranti a fronte di titolari fissi richiesti."
+            )
+            break
         
         surplus_pool += d
 
     if is_valid:
-        if n_target > n_give:
-            extra_target = sum(p['effective_val'] for p in target_sorted[min_len:])
-            if surplus_pool < (extra_target * 0.75):
+        # Multi-target value floor: effective value must reach at least 65% of target value
+        if target_tot_eff > 0 and (give_tot_eff / target_tot_eff) < 0.65:
+            is_valid = False
+            rejection_reason = (
+                f"Valore complessivo offerto ({give_tot_eff:.2f}) troppo distante da quello richiesto ({target_tot_eff:.2f})."
+            )
+        elif n_target > n_give:
+            # In 1x2 (give 1, ask 2): single given player must be of high caliber (not a bench piece)
+            if not has_primary_starter or give_tot_eff < (target_tot_eff * 0.60):
                 is_valid = False
                 rejection_reason = (
                     f"Richiesta 1x2 insostenibile: il tuo pezzo principale ({give_sorted[0]['Giocatore']}) "
-                    f"non genera surplus sufficiente per coprire il 2° calciatore richiesto."
+                    f"non genera valore sufficiente per richiedere un pacchetto multiplo."
                 )
 
     return {
@@ -1168,21 +1170,56 @@ def simulate_opponent_post_trade(
     opp_new_pts = opt_opp_new['Punti_Attesi_Totali'] if opt_opp_new else 0.0
     delta_opp_pts = round(opp_new_pts - opp_curr_pts, 2)
 
-    # 4. Check Net Starters Lost in Opponent Starting 11
+    # 4. Tactical Opponent Dynamics: Internal Reserve Promotion & Module Switch
     curr_titolari_names = set(p['Giocatore'] for p in opt_opp_curr.get('Titolari', [])) if opt_opp_curr else set()
     new_titolari_names = set(p['Giocatore'] for p in opt_opp_new.get('Titolari', [])) if opt_opp_new else set()
+    give_names_set = set(p['Giocatore'] for p in give_pkg)
     
     opp_starters_giving = [p['Giocatore'] for p in target_players if p['Giocatore'] in curr_titolari_names]
     opp_starters_received = [p['Giocatore'] for p in give_pkg if p['Giocatore'] in new_titolari_names]
     
-    net_starters_lost = len(opp_starters_giving) - len(opp_starters_received)
-    has_starter_deficit_flaw = False
-    if net_starters_lost > 0 and delta_opp_pts < 0.20:
-        has_starter_deficit_flaw = True
-        critical_flaws.append(
-            f"⚠️ Perdita netta di titolari negli 11: l'avversario cede {len(opp_starters_giving)} titolari ({', '.join(opp_starters_giving)}) "
-            f"ma ne inserisce solo {len(opp_starters_received)} nei nuovi 11 ({', '.join(opp_starters_received) if opp_starters_received else 'nessuno'})."
+    # Internal bench players promoted into the opponent's starting 11
+    promoted_internal_reserves = [
+        p['Giocatore'] for p in opt_opp_new.get('Titolari', [])
+        if p['Giocatore'] not in give_names_set and p['Giocatore'] not in curr_titolari_names
+    ]
+    
+    curr_mod = opt_opp_curr.get('Modulo', 'N/D') if opt_opp_curr else 'N/D'
+    new_mod = opt_opp_new.get('Modulo', 'N/D') if opt_opp_new else 'N/D'
+    is_module_changed = (curr_mod != new_mod and new_mod != 'N/D')
+    
+    # Positive tactical reassurances
+    if promoted_internal_reserves:
+        reassurances.append(
+            f"🔄 Spazio titolare sbloccato per le riserve: la cessione promuove negli 11 {', '.join(promoted_internal_reserves)}, "
+            f"precedentemente chiuso in panchina ma con fanta-valore comparabile."
         )
+    if is_module_changed and delta_opp_pts >= -0.50:
+        reassurances.append(
+            f"📐 Cambio modulo proficuo: consente a {opp_team_name} di passare dal {curr_mod} al {new_mod}, "
+            f"ottimizzando la resa complessiva della rosa."
+        )
+
+    # When is there a fatal starter deficit?
+    # Only if:
+    # 1. Net starters lost > 0 AND no internal reserve was promoted AND delta_opp_pts < -0.35
+    # OR 2. Lineup collapses heavily (delta_opp_pts < -0.90)
+    has_starter_deficit_flaw = False
+    net_starters_lost = len(opp_starters_giving) - len(opp_starters_received)
+    
+    if net_starters_lost > 0:
+        if not promoted_internal_reserves and delta_opp_pts < -0.35:
+            has_starter_deficit_flaw = True
+            critical_flaws.append(
+                f"⚠️ Perdita netta di titolari: cede {len(opp_starters_giving)} titolari ({', '.join(opp_starters_giving)}) "
+                f"senza avere riserve interne pronte a subentrare negli 11 ({delta_opp_pts:+.2f} pt)."
+            )
+        elif delta_opp_pts < -0.90:
+            has_starter_deficit_flaw = True
+            critical_flaws.append(
+                f"⚠️ Peggioramento eccessivo della formazione: la perdita dei titolari non è compensata "
+                f"dalle riserve interne ({delta_opp_pts:+.2f} pt attesi)."
+            )
 
     return {
         'is_goal_uncovered': is_goal_uncovered,
@@ -1191,8 +1228,10 @@ def simulate_opponent_post_trade(
         'opp_curr_pts': opp_curr_pts,
         'opp_new_pts': opp_new_pts,
         'delta_opp_pts': delta_opp_pts,
-        'opp_curr_modulo': opt_opp_curr.get('Modulo', 'N/D') if opt_opp_curr else 'N/D',
-        'opp_new_modulo': opt_opp_new.get('Modulo', 'N/D') if opt_opp_new else 'N/D',
+        'opp_curr_modulo': curr_mod,
+        'opp_new_modulo': new_mod,
+        'promoted_internal_reserves': promoted_internal_reserves,
+        'is_module_changed': is_module_changed,
         'reassurances': reassurances,
         'opt_opp_new': opt_opp_new
     }
@@ -1276,7 +1315,7 @@ def find_trades_for_target_players(
     opt_opp_curr = optimize_best_mantra_lineup(df_opp_proj)
     opp_curr_pts = opt_opp_curr['Punti_Attesi_Totali'] if opt_opp_curr else 0.0
     opp_curr_modulo = opt_opp_curr['Modulo'] if opt_opp_curr else 'N/D'
-    opp_sim_formations = list(dict.fromkeys([opp_curr_modulo, '3-5-2', '4-3-3']))[:2]
+    opp_sim_formations = list(dict.fromkeys([opp_curr_modulo, '3-5-2', '4-3-3', '4-2-3-1', '4-3-1-2']))[:4]
     
     target_players = []
     for tname in target_player_names:
@@ -1440,16 +1479,16 @@ def find_trades_for_target_players(
         target_eff_sum = pairwise_eval['target_tot_eff']
 
         if give_n == num_targets:
-            # 1x1 or 2x2: effective value should be balanced (0.75x to 1.35x)
-            if not (0.75 * target_eff_sum <= give_eff_sum <= 1.35 * target_eff_sum):
+            # 1x1 or 2x2: effective value should be balanced (0.65x to 1.45x)
+            if not (0.65 * target_eff_sum <= give_eff_sum <= 1.45 * target_eff_sum):
                 continue
         elif give_n > num_targets:
-            # Multi-to-one (2x1, 3x2): buyer can pay a slight premium (0.80x to 1.55x)
-            if not (0.80 * target_eff_sum <= give_eff_sum <= 1.55 * target_eff_sum):
+            # Multi-to-one (2x1, 3x2): buyer can pay a slight premium (0.72x to 1.60x)
+            if not (0.72 * target_eff_sum <= give_eff_sum <= 1.60 * target_eff_sum):
                 continue
         else:
-            # One-to-multi: giver gives high value (0.78x to 1.28x)
-            if not (0.78 * target_eff_sum <= give_eff_sum <= 1.28 * target_eff_sum):
+            # One-to-multi: giver gives high value (0.62x to 1.35x)
+            if not (0.62 * target_eff_sum <= give_eff_sum <= 1.35 * target_eff_sum):
                 continue
 
         # -------------------------------------------------------------
@@ -1531,7 +1570,7 @@ def find_trades_for_target_players(
 
     proposals = []
     # Identify relevant formations for fast simulation (My team)
-    sim_formations = list(dict.fromkeys([my_curr_modulo, '3-5-2', '4-3-3']))[:2]
+    sim_formations = list(dict.fromkeys([my_curr_modulo, '3-5-2', '4-3-3', '4-2-3-1', '4-3-1-2']))[:4]
 
     for item in pre_screened:
         give_pkg = item['give_pkg']
