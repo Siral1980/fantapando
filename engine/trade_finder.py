@@ -60,6 +60,32 @@ def check_fvm_parity(give_pkg, target_pkg, min_total_ratio=0.70, min_anchor_rati
     return True, ""
 
 
+def check_effective_fairness(give_pkg, target_pkg, min_total=0.85, max_total=1.25, min_anchor=0.78):
+    """
+    On-field fairness gate based on the continuous effective value (FM + xFV blend,
+    real starter status, xG/xA production, role scarcity).
+    - Total offered value must be within [min_total, max_total] of the total requested value:
+      the opponent must not lose quality, and the user must not overpay either.
+    - The top asset of each side must be comparable (min/max >= min_anchor), so a top player
+      can't be bought with filler pieces (and vice versa).
+    Returns (ok, reason, give_eff_total, target_eff_total).
+    """
+    g_vals = [compute_continuous_trade_value(p)['effective_val'] for p in give_pkg]
+    t_vals = [compute_continuous_trade_value(p)['effective_val'] for p in target_pkg]
+    g_tot, t_tot = sum(g_vals), sum(t_vals)
+    if t_tot > 0:
+        ratio = g_tot / t_tot
+        if ratio < min_total:
+            return False, f"Rendimento offerto ({g_tot:.2f}) inferiore a quello richiesto ({t_tot:.2f}): l'avversario ci rimette.", g_tot, t_tot
+        if ratio > max_total:
+            return False, f"Rendimento offerto ({g_tot:.2f}) molto superiore a quello richiesto ({t_tot:.2f}): scambio non conveniente per te.", g_tot, t_tot
+    g_top, t_top = max(g_vals or [0.0]), max(t_vals or [0.0])
+    max_top = max(g_top, t_top)
+    if max_top > 0 and (min(g_top, t_top) / max_top) < min_anchor:
+        return False, f"Pezzo principale non comparabile per rendimento ({g_top:.2f} vs {t_top:.2f}).", g_tot, t_tot
+    return True, "", g_tot, t_tot
+
+
 # Ideal role quotas for a balanced 25-30 player Mantra squad
 RECOMMENDED_QUOTAS = {
     'Por': {'min_active': 2, 'target': 3, 'name': 'Portieri'},
@@ -78,6 +104,8 @@ RECOMMENDED_QUOTAS = {
 
 
 def compute_real_starter_status(row, tot_matchdays=7):
+    if isinstance(row, dict) and 'Starter_Status' in row and isinstance(row['Starter_Status'], dict):
+        return row['Starter_Status']
     """
     Classifies a Serie A player based on real match minutes and continuous usage:
     - TITOLARE: Primary undisputed starter (>= 55 min/app AND >= 45% team minutes, or >= 68 min/app with >= 3 apps)
@@ -159,6 +187,8 @@ def compute_real_starter_status(row, tot_matchdays=7):
 
 
 def compute_continuous_trade_value(player_dict, tot_matchdays=7):
+    if isinstance(player_dict, dict) and 'Trade_Eff' in player_dict and isinstance(player_dict['Trade_Eff'], dict):
+        return player_dict['Trade_Eff']
     """
     Computes a continuous, objective market trade value based on:
     1. Base Long-Term Asset Value (blending season FM, MV, and model xFV).
@@ -275,9 +305,11 @@ def evaluate_pairwise_trade_balance(give_pkg, target_pkg, tot_matchdays=7):
        - Pair 1 (Anchors): Give[0] vs Target[0] -> delta_1 = Val(Give[0]) - Val(Target[0])
        - Pair 2 (Complements): Give[1] vs Target[1] -> delta_2 = Val(Give[1]) - Val(Target[1])
     4. Validates the Vasi Comunicanti balance:
-       - If Pair 1 is balanced (delta_1 ~ 0), Pair 2 CANNOT have a severe deficit (cannot give a bench player for a starter)!
+       - If Pair 1 is balanced (delta_1 ~ 0), Pair 2 CANNOT have a severe deficit.
        - A deficit in secondary pairs is ONLY allowed if the primary anchor provides an equal or greater surplus!
-       - In 1x2 (Give 1, Ask 2): The single given piece MUST have an effective value that covers the extra target player.
+       - Both pairs CANNOT be in deficit (No double downgrade for opponent).
+       - In 2x2: If rival gives two starters, user cannot offer a benchwarmer without a superstar anchor compensating.
+       - Parity gates: FVM parity, Effective value parity, xFV ratio parity, and Fantamedia gap limits.
     """
     give_evals = [{**p, **compute_continuous_trade_value(p, tot_matchdays)} for p in give_pkg]
     target_evals = [{**p, **compute_continuous_trade_value(p, tot_matchdays)} for p in target_pkg]
@@ -294,8 +326,6 @@ def evaluate_pairwise_trade_balance(give_pkg, target_pkg, tot_matchdays=7):
     
     pairwise_pairs = []
     surplus_pool = 0.0
-    is_valid = True
-    rejection_reason = ""
     has_primary_starter = any(p['i_tit'] >= 0.65 for p in give_sorted)
 
     for i in range(min_len):
@@ -313,43 +343,163 @@ def evaluate_pairwise_trade_balance(give_pkg, target_pkg, tot_matchdays=7):
             'target_mins': t.get('m_per_app', 0),
             'delta': round(d, 2)
         })
-        
-        # Titolarità Asymmetry check:
-        # If user offers ONLY benchwarmers/subentranti (no starting-caliber player at all) for top starters:
-        if not has_primary_starter and t['i_tit'] >= 0.70:
-            is_valid = False
-            rejection_reason = (
-                f"Nessun titolare offerto: proponi solo riserve/subentranti a fronte di titolari fissi richiesti."
-            )
-            break
-        
         surplus_pool += d
 
-    if is_valid:
-        fvm_ok, fvm_reason = check_fvm_parity(give_pkg, target_pkg)
-        if not fvm_ok:
-            is_valid = False
-            rejection_reason = fvm_reason
+    # 1. Starting caliber asymmetry
+    if not has_primary_starter and any(t['i_tit'] >= 0.70 for t in target_sorted):
+        return {
+            'is_valid': False,
+            'rejection_reason': "Nessun titolare offerto: proponi solo riserve/subentranti a fronte di titolari fissi richiesti.",
+            'give_tot_eff': round(give_tot_eff, 2),
+            'target_tot_eff': round(target_tot_eff, 2),
+            'delta_eff': round(give_tot_eff - target_tot_eff, 2),
+            'pairwise_pairs': pairwise_pairs
+        }
 
-    if is_valid:
-        # Multi-target value floor: effective value must reach at least 65% of target value
-        if target_tot_eff > 0 and (give_tot_eff / target_tot_eff) < 0.65:
-            is_valid = False
-            rejection_reason = (
-                f"Valore complessivo offerto ({give_tot_eff:.2f}) troppo distante da quello richiesto ({target_tot_eff:.2f})."
-            )
-        elif n_target > n_give:
-            # In 1x2 (give 1, ask 2): single given player must be of high caliber (not a bench piece)
-            if not has_primary_starter or give_tot_eff < (target_tot_eff * 0.60):
-                is_valid = False
-                rejection_reason = (
-                    f"Richiesta 1x2 insostenibile: il tuo pezzo principale ({give_sorted[0]['Giocatore']}) "
-                    f"non genera valore sufficiente per richiedere un pacchetto multiplo."
-                )
+    # 2. Vasi Comunicanti Pairwise Compensation Gates (for 2x2 multi-deals)
+    if n_give == 2 and n_target == 2:
+        d0 = pairwise_pairs[0]['delta']
+        d1 = pairwise_pairs[1]['delta']
+        
+        # Rule 2A: Double Downgrade Prohibition
+        # Opponent cannot lose value on BOTH the anchor piece and the secondary piece!
+        if d0 < -0.25 and d1 < -0.25:
+            return {
+                'is_valid': False,
+                'rejection_reason': f"Doppio downgrade per l'avversario: perde valore su entrambi i calciatori (delta1={d0:+.2f}, delta2={d1:+.2f}).",
+                'give_tot_eff': round(give_tot_eff, 2),
+                'target_tot_eff': round(target_tot_eff, 2),
+                'delta_eff': round(give_tot_eff - target_tot_eff, 2),
+                'pairwise_pairs': pairwise_pairs
+            }
+        
+        # Rule 2B: Strict Pairwise Compensation
+        # If user gets an upgrade on piece 0 (d0 < -0.25), user MUST concede an upgrade on piece 1 (d1 >= +0.20)!
+        if d0 < -0.25 and d1 < 0.20:
+            return {
+                'is_valid': False,
+                'rejection_reason': f"Compensazione insufficiente: guadagni sul pezzo principale ({d0:+.2f}) senza offrire un surplus sul secondo ({d1:+.2f}).",
+                'give_tot_eff': round(give_tot_eff, 2),
+                'target_tot_eff': round(target_tot_eff, 2),
+                'delta_eff': round(give_tot_eff - target_tot_eff, 2),
+                'pairwise_pairs': pairwise_pairs
+            }
+        
+        # Rule 2C: Net Surplus Pool Protection
+        if surplus_pool < -0.50:
+            return {
+                'is_valid': False,
+                'rejection_reason': f"L'avversario perde troppo valore netto complessivo ({surplus_pool:+.2f}).",
+                'give_tot_eff': round(give_tot_eff, 2),
+                'target_tot_eff': round(target_tot_eff, 2),
+                'delta_eff': round(give_tot_eff - target_tot_eff, 2),
+                'pairwise_pairs': pairwise_pairs
+            }
+
+        # Rule 2D: Starter Status Parity in 2x2
+        # If the rival gives 2 established Serie A starters, user cannot offer a benchwarmer unless top given piece is an elite superstar
+        t0_st = compute_real_starter_status(target_sorted[0])['Status']
+        t1_st = compute_real_starter_status(target_sorted[1])['Status']
+        g1_st = compute_real_starter_status(give_sorted[1])['Status']
+        g0_eff = give_sorted[0]['effective_val']
+        if t0_st == 'TITOLARE' and t1_st == 'TITOLARE' and g1_st in ['SUBENTRANTE', 'MARGINALE'] and g0_eff < 8.8:
+            return {
+                'is_valid': False,
+                'rejection_reason': f"L'avversario cede due titolari ({target_sorted[0]['Giocatore']}, {target_sorted[1]['Giocatore']}) ma riceve una riserva ({give_sorted[1]['Giocatore']}) senza un fuoriclasse a compensare.",
+                'give_tot_eff': round(give_tot_eff, 2),
+                'target_tot_eff': round(target_tot_eff, 2),
+                'delta_eff': round(give_tot_eff - target_tot_eff, 2),
+                'pairwise_pairs': pairwise_pairs
+            }
+
+    # 3. Format-specific caliber requirements (1x2 and 2x1)
+    if n_target > n_give:  # 1x2 (give 1, ask 2)
+        if not has_primary_starter or give_tot_eff < (target_tot_eff * 0.80):
+            return {
+                'is_valid': False,
+                'rejection_reason': f"Richiesta 1x2 insostenibile: il tuo pezzo principale ({give_sorted[0]['Giocatore']}) non genera valore sufficiente per 2 calciatori.",
+                'give_tot_eff': round(give_tot_eff, 2),
+                'target_tot_eff': round(target_tot_eff, 2),
+                'delta_eff': round(give_tot_eff - target_tot_eff, 2),
+                'pairwise_pairs': pairwise_pairs
+            }
+    elif n_give > n_target:  # 2x1 (give 2, ask 1)
+        if give_tot_eff < (target_tot_eff * 0.90):
+            return {
+                'is_valid': False,
+                'rejection_reason': f"Offerta 2x1 insufficiente per il top asset avversario ({target_sorted[0]['Giocatore']}).",
+                'give_tot_eff': round(give_tot_eff, 2),
+                'target_tot_eff': round(target_tot_eff, 2),
+                'delta_eff': round(give_tot_eff - target_tot_eff, 2),
+                'pairwise_pairs': pairwise_pairs
+            }
+
+    # 4. FVM/1000 Parity Check
+    fvm_ok, fvm_reason = check_fvm_parity(give_pkg, target_pkg, min_total_ratio=0.70, min_anchor_ratio=0.55)
+    if not fvm_ok:
+        return {
+            'is_valid': False,
+            'rejection_reason': fvm_reason,
+            'give_tot_eff': round(give_tot_eff, 2),
+            'target_tot_eff': round(target_tot_eff, 2),
+            'delta_eff': round(give_tot_eff - target_tot_eff, 2),
+            'pairwise_pairs': pairwise_pairs
+        }
+
+    # 5. Continuous Effective Value Parity Check
+    eff_ok, eff_reason, _, _ = check_effective_fairness(give_pkg, target_pkg, min_total=0.85, max_total=1.25, min_anchor=0.75)
+    if not eff_ok:
+        return {
+            'is_valid': False,
+            'rejection_reason': eff_reason,
+            'give_tot_eff': round(give_tot_eff, 2),
+            'target_tot_eff': round(target_tot_eff, 2),
+            'delta_eff': round(give_tot_eff - target_tot_eff, 2),
+            'pairwise_pairs': pairwise_pairs
+        }
+
+    # 6. xFV & Fantamedia Parity Protection (Strict Two-Way Bounding)
+    tot_xfv_give = sum(safe_float(p.get('xFV', 0.0)) for p in give_sorted)
+    tot_xfv_rec = sum(safe_float(p.get('xFV', 0.0)) for p in target_sorted)
+    max_xfv = max(tot_xfv_give, tot_xfv_rec)
+    min_xfv = min(tot_xfv_give, tot_xfv_rec)
+    if max_xfv > 0:
+        # Both sides must receive at least 80% of the xFV being exchanged
+        if (min_xfv / max_xfv) < 0.80:
+            return {
+                'is_valid': False,
+                'rejection_reason': f"Disparità xFV eccessiva ({tot_xfv_give:.2f} offerto vs {tot_xfv_rec:.2f} richiesto, rapporto {min_xfv/max_xfv:.2f} < 0.80).",
+                'give_tot_eff': round(give_tot_eff, 2),
+                'target_tot_eff': round(target_tot_eff, 2),
+                'delta_eff': round(give_tot_eff - target_tot_eff, 2),
+                'pairwise_pairs': pairwise_pairs
+            }
+        # Absolute difference cannot exceed 1.50 xFV points
+        if abs(tot_xfv_rec - tot_xfv_give) > 1.50:
+            return {
+                'is_valid': False,
+                'rejection_reason': f"Sbilanciamento xFV ({abs(tot_xfv_rec - tot_xfv_give):.2f} pt di differenza tra i pacchetti).",
+                'give_tot_eff': round(give_tot_eff, 2),
+                'target_tot_eff': round(target_tot_eff, 2),
+                'delta_eff': round(give_tot_eff - target_tot_eff, 2),
+                'pairwise_pairs': pairwise_pairs
+            }
+
+    avg_fm_give = sum(safe_float(p.get('FM', p.get('FM_Stagione', 0.0))) for p in give_sorted) / len(give_sorted)
+    avg_fm_rec = sum(safe_float(p.get('FM', p.get('FM_Stagione', 0.0))) for p in target_sorted) / len(target_sorted)
+    if avg_fm_rec > 0 and (avg_fm_give - avg_fm_rec) < -0.38:
+        return {
+            'is_valid': False,
+            'rejection_reason': f"Fantamedia offerta ({avg_fm_give:.2f}) nettamente inferiore a quella richiesta ({avg_fm_rec:.2f}).",
+            'give_tot_eff': round(give_tot_eff, 2),
+            'target_tot_eff': round(target_tot_eff, 2),
+            'delta_eff': round(give_tot_eff - target_tot_eff, 2),
+            'pairwise_pairs': pairwise_pairs
+        }
 
     return {
-        'is_valid': is_valid,
-        'rejection_reason': rejection_reason,
+        'is_valid': True,
+        'rejection_reason': '',
         'give_tot_eff': round(give_tot_eff, 2),
         'target_tot_eff': round(target_tot_eff, 2),
         'delta_eff': round(give_tot_eff - target_tot_eff, 2),
@@ -407,7 +557,7 @@ def is_player_to_release(p, release_names=None):
     return False
 
 
-def analyze_squad_weaknesses(team_name, league_data, df_master, matchday=8):
+def analyze_squad_weaknesses(team_name, league_data, df_master, matchday=8, df_all_proj=None):
     """
     Performs a deep diagnostic analysis of a fantasy team's roster:
     1. Evaluates departmental depth vs recommended Mantra quotas (filtering by active players).
@@ -436,7 +586,10 @@ def analyze_squad_weaknesses(team_name, league_data, df_master, matchday=8):
     df_squad['Costo'] = df_squad['FVM']
 
     # Project squad performance for the target matchday
-    df_proj = batch_predict_xfv(df_squad, matchday=matchday)
+    if df_all_proj is not None and not df_all_proj.empty:
+        df_proj = df_all_proj[df_all_proj['Giocatore'].isin(player_names)].copy()
+    else:
+        df_proj = batch_predict_xfv(df_squad, matchday=matchday)
     
     # Identify optimal lineup and starters
     opt_res = optimize_best_mantra_lineup(df_proj)
@@ -753,7 +906,8 @@ def analyze_squad_weaknesses(team_name, league_data, df_master, matchday=8):
         'Punti_di_Forza': strengths,
         'Surplus_Cedibili': surplus_assets,
         'Conteggio_Totale': {r: len(role_roster_all[r]) for r in RECOMMENDED_QUOTAS.keys()},
-        'Conteggio_Attivi': {r: len(role_roster_active[r]) for r in RECOMMENDED_QUOTAS.keys()}
+        'Conteggio_Attivi': {r: len(role_roster_active[r]) for r in RECOMMENDED_QUOTAS.keys()},
+        'Opt_Lineup': opt_res
     }
 
 
@@ -1000,7 +1154,12 @@ def find_win_win_trades(
     import itertools
     from engine.injuries_manager import classify_injury_status
 
-    my_diag = analyze_squad_weaknesses(my_team_name, league_data, df_master, matchday=matchday)
+    # Pre-project all players in df_master for matchday if not provided
+    if df_all_proj is None or df_all_proj.empty:
+        df_all_proj = batch_predict_xfv(df_master, matchday=matchday)
+    proj_map = {row['Giocatore']: row.to_dict() for _, row in df_all_proj.iterrows()}
+
+    my_diag = analyze_squad_weaknesses(my_team_name, league_data, df_master, matchday=matchday, df_all_proj=df_all_proj)
     if 'error' in my_diag:
         return []
 
@@ -1009,11 +1168,6 @@ def find_win_win_trades(
         my_weak_roles = {'Pc', 'M', 'Dc', 'Dd', 'Ds'}
 
     release_names = get_league_release_names(league_data)
-
-    # Pre-project all players in df_master for matchday if not provided
-    if df_all_proj is None or df_all_proj.empty:
-        df_all_proj = batch_predict_xfv(df_master, matchday=matchday)
-    proj_map = {row['Giocatore']: row.to_dict() for _, row in df_all_proj.iterrows()}
 
     # Build FVM/1000 lookup from df_master and league_data (Fantacalcio.it official valuation)
     fvm_map = {}
@@ -1033,6 +1187,8 @@ def find_win_win_trades(
         val = fvm_map.get(name, safe_int(p_data.get('FVM', 1)))
         p_data['FVM'] = val
         p_data['Costo'] = val  # Standardize player cost on official FVM/1000
+        p_data['Trade_Eff'] = compute_continuous_trade_value(p_data, tot_matchdays=7)
+        p_data['Starter_Status'] = compute_real_starter_status(p_data, tot_matchdays=7)
 
     # Diagnose My Team optimal lineup & offerable players
     my_owned = [
@@ -1097,6 +1253,8 @@ def find_win_win_trades(
 
     trade_proposals = []
     seen_trade_signatures = set()
+    opp_proj_by_team = {}
+    opt_opp_cache = {}
 
     # Iterate over opponent teams
     for opp_team, opp_players in league_data.items():
@@ -1122,9 +1280,12 @@ def find_win_win_trades(
             continue
             
         df_opp_proj = pd.DataFrame(opp_proj_list)
+        opp_proj_by_team[opp_team] = opp_proj_list
         opp_starters = set(df_opp_proj.sort_values('xFV', ascending=False).head(11)['Giocatore'])
 
-        opp_diag = analyze_squad_weaknesses(opp_team, league_data, df_master, matchday=matchday)
+        opp_diag = analyze_squad_weaknesses(opp_team, league_data, df_master, matchday=matchday, df_all_proj=df_all_proj)
+        if opp_diag.get('Opt_Lineup'):
+            opt_opp_cache[opp_team] = opp_diag['Opt_Lineup']
         opp_weak_roles = {w['Ruolo']: w.get('Severita', 'MEDIA') for w in opp_diag.get('Punti_Deboli', [])}
         opp_surplus_pnames = set(s['Giocatore'] for s in opp_diag.get('Surplus_Cedibili', []))
 
@@ -1180,12 +1341,25 @@ def find_win_win_trades(
             continue
 
         # Opponent secondary surplus/bench pieces for multi-player deals
-        opp_secondary_pieces = [
-            p for p in opp_proj_list
-            if not is_player_to_release(p, release_names) and
-               'Por' not in parse_mantra_roles(p.get('RuoloMantra', '')) and
-               (p['Giocatore'] in opp_surplus_pnames or safe_float(p.get('xFV', 0)) <= 5.8)
-        ]
+        opp_secondary_pieces = []
+        for p in opp_proj_list:
+            p_name = p['Giocatore']
+            if is_player_to_release(p, release_names) or is_player_to_release(p_name, release_names):
+                continue
+            if 'Por' in parse_mantra_roles(p.get('RuoloMantra', '')):
+                continue
+            # Injury check: never include long-term injured or unusable players in multi-deals
+            p_inj = classify_injury_status(p_name)
+            if p_inj.get('Is_Long_Term') or p_inj.get('Stato') == 'Squalificato' or not p_inj.get('Can_Be_Targeted_In', True):
+                continue
+            p_stat = compute_real_starter_status(p)
+            p_xfv = safe_float(p.get('xFV', 0))
+            # Must have minimal active contribution (avoid 0.0 xFV ghosts)
+            if p_xfv < 4.0 and not (p_inj.get('Is_Injured') and p_inj.get('Is_Short_Term')):
+                continue
+            # True secondary piece: rotation/bench or modest xFV, never an undisputed starter with high xFV
+            if p_xfv <= 5.8 or (p_name in opp_surplus_pnames and p_stat['Status'] in ['CO_TITOLARE', 'SUPER_SUB', 'SUBENTRANTE', 'MARGINALE']):
+                opp_secondary_pieces.append(p)
 
         # -------------------------------------------------------------
         # GENERATION 1: 1x1 TRADES (Scambi Singoli Equilibrati)
@@ -1212,7 +1386,9 @@ def find_win_win_trades(
                     # xFV Parity Check
                     my_give_xfv = safe_float(my_give.get('xFV', 0.0))
                     opp_p_xfv = safe_float(opp_p.get('xFV', 0.0))
-                    if abs(opp_p_xfv - my_give_xfv) > 1.85:
+                    if abs(opp_p_xfv - my_give_xfv) > 1.0:
+                        continue
+                    if not check_effective_fairness([my_give], [opp_p])[0]:
                         continue
 
                     # Don't swap same weak role without improvement
@@ -1325,6 +1501,11 @@ def find_win_win_trades(
                                 continue
 
                             rec_pkg = [t1, t2]
+                            # Medical check: cannot receive 2 injured players at once
+                            t1_inj = classify_injury_status(t1_name)
+                            t2_inj = classify_injury_status(t2_name)
+                            if t1_inj.get('Is_Injured') and t2_inj.get('Is_Injured'):
+                                continue
 
                             sig_key = (opp_team, tuple(sorted([str(g1_name), str(g2_name)])), tuple(sorted([str(t1_name), str(t2_name)])))
                             if sig_key in seen_trade_signatures:
@@ -1342,6 +1523,12 @@ def find_win_win_trades(
                             max_c_2x2 = max(tot_c_give_test, tot_c_rec_test, 1)
                             min_c_2x2 = min(tot_c_give_test, tot_c_rec_test)
                             if max_c_2x2 >= 20 and (min_c_2x2 / max_c_2x2) < 0.70:
+                                continue
+
+                            # Starter status parity in 2x2: if target piece 2 is a full starter, give piece 2 cannot be a deep benchwarmer
+                            t2_status = compute_real_starter_status(t2)
+                            g2_status = compute_real_starter_status(g2)
+                            if t2_status['Status'] == 'TITOLARE' and g2_status['Status'] in ['SUBENTRANTE', 'MARGINALE'] and safe_float(g1.get('xFV', 0)) < 7.5:
                                 continue
 
                             pw = evaluate_pairwise_trade_balance(give_pkg, rec_pkg)
@@ -1593,28 +1780,68 @@ def find_win_win_trades(
 
     # Balance proposals across opponent teams so no single rival monopolizes the list
     team_counts = {}
-    balanced_proposals = []
+    candidate_proposals = []
     seen_indices = set()
     sorted_proposals = sorted(trade_proposals, key=lambda x: safe_float(x.get('Score', 0.0)), reverse=True)
-    
+
     # Pass 1: take up to 2-3 proposals per rival team to guarantee diverse league options
     for idx, p in enumerate(sorted_proposals):
         t = p.get('Squadra_Avversaria', '')
         if team_counts.get(t, 0) < 3:
-            balanced_proposals.append(p)
+            candidate_proposals.append(p)
             seen_indices.add(idx)
             team_counts[t] = team_counts.get(t, 0) + 1
-        if len(balanced_proposals) >= max_proposals:
+        if len(candidate_proposals) >= max_proposals * 2:
             break
             
-    # Pass 2: if still under max_proposals, fill remaining spots
-    if len(balanced_proposals) < max_proposals:
+    # Pass 2: if still under capacity, fill remaining spots
+    if len(candidate_proposals) < max_proposals * 2:
         for idx, p in enumerate(sorted_proposals):
             if idx not in seen_indices:
-                balanced_proposals.append(p)
+                candidate_proposals.append(p)
                 seen_indices.add(idx)
-                if len(balanced_proposals) >= max_proposals:
+                if len(candidate_proposals) >= max_proposals * 2:
                     break
+
+    # Opponent lineup check on top candidate proposals (fast, cached by rival team)
+    balanced_proposals = []
+    # Fast pass: filter out critical flaws and ensure valid candidate list
+    sim_count = 0
+    for prop in candidate_proposals:
+        if len(balanced_proposals) >= max_proposals:
+            break
+        payload = prop.get('Simulazione_Payload', {})
+        opp_t = payload.get('opp_team')
+        opp_list = opp_proj_by_team.get(opp_t)
+        if not opp_list:
+            balanced_proposals.append(prop)
+            continue
+        
+        # Fast algebraic flaw check (0ms)
+        rec_names = set(payload.get('receive_names', []))
+        give_names = set(payload.get('give_names', []))
+        opp_new = [p for p in opp_list if p['Giocatore'] not in rec_names] + [proj_map[n] for n in give_names if n in proj_map]
+        
+        # Check that opponent doesn't run out of GK or CB
+        por_count = sum(1 for p in opp_new if 'Por' in parse_mantra_roles(p.get('RuoloMantra', '')) and (safe_int(p.get('Presenze', 0)) >= 2 or safe_float(p.get('P_Voto', 0)) >= 0.50))
+        dc_count = sum(1 for p in opp_new if 'Dc' in parse_mantra_roles(p.get('RuoloMantra', '')) and (safe_int(p.get('Presenze', 0)) >= 2 or safe_float(p.get('P_Voto', 0)) >= 0.50))
+        if por_count == 0 or dc_count < 2:
+            continue
+        
+        # Full LP simulation only for the top qualified proposals (max 6)
+        if sim_count < 6:
+            try:
+                curr_opt = opt_opp_cache.get(opp_t)
+                tgt = [p for p in opp_list if p['Giocatore'] in rec_names]
+                give = [proj_map[n] for n in give_names if n in proj_map]
+                sim = simulate_opponent_post_trade(opp_t, opp_list, tgt, give, opt_opp_curr=curr_opt)
+                prop['Delta_Punti_Avversario'] = sim.get('delta_opp_pts', 0.0)
+                sim_count += 1
+                if safe_float(sim.get('delta_opp_pts', 0.0)) < -0.30 or sim.get('critical_flaws'):
+                    continue
+            except Exception:
+                pass
+        balanced_proposals.append(prop)
                     
     return balanced_proposals
 
