@@ -1752,7 +1752,9 @@ with tab_scambi:
             # Get target opponent roster
             opp_roster_df = get_team_roster_df(target_opp_team, df_master)
             opp_owned_df = opp_roster_df[~opp_roster_df['InPrestito']] if 'InPrestito' in opp_roster_df.columns else opp_roster_df
-            opp_owned_df = opp_owned_df.sort_values(by=['Costo', 'xFV'], ascending=[False, False])
+            sort_cols = [c for c in ['Costo', 'FM_Stagione', 'MV_Stagione'] if c in opp_owned_df.columns]
+            if sort_cols:
+                opp_owned_df = opp_owned_df.sort_values(by=sort_cols, ascending=[False] * len(sort_cols))
 
             # Prepare player options
             opp_player_labels = []
