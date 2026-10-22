@@ -19,52 +19,57 @@ from engine.models import calculate_expected_dfactor
 MANTRA_FORMATIONS = {
     '4-3-3': {
         'def_type': '4-def',
-        'slots': ['Por', 'Dd', 'Ds', 'Dc', 'Dc', 'M', 'C', 'C', 'W/A', 'W/A', 'Pc'],
+        'slots': ['Por', 'Dd', 'Ds', 'Dc', 'Dc', 'M', 'M/C', 'C', 'W/A', 'W/A', 'A/Pc'],
         'max_pc': 1
     },
     '4-3-1-2': {
         'def_type': '4-def',
-        'slots': ['Por', 'Dd', 'Ds', 'Dc', 'Dc', 'M', 'C', 'C', 'T', 'A/Pc', 'A/Pc'],
+        'slots': ['Por', 'Dd', 'Ds', 'Dc', 'Dc', 'M', 'M/C', 'C', 'T', 'A/Pc', 'A/Pc'],
         'max_pc': 2
     },
     '4-2-3-1': {
         'def_type': '4-def',
-        'slots': ['Por', 'Dd', 'Ds', 'Dc', 'Dc', 'M', 'M/C', 'W/T', 'T', 'W/T', 'Pc'],
+        'slots': ['Por', 'Dd', 'Ds', 'Dc', 'Dc', 'M', 'M/C', 'W/T', 'T', 'W/A', 'A/Pc'],
         'max_pc': 1
     },
     '4-4-2': {
         'def_type': '4-def',
-        'slots': ['Por', 'Dd', 'Ds', 'Dc', 'Dc', 'E/W', 'E/W', 'M', 'M/C', 'A/Pc', 'A/Pc'],
+        'slots': ['Por', 'Dd', 'Ds', 'Dc', 'Dc', 'E/W', 'E/W', 'M/C', 'M/C', 'A/Pc', 'A/Pc'],
         'max_pc': 2
     },
-    '4-3-2-1': {
+    '4-4-1-1': {
         'def_type': '4-def',
-        'slots': ['Por', 'Dd', 'Ds', 'Dc', 'Dc', 'M', 'C', 'C', 'T/A', 'T/A', 'A/Pc'],
+        'slots': ['Por', 'Dd', 'Ds', 'Dc', 'Dc', 'M', 'C', 'E/W', 'E/W', 'T/A', 'A/Pc'],
         'max_pc': 1
     },
     '4-1-4-1': {
         'def_type': '4-def',
-        'slots': ['Por', 'Dd', 'Ds', 'Dc', 'Dc', 'M', 'C', 'C', 'W', 'W', 'A/Pc'],
+        'slots': ['Por', 'Dd', 'Ds', 'Dc', 'Dc', 'M', 'C/T', 'T', 'E/W', 'W', 'A/Pc'],
         'max_pc': 1
     },
     '3-5-2': {
         'def_type': '3-def',
-        'slots': ['Por', 'Dc/B', 'Dc/B', 'Dc/B', 'E', 'E', 'M', 'C', 'C', 'A/Pc', 'A/Pc'],
+        'slots': ['Por', 'Dc', 'Dc', 'Dc/B', 'E', 'E/W', 'M', 'M/C', 'C', 'A/Pc', 'A/Pc'],
         'max_pc': 2
+    },
+    '3-5-1-1': {
+        'def_type': '3-def',
+        'slots': ['Por', 'Dc', 'Dc', 'Dc/B', 'M', 'M', 'C', 'E/W', 'E/W', 'T/A', 'A/Pc'],
+        'max_pc': 1
     },
     '3-4-1-2': {
         'def_type': '3-def',
-        'slots': ['Por', 'Dc/B', 'Dc/B', 'Dc/B', 'E', 'E', 'M', 'M/C', 'T', 'A/Pc', 'A/Pc'],
+        'slots': ['Por', 'Dc', 'Dc', 'Dc/B', 'E', 'E', 'M/C', 'C', 'T', 'A/Pc', 'A/Pc'],
         'max_pc': 2
     },
     '3-4-2-1': {
         'def_type': '3-def',
-        'slots': ['Por', 'Dc/B', 'Dc/B', 'Dc/B', 'E', 'E', 'M', 'M/C', 'W/T', 'T/A', 'A/Pc'],
+        'slots': ['Por', 'Dc', 'Dc', 'Dc/B', 'E', 'M', 'M/C', 'E/W', 'T', 'T/A', 'A/Pc'],
         'max_pc': 1
     },
     '3-4-3': {
         'def_type': '3-def',
-        'slots': ['Por', 'Dc/B', 'Dc/B', 'Dc/B', 'E', 'E', 'M', 'M/C', 'W/A', 'W/A', 'Pc'],
+        'slots': ['Por', 'Dc', 'Dc', 'Dc/B', 'E', 'E', 'M', 'M/C', 'W/A', 'W/A', 'A/Pc'],
         'max_pc': 1
     }
 }
@@ -80,7 +85,7 @@ SLOT_ROLE_MAP = {
     'E/W': {'E', 'W'},
     'M': {'M'},
     'M/C': {'M', 'C'},
-    'C': {'C', 'M'},
+    'C': {'C'},
     'C/T': {'C', 'T'},
     'W': {'W'},
     'W/T': {'W', 'T'},
