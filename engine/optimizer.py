@@ -319,9 +319,51 @@ def optimize_best_mantra_lineup(df_projected_roster, allowed_formations=None):
         c['Penalita_Fragilita'] = fragility_penalty
         c['Punti_Benchmark_Robusto'] = round(c['Punti_Attesi_Totali'] - fragility_penalty, 2)
 
-    # Sort by highest Robust Score (accounting for starting quality AND bench depth safety)
-    candidates = sorted(candidates, key=lambda x: x['Punti_Benchmark_Robusto'], reverse=True)
+    # Sort primarily by HIGHEST Punti_Attesi_Totali (always recommend the absolute highest scoring potential)
+    candidates = sorted(candidates, key=lambda x: x['Punti_Attesi_Totali'], reverse=True)
     best_formation_result = candidates[0]
+
+    # Evaluate coverage safety and identify safer alternative modules
+    uncovered = best_formation_result.get('Slot_Scoperti', [])
+    has_coverage_issues = (len(uncovered) > 0)
+    best_formation_result['Ha_Problemi_Copertura'] = has_coverage_issues
+
+    safe_alternatives = []
+    # 1. Search for modules with 100% full coverage (0 uncovered slots)
+    fully_covered = [c for c in candidates[1:] if len(c.get('Slot_Scoperti', [])) == 0]
+    if fully_covered:
+        fully_covered = sorted(fully_covered, key=lambda x: x['Punti_Attesi_Totali'], reverse=True)
+        for alt in fully_covered[:2]:
+            delta = round(alt['Punti_Attesi_Totali'] - best_formation_result['Punti_Attesi_Totali'], 2)
+            safe_alternatives.append({
+                'Modulo': alt['Modulo'],
+                'Punti_Totali': alt['Punti_Attesi_Totali'],
+                'Delta_Punti': delta,
+                'Slot_Scoperti': [],
+                'Somma_xFV_Titolari': alt['Somma_xFV_Titolari'],
+                'D_Factor': alt['D_Factor_Atteso'],
+                'Tipo': '🛡️ Copertura Blindata 100%',
+                'Dettaglio': f"{alt['Modulo']} garantisce zero rischi di inferiorità numerica (100% coperto su tutti i ruoli in panchina, scarto di soli {abs(delta):.2f} pt rispetto al top)."
+            })
+    elif len(uncovered) > 1:
+        # If no module has 0 uncovered, look for modules with strictly fewer uncovered slots
+        fewer_uncovered = [c for c in candidates[1:] if len(c.get('Slot_Scoperti', [])) < len(uncovered)]
+        if fewer_uncovered:
+            fewer_uncovered = sorted(fewer_uncovered, key=lambda x: x['Punti_Attesi_Totali'], reverse=True)
+            for alt in fewer_uncovered[:1]:
+                delta = round(alt['Punti_Attesi_Totali'] - best_formation_result['Punti_Attesi_Totali'], 2)
+                safe_alternatives.append({
+                    'Modulo': alt['Modulo'],
+                    'Punti_Totali': alt['Punti_Attesi_Totali'],
+                    'Delta_Punti': delta,
+                    'Slot_Scoperti': alt.get('Slot_Scoperti', []),
+                    'Somma_xFV_Titolari': alt['Somma_xFV_Titolari'],
+                    'D_Factor': alt['D_Factor_Atteso'],
+                    'Tipo': '⚠️ Copertura Più Sicura',
+                    'Dettaglio': f"{alt['Modulo']} riduce il rischio panchina a soli {len(alt['Slot_Scoperti'])} slot scoperti ({', '.join(alt['Slot_Scoperti'])}), scarto {delta:+.2f} pt."
+                })
+
+    best_formation_result['Moduli_Sicuri_Alternativi'] = safe_alternatives
     
     # Build Official Mantra Modalità MASTER Bench (Panchina 1-12)
     tit_names = set([p['Giocatore'] for p in best_formation_result['Titolari']])
@@ -344,6 +386,8 @@ def optimize_best_mantra_lineup(df_projected_roster, allowed_formations=None):
             'Punti_Totali': c['Punti_Attesi_Totali'],
             'xFV_Titolari': c['Somma_xFV_Titolari'],
             'D_Factor': c['D_Factor_Atteso'],
+            'Stato_Copertura': '✅ Copertura 100%' if len(c.get('Slot_Scoperti', [])) == 0 else f"⚠️ Rischio ({len(c['Slot_Scoperti'])} scoperti: {', '.join(c['Slot_Scoperti'])})",
+            'Delta_vs_Top': round(c['Punti_Attesi_Totali'] - best_formation_result['Punti_Attesi_Totali'], 2),
             'Punti_Robusti': c.get('Punti_Benchmark_Robusto', c['Punti_Attesi_Totali']),
             'Slot_Scoperti': c.get('Slot_Scoperti', [])
         }

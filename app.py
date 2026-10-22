@@ -922,6 +922,40 @@ with tab_formazione:
 
             st.markdown("---")
             
+            # Coverage Warning & Safe Alternatives Callout
+            has_issues = opt_res.get('Ha_Problemi_Copertura', False)
+            safe_alts = opt_res.get('Moduli_Sicuri_Alternativi', [])
+
+            if has_issues:
+                uncovered_list = opt_res.get('Slot_Scoperti', [])
+                uncovered_badges = " ".join([f"`{s}`" for s in uncovered_list])
+                st.warning(f"""
+                ⚠️ **Attenzione alla Copertura Panchina per il modulo {opt_res['Modulo']}**:
+                Questo modulo massimizza il punteggio potenziale assoluto (**{opt_res['Punti_Attesi_Totali']} pt**), ma in panchina **mancano riserve affidabili per gli slot: {uncovered_badges}**.  
+                In caso di forfait o S.V. di un titolare in questi ruoli, la squadra rischia di non riuscire a effettuare una sostituzione legale o di dover forzare un cambio modulo.
+                """, icon="⚠️")
+                
+                if safe_alts:
+                    st.markdown("<div style='font-size: 0.95rem; font-weight: 700; color: #38bdf8; margin-top: 6px; margin-bottom: 4px;'>🛡️ Moduli Alternativi Consigliati Più Sicuri (Copertura 100%):</div>", unsafe_allow_html=True)
+                    cols_alt = st.columns(len(safe_alts))
+                    for idx_a, alt in enumerate(safe_alts):
+                        with cols_alt[idx_a]:
+                            delta_c = "#34d399" if abs(alt['Delta_Punti']) <= 0.8 else "#f59e0b"
+                            st.markdown(f"""
+                            <div style="background: rgba(16, 185, 129, 0.08); border: 1.5px solid #10b981; border-radius: 8px; padding: 10px 14px; height: 100%;">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span style="font-weight: 800; font-size: 1.05rem; color: #34d399;">🛡️ {alt['Modulo']}</span>
+                                    <span style="font-weight: 700; color: #ffffff;">{alt['Punti_Totali']} pt <span style="color: {delta_c}; font-size: 0.85rem;">({alt['Delta_Punti']:+.2f} pt)</span></span>
+                                </div>
+                                <div style="color: #cbd5e1; font-size: 0.82rem; margin-top: 5px;">{alt['Dettaglio']}</div>
+                            </div>
+                            """, unsafe_allow_html=True)
+                    st.caption("💡 *Puoi selezionare il modulo alternativo direttamente dal menu a tendina in alto se preferisci una formazione a zero rischi di inferiorità numerica.*")
+            else:
+                st.success(f"🛡️ **Copertura Panchina Blindata (100%)**: Il modulo **{opt_res['Modulo']}** offre sia il punteggio più alto (**{opt_res['Punti_Attesi_Totali']} pt**) sia una copertura al 100% con riserve affidabili su ogni reparto in panchina!", icon="✅")
+
+            st.markdown("---")
+            
             # Starting 11 Layout
             st.subheader(f"🟢 Gli 11 Titolari (Modulo: {opt_res['Modulo']})")
             
@@ -931,7 +965,7 @@ with tab_formazione:
             por_line = [t for t in titolari_list if t['Slot_Assegnato'] == 'Por']
             def_line = [t for t in titolari_list if t['Slot_Assegnato'] in ['Dc', 'Dd', 'Ds', 'Dc/B', 'B']]
             mid_line = [t for t in titolari_list if t['Slot_Assegnato'] in ['E', 'E/W', 'M', 'M/C', 'C', 'C/T', 'W', 'W/T', 'T', 'T/A']]
-            att_line = [t for t in titolari_list if t['Slot_Assegnato'] in ['A/Pc', 'W/A', 'Pc', 'A']]
+            att_line = [t for t in titolari_list if t['Slot_Assegnato'] in ['A/Pc', 'W/A', 'Pc', 'A', 'T/A/Pc']]
 
             for section_name, section_players in [
                 ("🧤 PORTIERE", por_line),
@@ -1329,7 +1363,22 @@ with tab_formazione:
             # Formations Comparison Section
             with st.expander("📊 Confronto con gli altri moduli Mantra valutati", expanded=False):
                 df_all_moduli = pd.DataFrame(opt_res['Tutti_Moduli_Valutati'])
-                st.dataframe(df_all_moduli, use_container_width=True, hide_index=True)
+                display_cols = ['Modulo', 'Punti_Totali', 'Delta_vs_Top', 'Stato_Copertura', 'xFV_Titolari', 'D_Factor', 'Punti_Robusti']
+                cols_to_show = [c for c in display_cols if c in df_all_moduli.columns]
+                st.dataframe(
+                    df_all_moduli[cols_to_show],
+                    use_container_width=True,
+                    hide_index=True,
+                    column_config={
+                        'Modulo': st.column_config.TextColumn('Modulo', width='medium'),
+                        'Punti_Totali': st.column_config.NumberColumn('Punti Totali', format='%.2f'),
+                        'Delta_vs_Top': st.column_config.NumberColumn('Δ vs Top', format='%+.2f'),
+                        'Stato_Copertura': st.column_config.TextColumn('Copertura Panchina', width='large'),
+                        'xFV_Titolari': st.column_config.NumberColumn('xFV Titolari', format='%.2f'),
+                        'D_Factor': st.column_config.NumberColumn('D-Factor', format='%.2f'),
+                        'Punti_Robusti': st.column_config.NumberColumn('Punteggio Robusto', format='%.2f'),
+                    }
+                )
                 st.bar_chart(df_all_moduli.set_index('Modulo')['Punti_Totali'])
 
 # =============================================================
