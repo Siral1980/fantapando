@@ -31,6 +31,35 @@ def safe_float(val, default=0.0):
         return default
 
 
+def _fvm_of(p):
+    """Official Fantacalcio.it FVM/1000 of a player dict (falls back to Costo)."""
+    if not isinstance(p, dict):
+        return 0
+    return safe_int(p.get('FVM', p.get('Costo', 0)))
+
+
+def check_fvm_parity(give_pkg, target_pkg, min_total_ratio=0.70, min_anchor_ratio=0.55, floor=20):
+    """
+    Hard market-credibility gate based on official FVM/1000.
+    - Total FVM given and received must be within a band: min/max >= min_total_ratio.
+    - The top asset of each side (anchors) must be comparable: min/max >= min_anchor_ratio.
+    - The opponent must never be asked to hand over (much) more FVM than it receives, and the
+      user must never overpay by a symmetric margin (win-win must be believable for both).
+    Returns (ok, reason).
+    """
+    g_vals = [_fvm_of(p) for p in give_pkg]
+    t_vals = [_fvm_of(p) for p in target_pkg]
+    g_tot, t_tot = sum(g_vals), sum(t_vals)
+    max_tot = max(g_tot, t_tot)
+    if max_tot >= floor and (min(g_tot, t_tot) / max(max_tot, 1)) < min_total_ratio:
+        return False, f"FVM totale sbilanciato ({g_tot} offerto vs {t_tot} richiesto)."
+    g_top, t_top = max(g_vals or [0]), max(t_vals or [0])
+    max_top = max(g_top, t_top)
+    if max_top >= 30 and (min(g_top, t_top) / max(max_top, 1)) < min_anchor_ratio:
+        return False, f"Pezzo principale non comparabile (FVM {g_top} vs {t_top})."
+    return True, ""
+
+
 # Ideal role quotas for a balanced 25-30 player Mantra squad
 RECOMMENDED_QUOTAS = {
     'Por': {'min_active': 2, 'target': 3, 'name': 'Portieri'},
@@ -295,6 +324,12 @@ def evaluate_pairwise_trade_balance(give_pkg, target_pkg, tot_matchdays=7):
             break
         
         surplus_pool += d
+
+    if is_valid:
+        fvm_ok, fvm_reason = check_fvm_parity(give_pkg, target_pkg)
+        if not fvm_ok:
+            is_valid = False
+            rejection_reason = fvm_reason
 
     if is_valid:
         # Multi-target value floor: effective value must reach at least 65% of target value
@@ -829,6 +864,13 @@ def is_trade_role_parity_credible(give_dict, receive_dict):
     rec_pres = safe_int(receive_dict.get('Presenze', 0))
 
     # -------------------------------------------------------------
+    # FVM/1000 hard parity gate (1x1)
+    # -------------------------------------------------------------
+    _max_fvm = max(give_fvm, rec_fvm)
+    if _max_fvm >= 20 and (min(give_fvm, rec_fvm) / max(_max_fvm, 1)) < 0.60:
+        return False
+
+    # -------------------------------------------------------------
     # 0. GOALKEEPER SANITY & INTEGRITY
     # -------------------------------------------------------------
     if is_rec_gk != is_give_gk:
@@ -1299,7 +1341,7 @@ def find_win_win_trades(
                             tot_c_rec_test = sum(safe_int(p.get('FVM', p.get('Costo', 0))) for p in rec_pkg)
                             max_c_2x2 = max(tot_c_give_test, tot_c_rec_test, 1)
                             min_c_2x2 = min(tot_c_give_test, tot_c_rec_test)
-                            if max_c_2x2 >= 70 and (min_c_2x2 / max_c_2x2) < 0.28:
+                            if max_c_2x2 >= 20 and (min_c_2x2 / max_c_2x2) < 0.70:
                                 continue
 
                             pw = evaluate_pairwise_trade_balance(give_pkg, rec_pkg)
