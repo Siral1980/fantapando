@@ -53,6 +53,7 @@ def compute_real_starter_status(row, tot_matchdays=7):
     Classifies a Serie A player based on real match minutes and continuous usage:
     - TITOLARE: Primary undisputed starter (>= 55 min/app AND >= 45% team minutes, or >= 68 min/app with >= 3 apps)
     - CO_TITOLARE: Solid regular rotation / staffetta (>= 45 min/app AND >= 28% team minutes, e.g. Scamacca, Cutrone)
+    - SUPER_SUB: Regular impactful substitute with elite creation rates (xG90 + xA90 >= 0.35, e.g. Neres, Simeone)
     - SUBENTRANTE: Late substitute / bench warmer (< 45 min/app or < 28% team minutes, e.g. Lucca, Nzola, Kevin Carlos, Beto)
     - MARGINALE: Rare or zero appearances (< 2 apps or < 70 min total)
     """
@@ -64,6 +65,11 @@ def compute_real_starter_status(row, tot_matchdays=7):
     pct_mins = (mins / tot_mins * 100.0) if tot_mins > 0 else 0.0
     pct_suff = float(row.get('Pct_Sufficienza', 50.0))
     
+    xg_90 = safe_float(row.get('xG_90_Regressed', row.get('xG_90', 0.0)))
+    xa_90 = safe_float(row.get('xA_90_Regressed', row.get('xA_90', 0.0)))
+    burst_rate = xg_90 + xa_90
+    roles_str = str(row.get('RuoloMantra', ''))
+    
     if (m_per_app >= 55.0 and pct_mins >= 45.0) or (m_per_app >= 68.0 and pres >= 3) or pct_mins >= 65.0:
         return {
             'Status': 'TITOLARE',
@@ -72,7 +78,8 @@ def compute_real_starter_status(row, tot_matchdays=7):
             'Min_Per_Pres': round(m_per_app, 1),
             'Pct_Minuti': round(pct_mins, 1),
             'Tier_Weight': 1.0,
-            'Is_Real_Starter': True
+            'Is_Real_Starter': True,
+            'Is_Super_Sub': False
         }
     elif (m_per_app >= 45.0 and pct_mins >= 28.0) or (m_per_app >= 40.0 and pres >= 4 and pct_mins >= 24.0 and pct_suff >= 40.0):
         return {
@@ -82,9 +89,21 @@ def compute_real_starter_status(row, tot_matchdays=7):
             'Min_Per_Pres': round(m_per_app, 1),
             'Pct_Minuti': round(pct_mins, 1),
             'Tier_Weight': 0.75,
-            'Is_Real_Starter': True
+            'Is_Real_Starter': True,
+            'Is_Super_Sub': False
         }
     elif pres >= 2 and mins >= 50:
+        if burst_rate >= 0.35 and not 'Por' in roles_str:
+            return {
+                'Status': 'SUPER_SUB',
+                'Badge': '⚡ JOLLY / SUPER-SUB',
+                'Label': f'⚡ Super-Sub ({int(m_per_app)} min/p, {xg_90:.2f} xG/90)',
+                'Min_Per_Pres': round(m_per_app, 1),
+                'Pct_Minuti': round(pct_mins, 1),
+                'Tier_Weight': 0.55,
+                'Is_Real_Starter': False,
+                'Is_Super_Sub': True
+            }
         return {
             'Status': 'SUBENTRANTE',
             'Badge': '🟠 SUBENTRANTE',
@@ -92,7 +111,8 @@ def compute_real_starter_status(row, tot_matchdays=7):
             'Min_Per_Pres': round(m_per_app, 1),
             'Pct_Minuti': round(pct_mins, 1),
             'Tier_Weight': 0.35,
-            'Is_Real_Starter': False
+            'Is_Real_Starter': False,
+            'Is_Super_Sub': False
         }
     else:
         return {
@@ -102,26 +122,37 @@ def compute_real_starter_status(row, tot_matchdays=7):
             'Min_Per_Pres': round(m_per_app, 1),
             'Pct_Minuti': round(pct_mins, 1),
             'Tier_Weight': 0.10,
-            'Is_Real_Starter': False
+            'Is_Real_Starter': False,
+            'Is_Super_Sub': False
         }
 
 
 def compute_continuous_trade_value(player_dict, tot_matchdays=7):
     """
     Computes a continuous, objective market trade value based on:
-    1. Base Expected Fantasy Value (xFV).
+    1. Base Long-Term Asset Value (blending season FM, MV, and model xFV).
     2. Continuous Playing Time & Starting Status Index (I_Tit in [0.12, 1.00])
        derived from real Serie A match minutes, appearances, and minutes-per-appearance.
-    3. Role Scarcity Factor (Mantra role hierarchy: Pc/A > W/T > Dd/Ds > M/C/E/D/Por).
-    
-    Starters with heavy minutes maintain ~100% of xFV;
-    rotation players get ~70%; late substitutes get ~40-48%; marginals get ~20-25%.
+    3. Underlying Expected Production:
+       - Proven Volume: xG_Tot and xA_Tot (rewards consistent season-long chance generation).
+       - Rate: Regressed xG_90 and xA_90 with Bayesian shrinkage on small samples (< 270 mins).
+       - Super-Sub Upside: Recognizes game-changers (burst_rate >= 0.35) with elevated market liquidity.
+    4. Buy-Low / Sell-High Delta_xG regression adjustment.
+    5. Role Scarcity Factor (Mantra role hierarchy: Pc/A > W/T > Dd/Ds > M/C/E/D/Por).
     """
     raw_xfv = safe_float(player_dict.get('xFV', player_dict.get('FM_Stagione', 0.0)))
+    fm_stag = safe_float(player_dict.get('FM_Stagione', 0.0))
+    mv_stag = safe_float(player_dict.get('MV_Stagione', 6.0))
     pres = safe_float(player_dict.get('Presenze', 0))
     mins = safe_float(player_dict.get('Minuti_Reali', 0))
     roles = parse_mantra_roles(player_dict.get('RuoloMantra', ''))
     
+    # Long-term baseline: avoids single-fixture distortion in permanent trades
+    if fm_stag > 0:
+        base_val = (0.55 * fm_stag) + (0.45 * raw_xfv)
+    else:
+        base_val = raw_xfv
+        
     tot_team_mins = tot_matchdays * 90.0
     m_per_app = (mins / pres) if pres > 0 else 0.0
     pct_mins = (mins / tot_team_mins) if tot_team_mins > 0 else 0.0
@@ -145,22 +176,60 @@ def compute_continuous_trade_value(player_dict, tot_matchdays=7):
         else:
             i_tit = 0.12
 
+    # Bayesian shrinkage on underlying per-90 rates (stabilization threshold 270 minutes ~ 3 games)
+    is_striker = any(r in ['Pc', 'A'] for r in roles)
+    is_w_or_t = any(r in ['W', 'T'] for r in roles)
+    prior_xg90 = 0.32 if is_striker else (0.16 if is_w_or_t else 0.04)
+    prior_xa90 = 0.18 if is_w_or_t else (0.10 if is_striker or 'C' in roles else 0.03)
+
+    w_mins = mins / (mins + 270.0) if mins > 0 else 0.0
+    raw_xg90 = safe_float(player_dict.get('xG_90', 0.0))
+    raw_xa90 = safe_float(player_dict.get('xA_90', 0.0))
+    reg_xg90 = (w_mins * raw_xg90) + ((1.0 - w_mins) * prior_xg90)
+    reg_xa90 = (w_mins * raw_xa90) + ((1.0 - w_mins) * prior_xa90)
+
+    xg_tot = safe_float(player_dict.get('xG_Tot', 0.0))
+    xa_tot = safe_float(player_dict.get('xA_Tot', 0.0))
+    delta_xg = safe_float(player_dict.get('Delta_xG', 0.0))
+
+    # Super-Sub Recognition: elevate effective playing time for explosive game-changers
+    if not is_gk and i_tit < 0.65 and (reg_xg90 + reg_xa90) >= 0.35 and pres >= 2:
+        i_tit = min(0.80, i_tit + 0.18)
+
+    # Underlying production value-add
+    prod_boost = 0.0
+    if is_striker or is_w_or_t:
+        prod_boost = (min(3.5, xg_tot) * 0.10) + (min(2.5, xa_tot) * 0.06) + (reg_xg90 * 0.20) + (reg_xa90 * 0.12)
+    elif 'C' in roles or 'E' in roles:
+        prod_boost = (min(2.0, xg_tot) * 0.06) + (min(2.0, xa_tot) * 0.08) + (reg_xa90 * 0.15)
+
+    # Buy-Low / Sell-High regression adjustment:
+    # Buy-low players (ΔxG < -1.5) are undervalued by market; Sell-high (ΔxG > +2.0) carry negative reversion risk
+    reversion_adj = 0.0
+    if delta_xg <= -1.5:
+        reversion_adj = +0.25  # Hidden intrinsic value upside
+    elif delta_xg >= +2.0:
+        reversion_adj = -0.20  # Risk of cold streak regression
+
     # Role Scarcity Multiplier (Goals and strikers are rarest and most decisive)
-    if any(r in ['Pc', 'A'] for r in roles):
+    if is_striker:
         w_role = 1.15
-    elif any(r in ['W', 'T'] for r in roles):
+    elif is_w_or_t:
         w_role = 1.08
     elif any(r in ['Dd', 'Ds'] for r in roles):
         w_role = 1.03
     else:
         w_role = 1.00
 
-    effective_val = raw_xfv * (0.28 + 0.72 * i_tit) * w_role
+    effective_val = (base_val + prod_boost + reversion_adj) * (0.28 + 0.72 * i_tit) * w_role
     return {
         'raw_xfv': round(raw_xfv, 2),
+        'base_val': round(base_val, 2),
         'i_tit': round(i_tit, 2),
         'm_per_app': round(m_per_app, 1),
         'pct_mins': round(pct_mins * 100.0, 1),
+        'reg_xg90': round(reg_xg90, 2),
+        'reg_xa90': round(reg_xa90, 2),
         'w_role': round(w_role, 2),
         'effective_val': round(effective_val, 2)
     }
@@ -950,7 +1019,13 @@ def find_win_win_trades(
                         w_obj = matching_weakness[0]
                         score += 20.0 if w_obj['Severita'] == 'CRITICA' else 15.0
                         reasons.append(f"Risolve un tuo punto debole: garantisce una solida opzione in {w_obj['Reparto']} ({w_obj['Ruolo']})")
-                else: # SUBENTRANTE
+                elif opp_p_status['Status'] == 'SUPER_SUB':
+                    score += 15.0
+                    reasons.append(
+                        f"⚡ Jolly da bonus / Super-Sub: pur partendo spesso dalla panchina ({opp_p_status['Min_Per_Pres']} min/partita), "
+                        f"vanta una pericolosità d'élite ({opp_xg90:.2f} xG/90, {opp_xa90:.2f} xA/90) ad alto potenziale di bonus immediati"
+                    )
+                else: # SUBENTRANTE / MARGINALE
                     # If user has a critical weakness in this department, a subentrante does NOT solve it!
                     score -= 30.0
                     reasons.append(f"⚠️ Subentrante / Riserva in Serie A: gioca solo ~{opp_p_status['Min_Per_Pres']} min a partita; non garantisce titolarità")
@@ -990,12 +1065,16 @@ def find_win_win_trades(
                         score += 15.0
                         reasons.append(f"🛡️ Massima sicurezza tra i pali: zero errori decisivi e resa positiva sui tiri")
                 else:
+                    opp_mins_tot = safe_float(opp_p.get('Minuti_Reali', 0.0))
                     if opp_tiri >= 2.0 or opp_xg90 >= 0.25:
                         score += 15.0
-                        reasons.append(f"🔥 Alto volume offensivo: {opp_tiri:.1f} tiri e {opp_xg90:.2f} xG/90 min")
+                        reasons.append(f"🔥 Rendimento offensivo: {opp_tiri:.1f} tiri e {opp_xg90:.2f} xG/90 min (Volume stagionale: {opp_xg_tot:.2f} xG)")
                     elif opp_kp >= 1.5 or opp_xa90 >= 0.15:
                         score += 12.0
-                        reasons.append(f"🎯 Macchina da assist: {opp_kp:.1f} passaggi chiave e {opp_xa90:.2f} xA/90 min")
+                        reasons.append(f"🎯 Macchina da assist: {opp_kp:.1f} passaggi chiave e {opp_xa90:.2f} xA/90 min (Volume stagionale: {safe_float(opp_p.get('xA_Tot', 0.0)):.2f} xA)")
+
+                    if 0 < opp_mins_tot < 270:
+                        reasons.append(f"⚠️ Campione ridotto: i parametri per 90 minuti di {opp_p_name} sono calcolati su soli {int(opp_mins_tot)} minuti totali (valutazione normalizzata bayesiana).")
 
                 # E. Buy-Low leverage (Great opportunity)
                 if is_buy_low:
@@ -1036,6 +1115,8 @@ def find_win_win_trades(
                     target_desc = f"un titolare fisso come {opp_p_name} (gioca oltre {int(opp_p_status['Min_Per_Pres'])} min a partita)"
                 elif opp_p_status['Status'] == 'CO_TITOLARE':
                     target_desc = f"una valida rotazione come {opp_p_name} ({int(opp_p_status['Min_Per_Pres'])} min a partita)"
+                elif opp_p_status['Status'] == 'SUPER_SUB':
+                    target_desc = f"un super-sub ad alto impatto come {opp_p_name} ({opp_xg90:.2f} xG/90)"
                 else:
                     target_desc = f"un cambio numerico come {opp_p_name}"
 

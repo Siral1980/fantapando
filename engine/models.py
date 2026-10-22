@@ -75,6 +75,8 @@ def predict_player_xfv(player_row, matchday=6, calendar=None, ratings_cache=None
     # Real In-Game Underlying Metrics (Understat & Match Data)
     xg_90 = float(player_row.get('xG_90', 0.0))
     xa_90 = float(player_row.get('xA_90', 0.0))
+    xg_tot = float(player_row.get('xG_Tot', 0.0))
+    xa_tot = float(player_row.get('xA_Tot', 0.0))
     tiri_90 = float(player_row.get('Tiri_90', 0.0))
     kp_90 = float(player_row.get('Key_Passes_90', 0.0))
     minuti_reali = float(player_row.get('Minuti_Reali', 0.0))
@@ -336,6 +338,14 @@ def predict_player_xfv(player_row, matchday=6, calendar=None, ratings_cache=None
             'Errors_Leading_To_Goal': blunders,
             'Blunder_Rate_90': round(blunder_rate, 2),
             'Team_xGA': team_xga,
+            'xG_Tot': 0.0,
+            'xA_Tot': 0.0,
+            'xG_90': 0.0,
+            'xA_90': 0.0,
+            'xG_90_Regressed': 0.0,
+            'xA_90_Regressed': 0.0,
+            'Delta_xG': 0.0,
+            'Delta_xA': 0.0,
             'P_Voto': round(p_voto, 2),
             'Status_Titolarita': status_titolarita,
             'Min_Per_App': int(min_per_app),
@@ -356,24 +366,37 @@ def predict_player_xfv(player_row, matchday=6, calendar=None, ratings_cache=None
         is_striker = any(r in ruolo_mantra for r in ['Pc', 'A'])
         is_w_or_t = any(r in ruolo_mantra for r in ['W', 'T'])
         
-        # Bayesian shrinkage on goal/assist rates:
-        # Avoid exploding projections for small sample sizes (e.g. 1 goal in 2 games)
+        # Bayesian shrinkage on per-90 rates:
+        # Prevents exploding projections for small sample sizes (< 270 minutes ~ 3 full games)
+        prior_xg_90 = 0.32 if is_striker else (0.16 if is_w_or_t else 0.04)
+        prior_xa_90 = 0.18 if is_w_or_t else (0.10 if is_striker or 'C' in ruolo_mantra else 0.03)
+        prior_shots_90 = 2.4 if is_striker else (1.5 if is_w_or_t else 0.6)
+        prior_kp_90 = 1.6 if is_w_or_t else (1.0 if is_striker or 'C' in ruolo_mantra else 0.4)
+
+        # Minutes stabilization weight
+        w_mins = minuti_reali / (minuti_reali + 270.0) if minuti_reali > 0 else 0.0
+        shrunk_xg_90 = (w_mins * xg_90) + ((1.0 - w_mins) * prior_xg_90)
+        shrunk_xa_90 = (w_mins * xa_90) + ((1.0 - w_mins) * prior_xa_90)
+        shrunk_tiri_90 = (w_mins * tiri_90) + ((1.0 - w_mins) * prior_shots_90)
+        shrunk_kp_90 = (w_mins * kp_90) + ((1.0 - w_mins) * prior_kp_90)
+
+        # Goal and assist frequency shrinkage
         prior_gf_rate = 0.25 if is_striker else (0.10 if is_w_or_t else 0.03)
         prior_ass_rate = 0.12 if is_w_or_t else (0.08 if is_striker or 'C' in ruolo_mantra else 0.03)
         w_att_sample = raw_presenze / (raw_presenze + 4.0) if raw_presenze > 0 else 0.0
         shrunk_gf_rate = (w_att_sample * gf_per_game) + ((1.0 - w_att_sample) * prior_gf_rate)
         shrunk_ass_rate = (w_att_sample * ass_per_game) + ((1.0 - w_att_sample) * prior_ass_rate)
         
-        shot_threat = tiri_90 * 0.105
-        kp_threat = kp_90 * 0.095
+        shot_threat = shrunk_tiri_90 * 0.105
+        kp_threat = shrunk_kp_90 * 0.095
         
-        if minuti_reali >= 60 and (xg_90 > 0 or tiri_90 > 0):
+        if minuti_reali >= 45 and (xg_90 > 0 or tiri_90 > 0 or raw_presenze >= 1):
             # Clinical finishing factor: ONLY for recognized strikers with meaningful sample
             finishing_factor = max(0.0, shrunk_gf_rate) if is_striker else 0.0
-            base_goal_threat = (0.40 * xg_90) + (0.25 * shot_threat) + (0.35 * finishing_factor)
+            base_goal_threat = (0.40 * shrunk_xg_90) + (0.25 * shot_threat) + (0.35 * finishing_factor)
             regressed_xg = max(0.02, base_goal_threat)
             
-            base_ass_threat = (0.45 * xa_90) + (0.25 * kp_threat) + (0.30 * shrunk_ass_rate)
+            base_ass_threat = (0.45 * shrunk_xa_90) + (0.25 * kp_threat) + (0.30 * shrunk_ass_rate)
             regressed_xa = max(0.01, base_ass_threat)
         else:
             role_base_goal = 0.22 if is_striker else (0.10 if is_w_or_t else 0.02)
@@ -425,9 +448,9 @@ def predict_player_xfv(player_row, matchday=6, calendar=None, ratings_cache=None
         if is_dfactor_role and not any(r in ruolo_mantra for r in ['Pc', 'A']):
             rationale = f"Suff. {pct_suff}% (voti>=6) | Titolarità {int(p_voto*100)}% | D-Factor base: {pred_voto:.2f}"
         elif any(r in ruolo_mantra for r in ['Pc', 'A']):
-            rationale = f"Tiri: {tiri_90:.1f}/90 | xG: {xg_90:.2f} | Titolarità {int(p_voto*100)}% | Exp GF: {exp_gf:.2f}"
+            rationale = f"xG/90: {xg_90:.2f} ({int(min_per_app)}m/p) | xG Tot: {xg_tot:.2f} | Titolarità {int(p_voto*100)}% | Exp GF: {exp_gf:.2f}"
         elif any(r in ruolo_mantra for r in ['W', 'T']):
-            rationale = f"KP: {kp_90:.1f}/90 | xA: {xa_90:.2f} | Titolarità {int(p_voto*100)}% | Exp ASS: {exp_ass:.2f}"
+            rationale = f"xA/90: {xa_90:.2f} ({int(min_per_app)}m/p) | xA Tot: {xa_tot:.2f} | Titolarità {int(p_voto*100)}% | Exp ASS: {exp_ass:.2f}"
         else:
             rationale = f"Voto base: {pred_voto:.2f} | Titolarità {int(p_voto*100)}% | Exp GF: {exp_gf:.2f}"
             
@@ -448,6 +471,14 @@ def predict_player_xfv(player_row, matchday=6, calendar=None, ratings_cache=None
             'Bonus_Imbattibilita': 0.0,
             'Pct_Parate': 0.0,
             'Team_xGA': 0.0,
+            'xG_Tot': round(xg_tot, 2),
+            'xA_Tot': round(xa_tot, 2),
+            'xG_90': round(xg_90, 2),
+            'xA_90': round(xa_90, 2),
+            'xG_90_Regressed': round(shrunk_xg_90, 2),
+            'xA_90_Regressed': round(shrunk_xa_90, 2),
+            'Delta_xG': round(delta_xg, 2),
+            'Delta_xA': round(delta_xa, 2),
             'P_Voto': round(p_voto, 2),
             'Status_Titolarita': status_titolarita,
             'Min_Per_App': int(min_per_app),

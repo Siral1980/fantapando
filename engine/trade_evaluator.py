@@ -223,6 +223,8 @@ def evaluate_trade(
     kp_receive = round(_weighted_metric(receive_df, receive_weights, 'Key_Passes_90', 0.0), 1)
     xa_give = round(_weighted_metric(give_df, give_weights, 'xA_90', 0.0), 2)
     xa_receive = round(_weighted_metric(receive_df, receive_weights, 'xA_90', 0.0), 2)
+    xatot_give = round(_weighted_metric(give_df, give_weights, 'xA_Tot', 0.0), 2)
+    xatot_receive = round(_weighted_metric(receive_df, receive_weights, 'xA_Tot', 0.0), 2)
 
     # Goalkeeper advanced metrics comparison
     gk_give = give_df[(give_df['RuoloClassic'] == 'P') | (give_df['RuoloMantra'].str.contains('Por', na=False))]
@@ -247,7 +249,9 @@ def evaluate_trade(
     from engine.trade_finder import compute_real_starter_status
     for _, r_p in receive_df.iterrows():
         st_rec = compute_real_starter_status(r_p)
-        if st_rec['Status'] == 'SUBENTRANTE':
+        if st_rec.get('Status') == 'SUPER_SUB':
+            starter_bonuses.append(f"⚡ Jolly da bonus / Super-Sub {r_p['Giocatore']}: in Serie A parte spesso dalla panchina (media ~{st_rec['Min_Per_Pres']} min/partita) ma vanta un'efficienza offensiva d'élite ({st_rec.get('Label')}).")
+        elif st_rec['Status'] == 'SUBENTRANTE':
             starter_warnings.append(f"⚠️ Rischio titolarità per {r_p['Giocatore']}: in Serie A è una riserva/subentrante (media ~{st_rec['Min_Per_Pres']} min a partita, {st_rec['Pct_Minuti']}% minuti giocati).")
         elif st_rec['Status'] == 'MARGINALE':
             starter_warnings.append(f"🚨 Calciatore marginale {r_p['Giocatore']}: minutaggio quasi nullo (< 2 presenze o spezzoni rari).")
@@ -321,16 +325,30 @@ def evaluate_trade(
     elif shots_give > shots_receive + 0.5:
         reasons.append(f"⚠️ Calo di volume al tiro: stai cedendo calciatori con produzione al tiro superiore ({shots_give} vs {shots_receive} tiri/90 medi ponderati).")
 
-    if xg_receive > xg_give + 0.10:
-        reasons.append(f"⚽ Qualità delle occasioni (xG/90 medio ponderato): i calciatori ricevuti producono {xg_receive} xG/90 vs {xg_give} di quelli ceduti.")
-    elif xg_give > xg_receive + 0.10:
+    # Volume Totale (xG Tot) vs Tasso per 90 (xG/90)
+    if xgtot_receive > xgtot_give + 0.8:
+        reasons.append(f"📈 Maggior volume offensivo garantito: i calciatori ricevuti hanno già prodotto {xgtot_receive} xG totali vs {xgtot_give} dei ceduti (+{round(xgtot_receive - xgtot_give, 2)} xG complessivi).")
+    elif xgtot_give > xgtot_receive + 0.8:
+        if xg_receive > xg_give + 0.08:
+            reasons.append(
+                f"⚖️ Trade-off Efficienza vs Volume: i calciatori ricevuti hanno una resa al minuto superiore ({xg_receive} vs {xg_give} xG/90), "
+                f"ma cedi più volume cumulativo già consolidato ({xgtot_give} vs {xgtot_receive} xG totali). "
+                f"Operazione ideale se chi ricevi troverà continuità da titolare."
+            )
+        else:
+            reasons.append(f"⚠️ Calo di volume complessivo: i ceduti hanno prodotto {xgtot_give} xG totali vs {xgtot_receive} dei ricevuti.")
+
+    # Resa al minuto (xG/90)
+    if xg_receive > xg_give + 0.10 and not (xgtot_give > xgtot_receive + 0.8):
+        reasons.append(f"⚽ Qualità e frequenza delle occasioni: i calciatori ricevuti producono {xg_receive} xG/90 vs {xg_give} di quelli ceduti.")
+    elif xg_give > xg_receive + 0.10 and not (xgtot_receive > xgtot_give + 0.8):
         reasons.append(f"⚠️ Calo di pericolosità attesa: i calciatori ceduti generano più occasioni da gol ({xg_give} vs {xg_receive} xG/90 medi ponderati).")
 
     if kp_receive > kp_give + 0.5:
         reasons.append(f"🎯 Più rifinitura e assist: i ricevuti producono +{round(kp_receive - kp_give, 1)} passaggi chiave/90 ({kp_receive} vs {kp_give} medi ponderati).")
 
     if xa_receive > xa_give + 0.08:
-        reasons.append(f"👟 Assist attesi (xA/90 medio ponderato): i ricevuti producono {xa_receive} xA/90 vs {xa_give} dei ceduti.")
+        reasons.append(f"👟 Assist attesi: i ricevuti producono {xa_receive} xA/90 vs {xa_give} dei ceduti (Volume: {xatot_receive} vs {xatot_give} xA totali).")
 
     # Small Sample Size Warning (< 270 minutes)
     for _, p_r in receive_df.iterrows():
@@ -401,6 +419,8 @@ def evaluate_trade(
         'xA_Ricevuti_90': xa_receive,
         'xGTot_Ceduti': xgtot_give,
         'xGTot_Ricevuti': xgtot_receive,
+        'xATot_Ceduti': xatot_give,
+        'xATot_Ricevuti': xatot_receive,
         'Delta_xG_Ceduti': deltaxg_give,
         'Delta_xG_Ricevuti': deltaxg_receive,
         'KP_Ceduti_90': kp_give,

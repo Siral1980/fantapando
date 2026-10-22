@@ -210,12 +210,15 @@ def solve_lineup_for_formation(formation_name, df_projected_roster):
                         save_pct_val = (float(p['Raw'].get('Pct_Parate', 70.0)) - 70.0) / 100.0
                         tie_breaker += (gp_90_val * 0.002) + (save_pct_val * 0.001) - (blunders_val * 0.002)
                     else:
-                        # Outfield players: favor real volume (xG/90, xA/90) and regular starter minutes
-                        xg_val = float(p['Raw'].get('xG_90', 0.0))
-                        xa_val = float(p['Raw'].get('xA_90', 0.0))
+                        # Outfield players: favor real volume (xG_Tot, xA_Tot) and regular starter minutes
+                        xg_val = float(p['Raw'].get('xG_90_Regressed', p['Raw'].get('xG_90', 0.0)))
+                        xa_val = float(p['Raw'].get('xA_90_Regressed', p['Raw'].get('xA_90', 0.0)))
+                        xgtot_val = float(p['Raw'].get('xG_Tot', 0.0))
+                        xatot_val = float(p['Raw'].get('xA_Tot', 0.0))
                         mins_val = float(p['Raw'].get('Min_Per_App', 60.0))
+                        
                         # Explicit Starter XI Volume Preference:
-                        # Starting 11 strongly favors full-game starters (>= 65 mins);
+                        # Starting 11 strongly favors full-game starters (>= 65 mins) and proven season volume (xG_Tot);
                         # Substitutes (< 45 mins) receive an explicit starting penalty, pushing them to the bench
                         if mins_val >= 65.0:
                             mins_bias = 0.06 + min(0.06, (mins_val - 65.0) * 0.002)
@@ -223,7 +226,10 @@ def solve_lineup_for_formation(formation_name, df_projected_roster):
                             mins_bias = -0.22 - ((45.0 - mins_val) * 0.015)
                         else:
                             mins_bias = 0.0
-                        tie_breaker += (xg_val * 0.001) + (xa_val * 0.001) + mins_bias
+                            
+                        volume_bias = (xgtot_val * 0.002) + (xatot_val * 0.001)
+                        rate_bias = (xg_val * 0.001) + (xa_val * 0.001)
+                        tie_breaker += volume_bias + rate_bias + mins_bias
                     
                     cost_matrix[i, j] = - (p['xFV'] + tie_breaker)
                     
@@ -438,6 +444,9 @@ def compute_bench_priority_score(row):
     """
     Computes the explicit probability and value score of bringing a grade >= 6.0 
     or a bonus (+3 GF, +1 ASS, +1 Clean Sheet), weighted by titolarità P(Voto).
+    Integrates Super-Sub / High-Impact metrics (xG/90 and xA/90):
+    Bench Top Positions prioritize players who have explosive burst potential (+3 / +1)
+    if called into action, avoiding passive 5.5-rated defenders at the top of the bench.
     """
     p_voto = float(row.get('P_Voto', 0.85))
     pct_suff = float(row.get('Pct_Sufficienza', 60.0))
@@ -448,6 +457,11 @@ def compute_bench_priority_score(row):
     
     # Expected bonus points
     exp_bonus_pts = (3.0 * exp_gf) + (1.0 * exp_ass) + bonus_imb
+    
+    # Underlying burst efficiency (/90)
+    xg_90 = float(row.get('xG_90_Regressed', row.get('xG_90', 0.0)))
+    xa_90 = float(row.get('xA_90_Regressed', row.get('xA_90', 0.0)))
+    burst_pot = (3.0 * xg_90) + (1.0 * xa_90)
     
     # Probability of goal or assist
     p_bonus = 1.0 - np.exp(-(exp_gf + exp_ass)) if (exp_gf + exp_ass) > 0 else 0.0
@@ -460,8 +474,16 @@ def compute_bench_priority_score(row):
     net_prob_ge_6_or_bonus = round(p_voto * prob_voto_ge_6_or_bonus * 100.0, 1)
     
     raw_xfv = float(row.get('xFV', 6.0))
-    # Bench priority score: directly scales expected fantasy value with probability of vote >= 6 or bonus
-    bench_score = round(raw_xfv * (net_prob_ge_6_or_bonus / 100.0)**0.35, 2)
+    
+    # Super-Sub Upside Factor:
+    # If a player has high offensive efficiency per 90 (burst_pot >= 0.60) and regular game participation (P_Voto >= 0.40),
+    # boost bench priority score so game-changers (e.g. Neres, Pedro, Simeone) sit in the Top 5 Cambi
+    supersub_boost = 0.0
+    if burst_pot >= 0.60 and p_voto >= 0.40 and not 'Por' in str(row.get('RuoloMantra', '')):
+        supersub_boost = min(1.25, (burst_pot - 0.40) * 0.45 * p_voto)
+        
+    # Bench priority score: scales expected fantasy value with probability of vote >= 6 or bonus + supersub burst
+    bench_score = round(raw_xfv * (net_prob_ge_6_or_bonus / 100.0)**0.35 + supersub_boost, 2)
     
     return bench_score, net_prob_ge_6_or_bonus, round(exp_bonus_pts, 2)
 
