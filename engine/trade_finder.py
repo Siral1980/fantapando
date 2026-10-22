@@ -396,8 +396,9 @@ def analyze_squad_weaknesses(team_name, league_data, df_master, matchday=8):
     if df_squad.empty:
         return {'error': "Nessun calciatore della squadra trovato nel database master."}
 
-    cost_lookup = {p['Giocatore']: safe_int(p.get('Costo', 1), default=1) for p in team_players if isinstance(p, dict) and 'Giocatore' in p}
-    df_squad['Costo'] = df_squad['Giocatore'].map(cost_lookup).fillna(1).astype(int)
+    fvm_lookup = {p['Giocatore']: safe_int(p.get('FVM', p.get('Costo', 1)), default=1) for p in team_players if isinstance(p, dict) and 'Giocatore' in p}
+    df_squad['FVM'] = df_squad['Giocatore'].map(fvm_lookup).fillna(1).astype(int)
+    df_squad['Costo'] = df_squad['FVM']
 
     # Project squad performance for the target matchday
     df_proj = batch_predict_xfv(df_squad, matchday=matchday)
@@ -689,7 +690,9 @@ def analyze_squad_weaknesses(team_name, league_data, df_master, matchday=8):
                 'RuoloMantra': roles_str,
                 'xFV': safe_float(xfv),
                 'FM_Stagione': safe_float(b_row.get('FM_Stagione', 0)),
-                'Costo': safe_int(b_row.get('Costo', 0)),
+                'FVM': safe_int(b_row.get('FVM', b_row.get('Costo', 0))),
+                'Costo': safe_int(b_row.get('FVM', b_row.get('Costo', 0))),
+                'Costo_Asta': safe_int(b_row.get('Costo', 0)),
                 'GF': safe_int(b_row.get('GF', 0)),
                 'Signal': sig,
                 'Motivo_Cessione': "; ".join(reasons),
@@ -736,7 +739,7 @@ def _get_department_name(roles):
 
 
 def _format_trade_player(p, is_opponent=False):
-    """Formats player dictionary for trade proposals with full stats and starter status."""
+    """Formats player dictionary for trade proposals with full stats, FVM/1000 and starter status."""
     from engine.injuries_manager import classify_injury_status
     if not isinstance(p, dict):
         p = {}
@@ -744,12 +747,16 @@ def _format_trade_player(p, is_opponent=False):
     p_name = p.get('Giocatore', '')
     inj_info = classify_injury_status(p_name) if (is_opponent and p_name) else {}
     is_buy_low = ('BUY-LOW' in str(p.get('Signal', '')))
+    fvm_val = safe_int(p.get('FVM', p.get('FVM_1000', p.get('Costo', 1))), default=1)
+    auction_cost = safe_int(p.get('Costo_Asta', p.get('Costo', 0)))
     
     return {
         'Giocatore': p_name,
         'Squadra': p.get('Squadra', ''),
         'RuoloMantra': p.get('RuoloMantra', ''),
-        'Costo': safe_int(p.get('Costo', 0)),
+        'FVM': fvm_val,
+        'Costo': fvm_val,
+        'Costo_Asta': auction_cost,
         'xFV': round(safe_float(p.get('xFV', 0.0)), 2),
         'FM': round(safe_float(p.get('FM', p.get('FM_Stagione', 0.0))), 2),
         'Signal': str(p.get('Signal', 'NEUTRO')),
@@ -794,7 +801,7 @@ def is_trade_role_parity_credible(give_dict, receive_dict):
     Rule 2: Nobody trades an established starting W or T for a zero-bonus defensive midfielder or bench defender.
     Rule 3: Tactical cross-exchanges within M, C, E, Dc, Dd, Ds are credible if xFV is balanced.
     Rule 4: Por is only exchanged for other Por or comparable tactical assets.
-    Rule 5: Extreme auction cost disparity (e.g. Costo 3 for Costo 232) is strictly rejected.
+    Rule 5: Extreme FVM/1000 market disparity (e.g. FVM 3 for FVM 227) is strictly rejected.
     Rule 6: Starting status parity: a marginal/deep bench player cannot be swapped 1x1 for an established Serie A starter.
     """
     give_roles = parse_mantra_roles(give_dict.get('RuoloMantra', ''))
@@ -812,43 +819,43 @@ def is_trade_role_parity_credible(give_dict, receive_dict):
     give_fm = safe_float(give_dict.get('FM', give_dict.get('FM_Stagione', 0)))
     give_xfv = safe_float(give_dict.get('xFV', 0))
     give_gf = safe_int(give_dict.get('GF', 0))
-    give_costo = safe_int(give_dict.get('Costo', 0))
+    give_fvm = safe_int(give_dict.get('FVM', give_dict.get('Costo', 0)))
     give_pres = safe_int(give_dict.get('Presenze', 0))
 
     rec_fm = safe_float(receive_dict.get('FM', receive_dict.get('FM_Stagione', 0)))
     rec_xfv = safe_float(receive_dict.get('xFV', 0))
     rec_gf = safe_int(receive_dict.get('GF', 0))
-    rec_costo = safe_int(receive_dict.get('Costo', 0))
+    rec_fvm = safe_int(receive_dict.get('FVM', receive_dict.get('Costo', 0)))
     rec_pres = safe_int(receive_dict.get('Presenze', 0))
 
     # -------------------------------------------------------------
     # 0. GOALKEEPER SANITY & INTEGRITY
     # -------------------------------------------------------------
     if is_rec_gk != is_give_gk:
-        rec_is_starter_gk = is_rec_gk and (rec_pres >= 4 or rec_costo >= 20)
-        give_is_starter_gk = is_give_gk and (give_pres >= 4 or give_costo >= 20)
+        rec_is_starter_gk = is_rec_gk and (rec_pres >= 4 or rec_fvm >= 15)
+        give_is_starter_gk = is_give_gk and (give_pres >= 4 or give_fvm >= 15)
         # Outfield for backup/reserve GK is completely unrealistic
         if is_rec_gk and not rec_is_starter_gk:
             return False
         if is_give_gk and not give_is_starter_gk:
             return False
         # Star striker for goalkeeper 1x1 is also rejected in real leagues
-        if (is_give_striker and give_costo >= 40) or (is_rec_striker and rec_costo >= 40):
+        if (is_give_striker and give_fvm >= 40) or (is_rec_striker and rec_fvm >= 40):
             return False
 
     # -------------------------------------------------------------
-    # 1. CAPITAL INVESTMENT & AUCTION COST DISPARITY (1x1)
+    # 1. CAPITAL INVESTMENT & FVM/1000 PARITY (1x1)
     # -------------------------------------------------------------
-    if rec_costo >= 80:
-        # Top star/bomber requires substantial value in return (at least 35% of cost or 35+ credits with high FM)
-        if give_costo < 0.35 * rec_costo and not (give_costo >= 35 and give_fm >= 6.60):
+    if rec_fvm >= 100:
+        # Top star/bomber requires substantial value in return (at least 35% of target FVM or 50+ FVM with high FM)
+        if give_fvm < 0.35 * rec_fvm and not (give_fvm >= 50 and give_fm >= 6.60):
             return False
-    elif rec_costo >= 40:
-        if give_costo < 0.25 * rec_costo and give_costo < 18:
+    elif rec_fvm >= 45:
+        if give_fvm < 0.28 * rec_fvm and give_fvm < 16:
             return False
 
-    if give_costo >= 80:
-        if rec_costo < 0.25 * give_costo and rec_costo < 25:
+    if give_fvm >= 100:
+        if rec_fvm < 0.28 * give_fvm and rec_fvm < 20:
             return False
 
     # -------------------------------------------------------------
@@ -858,7 +865,7 @@ def is_trade_role_parity_credible(give_dict, receive_dict):
     rec_status = compute_real_starter_status(receive_dict)['Status']
     if rec_status == 'TITOLARE' and give_status == 'MARGINALE':
         return False
-    if rec_status == 'TITOLARE' and give_status == 'SUBENTRANTE' and give_costo < 25:
+    if rec_status == 'TITOLARE' and give_status == 'SUBENTRANTE' and give_fvm < 22:
         return False
     if give_status == 'MARGINALE' and rec_status in ['TITOLARE', 'CO_TITOLARE']:
         return False
@@ -867,7 +874,7 @@ def is_trade_role_parity_credible(give_dict, receive_dict):
     is_give_top_dept = (
         give_gf >= 2 or 
         (give_fm >= 6.70 and give_xfv >= 5.8) or 
-        (give_costo >= 16 and give_fm >= 6.30)
+        (give_fvm >= 18 and give_fm >= 6.30)
     )
 
     # -------------------------------------------------------------
@@ -876,21 +883,21 @@ def is_trade_role_parity_credible(give_dict, receive_dict):
     if is_rec_striker:
         # A) You give another striker (Pc or A)
         if is_give_striker:
-            max_c = max(give_costo, rec_costo, 1)
-            min_c = min(give_costo, rec_costo)
+            max_c = max(give_fvm, rec_fvm, 1)
+            min_c = min(give_fvm, rec_fvm)
             if max_c >= 50 and (min_c / max_c) < 0.25:
                 return False
             return True
         # B) You give an elite attacking wing / trequartista (W or T)
         if is_give_wing_t:
-            if give_xfv >= 5.5 and (give_fm >= 6.35 or give_gf >= 1 or give_costo >= 14):
-                if rec_costo >= 100 and give_costo < 35:
+            if give_xfv >= 5.5 and (give_fm >= 6.35 or give_gf >= 1 or give_fvm >= 16):
+                if rec_fvm >= 120 and give_fvm < 40:
                     return False
                 return True
             return False
         # C) You give a Top di Reparto from midfield or defense
         if is_give_top_dept:
-            if rec_costo >= 120 and give_costo < 45:
+            if rec_fvm >= 130 and give_fvm < 45:
                 return False
             return True
         return False
@@ -914,11 +921,11 @@ def is_trade_role_parity_credible(give_dict, receive_dict):
     if is_rec_gk:
         if is_give_gk:
             return True
-        is_rec_top_gk = (rec_costo >= 20 or rec_pres >= 4)
+        is_rec_top_gk = (rec_fvm >= 18 or rec_pres >= 4)
         if is_rec_top_gk:
             if is_give_striker or is_give_top_dept:
                 return True
-            if is_give_wing_t and give_xfv >= 5.6 and (give_costo >= 16 or give_fm >= 6.4):
+            if is_give_wing_t and give_xfv >= 5.6 and (give_fvm >= 16 or give_fm >= 6.4):
                 return True
             return False
         return False
@@ -966,20 +973,24 @@ def find_win_win_trades(
         df_all_proj = batch_predict_xfv(df_master, matchday=matchday)
     proj_map = {row['Giocatore']: row.to_dict() for _, row in df_all_proj.iterrows()}
 
-    # Build league auction cost lookup (taking max cost to ensure true ownership cost)
-    costo_map = {}
+    # Build FVM/1000 lookup from df_master and league_data (Fantacalcio.it official valuation)
+    fvm_map = {}
+    if df_master is not None and 'Giocatore' in df_master.columns and 'FVM' in df_master.columns:
+        fvm_map = dict(zip(df_master['Giocatore'], df_master['FVM']))
+
     if isinstance(league_data, dict):
         for t_players in league_data.values():
             if isinstance(t_players, list):
                 for p in t_players:
                     if isinstance(p, dict) and 'Giocatore' in p:
                         name = p['Giocatore']
-                        cost = safe_int(p.get('Costo', 0))
-                        costo_map[name] = max(costo_map.get(name, 0), cost)
+                        fvm_val = safe_int(p.get('FVM', fvm_map.get(name, 1)))
+                        fvm_map[name] = max(fvm_map.get(name, 1), fvm_val)
 
     for name, p_data in proj_map.items():
-        if name in costo_map:
-            p_data['Costo'] = costo_map[name]
+        val = fvm_map.get(name, safe_int(p_data.get('FVM', 1)))
+        p_data['FVM'] = val
+        p_data['Costo'] = val  # Standardize player cost on official FVM/1000
 
     # Diagnose My Team optimal lineup & offerable players
     my_owned = [
@@ -1061,8 +1072,9 @@ def find_win_win_trades(
         for name in opp_pnames:
             if name in proj_map:
                 p_item = dict(proj_map[name])
-                if name in costo_map:
-                    p_item['Costo'] = costo_map[name]
+                if name in fvm_map:
+                    p_item['FVM'] = fvm_map[name]
+                    p_item['Costo'] = fvm_map[name]
                 opp_proj_list.append(p_item)
         if not opp_proj_list:
             continue
@@ -1220,8 +1232,10 @@ def find_win_win_trades(
                         'Tu_Ricevi_List': [rec_fmt],
                         'Tu_Cedi': give_fmt,
                         'Tu_Ricevi': rec_fmt,
-                        'Tot_Costo_Cedi': give_fmt['Costo'],
-                        'Tot_Costo_Ricevi': rec_fmt['Costo'],
+                        'Tot_FVM_Cedi': give_fmt.get('FVM', give_fmt['Costo']),
+                        'Tot_FVM_Ricevi': rec_fmt.get('FVM', rec_fmt['Costo']),
+                        'Tot_Costo_Cedi': give_fmt.get('FVM', give_fmt['Costo']),
+                        'Tot_Costo_Ricevi': rec_fmt.get('FVM', rec_fmt['Costo']),
                         'Tot_xFV_Cedi': give_fmt['xFV'],
                         'Tot_xFV_Ricevi': rec_fmt['xFV'],
                         'Delta_xFV': round(rec_fmt['xFV'] - give_fmt['xFV'], 2),
@@ -1280,12 +1294,12 @@ def find_win_win_trades(
                             if give_has_por != rec_has_por:
                                 continue
 
-                            # Rule: Capital investment balance in 2x2 (avoid extreme multi-package cost asymmetry)
-                            tot_c_give_test = sum(safe_int(p.get('Costo', 0)) for p in give_pkg)
-                            tot_c_rec_test = sum(safe_int(p.get('Costo', 0)) for p in rec_pkg)
+                            # Rule: Capital investment balance in 2x2 via FVM/1000 parity
+                            tot_c_give_test = sum(safe_int(p.get('FVM', p.get('Costo', 0))) for p in give_pkg)
+                            tot_c_rec_test = sum(safe_int(p.get('FVM', p.get('Costo', 0))) for p in rec_pkg)
                             max_c_2x2 = max(tot_c_give_test, tot_c_rec_test, 1)
                             min_c_2x2 = min(tot_c_give_test, tot_c_rec_test)
-                            if max_c_2x2 >= 80 and (min_c_2x2 / max_c_2x2) < 0.28:
+                            if max_c_2x2 >= 70 and (min_c_2x2 / max_c_2x2) < 0.28:
                                 continue
 
                             pw = evaluate_pairwise_trade_balance(give_pkg, rec_pkg)
@@ -1347,6 +1361,8 @@ def find_win_win_trades(
                                 'Tu_Ricevi_List': rec_list,
                                 'Tu_Cedi': g1_fmt,
                                 'Tu_Ricevi': t1_fmt,
+                                'Tot_FVM_Cedi': tot_c_give,
+                                'Tot_FVM_Ricevi': tot_c_rec,
                                 'Tot_Costo_Cedi': tot_c_give,
                                 'Tot_Costo_Ricevi': tot_c_rec,
                                 'Tot_xFV_Cedi': tot_x_give,
@@ -1367,7 +1383,7 @@ def find_win_win_trades(
         # -------------------------------------------------------------
         if trade_format_filter in ['TUTTI', 'SOLO_MULTIPLI']:
             seen_2x1_targets = set()
-            high_targets = [t for t in opp_target_candidates if safe_int(t.get('Costo', 0)) >= 35 or safe_float(t.get('xFV', 0)) >= 6.0]
+            high_targets = [t for t in opp_target_candidates if safe_int(t.get('FVM', t.get('Costo', 0))) >= 30 or safe_float(t.get('xFV', 0)) >= 6.0]
             my_top_offers = sorted(my_offerable, key=lambda x: safe_float(x.get('xFV', 0)), reverse=True)[:10]
 
             for t1 in high_targets[:6]:
@@ -1439,6 +1455,10 @@ def find_win_win_trades(
                         'Tu_Ricevi_List': rec_list,
                         'Tu_Cedi': g1_fmt,
                         'Tu_Ricevi': t1_fmt,
+                        'Tot_FVM_Cedi': tot_c_give,
+                        'Tot_FVM_Ricevi': tot_c_rec,
+                        'Tot_FVM_Cedi': tot_c_give,
+                        'Tot_FVM_Ricevi': tot_c_rec,
                         'Tot_Costo_Cedi': tot_c_give,
                         'Tot_Costo_Ricevi': tot_c_rec,
                         'Tot_xFV_Cedi': tot_x_give,
@@ -1458,7 +1478,7 @@ def find_win_win_trades(
         # GENERATION 4: 1x2 TRADES (Ristrutturazione Modulo / Profondità)
         # -------------------------------------------------------------
         if trade_format_filter in ['TUTTI', 'SOLO_MULTIPLI']:
-            high_give = [p for p in my_offerable if safe_int(p.get('Costo', 0)) >= 45 or safe_float(p.get('xFV', 0)) >= 6.2]
+            high_give = [p for p in my_offerable if safe_int(p.get('FVM', p.get('Costo', 0))) >= 40 or safe_float(p.get('xFV', 0)) >= 6.2]
             for g1 in high_give[:4]:
                 g1_name = g1['Giocatore']
                 if give_player_filter and give_player_filter != 'TUTTI' and give_player_filter != g1_name:
@@ -1771,7 +1791,7 @@ def find_trades_for_target_players(
         return []
 
     target_xfv_sum = sum(safe_float(p.get('xFV', 0.0)) for p in target_players)
-    target_cost_sum = sum(safe_int(p.get('Costo', 1)) for p in target_players)
+    target_cost_sum = sum(safe_int(p.get('FVM', p.get('Costo', 1))) for p in target_players)
     target_roles = set().union(*[parse_mantra_roles(p.get('RuoloMantra', '')) for p in target_players])
     num_targets = len(target_players)
     target_pnames_set = set(t['Giocatore'] for t in target_players)
@@ -1904,7 +1924,7 @@ def find_trades_for_target_players(
         seen_combos.add(give_names)
 
         give_xfv_sum = sum(safe_float(p.get('xFV', 0.0)) for p in give_pkg)
-        give_cost_sum = sum(safe_int(p.get('Costo', 1)) for p in give_pkg)
+        give_cost_sum = sum(safe_int(p.get('FVM', p.get('Costo', 1))) for p in give_pkg)
         give_roles = set().union(*[parse_mantra_roles(p.get('RuoloMantra', '')) for p in give_pkg])
         give_n = len(give_pkg)
 
@@ -2145,7 +2165,9 @@ def find_trades_for_target_players(
                     'RuoloMantra': p.get('RuoloMantra', ''),
                     'xFV': safe_float(p.get('xFV', 0.0)),
                     'FM': safe_float(p.get('FM_Stagione', 0.0)),
-                    'Costo': safe_int(p.get('Costo', 0)),
+                    'FVM': safe_int(p.get('FVM', p.get('Costo', 0))),
+                    'Costo': safe_int(p.get('FVM', p.get('Costo', 0))),
+                    'Costo_Asta': safe_int(p.get('Costo', 0)),
                     'Tier': p.get('Tier', 'PANCHINARO'),
                     'P_Voto': safe_float(p.get('P_Voto', 0.8)),
                     'Status_Titolarita': p.get('Status_Titolarita', '🟢 TITOLARE')
@@ -2158,7 +2180,9 @@ def find_trades_for_target_players(
                     'RuoloMantra': p.get('RuoloMantra', ''),
                     'xFV': safe_float(p.get('xFV', 0.0)),
                     'FM': safe_float(p.get('FM_Stagione', 0.0)),
-                    'Costo': safe_int(p.get('Costo', 0)),
+                    'FVM': safe_int(p.get('FVM', p.get('Costo', 0))),
+                    'Costo': safe_int(p.get('FVM', p.get('Costo', 0))),
+                    'Costo_Asta': safe_int(p.get('Costo', 0)),
                     'P_Voto': safe_float(p.get('P_Voto', 0.8)),
                     'Status_Titolarita': p.get('Status_Titolarita', '🟢 TITOLARE')
                 } for p in target_players

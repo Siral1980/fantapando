@@ -377,6 +377,17 @@ def sync_and_build_database(stats_file=None):
     except Exception as e:
         print(f"Goalkeeper advanced metrics enrichment notice: {e}")
         
+    # 4.5. Enrich with FVM/1000 from Fantacalcio.it official list
+    try:
+        fvm_file = os.path.join(DATA_DIR, "lista_calciatori_mantra_lega_attuale.xlsx")
+        if os.path.exists(fvm_file):
+            df_fvm = pd.read_excel(fvm_file)
+            if 'FVM/1000' in df_fvm.columns and '#' in df_fvm.columns:
+                fvm_map = dict(zip(df_fvm['#'], df_fvm['FVM/1000']))
+                df_master['FVM'] = df_master['Cod'].map(fvm_map).fillna(1).astype(int)
+    except Exception as e:
+        print(f"FVM enrichment notice: {e}")
+
     # 5. Save clean players_master.csv
     df_master.to_csv(MASTER_CSV, index=False)
     print(f"Master database saved to {MASTER_CSV} ({len(df_master)} players).")

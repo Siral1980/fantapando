@@ -1696,7 +1696,7 @@ with tab_scambi:
                         n_g = len(give_list)
                         st.markdown(f"""
                         <div style="font-size: 0.82rem; color: #ef4444; font-weight: bold; text-transform: uppercase; margin-bottom: 6px;">
-                            🔴 Tu Cedi ({n_g} calciator{'e' if n_g == 1 else 'i'}) | Tot Costo: <b>{tot_c_give} cr</b> | Tot xFV: <b>{tot_x_give:.2f}</b>
+                            🔴 Tu Cedi ({n_g} calciator{'e' if n_g == 1 else 'i'}) | Tot FVM/1000: <b>{tot_c_give}</b> | Tot xFV: <b>{tot_x_give:.2f}</b>
                         </div>
                         """, unsafe_allow_html=True)
                         for cedi in give_list:
@@ -1709,7 +1709,7 @@ with tab_scambi:
                             <div style="background: rgba(239, 68, 68, 0.08); border-left: 4px solid #ef4444; padding: 10px 14px; border-radius: 6px; margin-bottom: 8px;">
                                 <div style="font-size: 1.05rem; font-weight: bold; color: #f8fafc;">
                                     {cedi['Giocatore']} {sig_badge}
-                                    <span style="font-size: 0.78rem; color: #94a3b8; font-weight: normal;">(Costo: {cedi.get('Costo', 0)} cr)</span>
+                                    <span style="font-size: 0.78rem; color: #94a3b8; font-weight: normal;">(FVM: <b>{cedi.get('FVM', cedi.get('Costo', 0))}</b>)</span>
                                 </div>
                                 <div style="color: #cbd5e1; font-size: 0.85rem;">{cedi['Squadra']} — <b>{cedi['RuoloMantra']}</b></div>
                                 <div style="color: #94a3b8; font-size: 0.80rem; margin-top: 2px;">xFV Giornata: <b>{cedi['xFV']:.2f}</b> | FM: <b>{cedi['FM']:.2f}</b></div>
@@ -1723,7 +1723,7 @@ with tab_scambi:
                         st.markdown(f"""
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                             <span style="font-size: 0.82rem; color: #10b981; font-weight: bold; text-transform: uppercase;">
-                                🟢 Tu Ricevi ({n_r} calciator{'e' if n_r == 1 else 'i'}) | Tot Costo: <b>{tot_c_rec} cr</b>
+                                🟢 Tu Ricevi ({n_r} calciator{'e' if n_r == 1 else 'i'}) | Tot FVM/1000: <b>{tot_c_rec}</b>
                             </span>
                             <span style="color: {delta_color}; font-weight: bold; font-size: 0.85rem;">
                                 Delta: {'+' if delta_xfv > 0 else ''}{delta_xfv} xFV
@@ -1752,7 +1752,7 @@ with tab_scambi:
                             <div style="background: rgba(16, 185, 129, 0.08); border-left: 4px solid #10b981; padding: 10px 14px; border-radius: 6px; margin-bottom: 8px;">
                                 <div style="font-size: 1.05rem; font-weight: bold; color: #f8fafc;">
                                     {ricevi['Giocatore']} {tit_badge} {stash_badge} {sig_rec_badge} {bench_badge}
-                                    <span style="font-size: 0.78rem; color: #94a3b8; font-weight: normal;">(Costo: {ricevi.get('Costo', 0)} cr)</span>
+                                    <span style="font-size: 0.78rem; color: #94a3b8; font-weight: normal;">(FVM: <b>{ricevi.get('FVM', ricevi.get('Costo', 0))}</b>)</span>
                                 </div>
                                 <div style="color: #cbd5e1; font-size: 0.85rem;">{ricevi['Squadra']} — <b>{ricevi['RuoloMantra']}</b></div>
                                 <div style="color: #94a3b8; font-size: 0.80rem; margin-top: 2px;">
@@ -1939,7 +1939,7 @@ with tab_scambi:
                                 st.markdown(f"""
                                 <div style="background: rgba(255,255,255,0.04); border-left: 3px solid {tier_color}; padding: 8px 12px; border-radius: 6px; margin-bottom: 6px;">
                                     <div style="font-weight: 700; color: #ffffff;">{p['Giocatore']} <span style="font-weight: 450; color: #94a3b8; font-size: 0.85rem;">({p['RuoloMantra']} - {p['Squadra']})</span></div>
-                                    <div style="font-size: 0.8rem; color: #cbd5e1;">Status: <strong style="color: {tier_color};">{p['Tier']}</strong> | FM: <strong>{p['FM']:.2f}</strong> | xFV: <strong>{p['xFV']:.2f}</strong> | Costo: <strong>{p['Costo']}</strong></div>
+                                    <div style="font-size: 0.8rem; color: #cbd5e1;">Status: <strong style="color: {tier_color};">{p['Tier']}</strong> | FM: <strong>{p['FM']:.2f}</strong> | xFV: <strong>{p['xFV']:.2f}</strong> | FVM: <strong>{p.get('FVM', p.get('Costo', 0))}</strong></div>
                                 </div>
                                 """, unsafe_allow_html=True)
                             st.caption(f"Totale xFV Offerto: **{prop['Totale_xFV_Ceduti']}**")
@@ -1950,7 +1950,7 @@ with tab_scambi:
                                 st.markdown(f"""
                                 <div style="background: rgba(16, 185, 129, 0.08); border-left: 3px solid #10b981; padding: 8px 12px; border-radius: 6px; margin-bottom: 6px;">
                                     <div style="font-weight: 700; color: #ffffff;">{p['Giocatore']} <span style="font-weight: 450; color: #94a3b8; font-size: 0.85rem;">({p['RuoloMantra']} - {p['Squadra']})</span></div>
-                                    <div style="font-size: 0.8rem; color: #cbd5e1;">FM: <strong>{p['FM']:.2f}</strong> | xFV: <strong>{p['xFV']:.2f}</strong> | Costo: <strong>{p['Costo']}</strong></div>
+                                    <div style="font-size: 0.8rem; color: #cbd5e1;">FM: <strong>{p['FM']:.2f}</strong> | xFV: <strong>{p['xFV']:.2f}</strong> | FVM: <strong>{p.get('FVM', p.get('Costo', 0))}</strong></div>
                                 </div>
                                 """, unsafe_allow_html=True)
                             st.caption(f"Totale xFV Ricevuto: **{prop['Totale_xFV_Ricevuti']}** (Δ xFV: **{prop['Delta_xFV']:+.2f}**)")

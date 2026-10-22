@@ -194,6 +194,7 @@ def parse_official_league_excel(file_or_path, df_master):
                 'Squadra': p_info.get('Squadra', 'Serie A'),
                 'RuoloClassic': p_info.get('RuoloClassic', 'C'),
                 'RuoloMantra': p_info.get('RuoloMantra', 'C'),
+                'FVM': p_info.get('FVM', 1),
                 'Costo': cost,
                 'InPrestito': (cost == 0),
                 'FuoriSerieA': bool(p_info.get('FuoriSerieA', False)),
@@ -257,6 +258,8 @@ def parse_official_league_excel(file_or_path, df_master):
                     col_map['fm'] = c_idx
                 elif 'fuori lista' in v_str:
                     col_map['fuori_lista'] = c_idx
+                elif 'fvm' in v_str:
+                    col_map['fvm'] = c_idx
             tabular_header_row = r_idx
             break
 
@@ -321,6 +324,13 @@ def parse_official_league_excel(file_or_path, df_master):
                 except Exception:
                     pass
 
+            fvm = p_info.get('FVM', 1)
+            if 'fvm' in col_map and pd.notna(df_raw.iloc[r, col_map['fvm']]):
+                try:
+                    fvm = int(float(str(df_raw.iloc[r, col_map['fvm']]).strip()))
+                except Exception:
+                    pass
+
             player_entry = {
                 'Cod': cod,
                 'Giocatore': matched_name,
@@ -328,6 +338,7 @@ def parse_official_league_excel(file_or_path, df_master):
                 'Squadra': sq_sa,
                 'RuoloClassic': ruolo_classic,
                 'RuoloMantra': ruolo_mantra,
+                'FVM': fvm,
                 'Costo': cost,
                 'InPrestito': (cost == 0),
                 'FuoriSerieA': is_out,
