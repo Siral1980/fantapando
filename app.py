@@ -1926,6 +1926,30 @@ with tab_scambi:
                             </div>
                             """, unsafe_allow_html=True)
 
+                        # Pairwise Matching & Titolarita Breakdown
+                        pairs = prop.get('Accoppiamento_Coppie', [])
+                        if pairs and len(pairs) >= 1:
+                            with st.expander("⚖️ Dettaglio Accoppiamento a Coppie & Titolarità Reale (Vasi Comunicanti)", expanded=False):
+                                st.caption("Ogni calciatore richiesto viene confrontato direttamente con una contropartita di pari status. Il minutaggio e la titolarità reale pesano il valore di mercato effettivo.")
+                                for p_match in pairs:
+                                    g_pct = int(p_match['give_itit'] * 100)
+                                    t_pct = int(p_match['target_itit'] * 100)
+                                    d_val = p_match['delta']
+                                    d_color = "#10b981" if d_val >= 0 else "#f59e0b"
+                                    st.markdown(f"""
+                                    <div style='background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 6px; padding: 6px 12px; margin-bottom: 5px; font-size: 0.88rem; display: flex; justify-content: space-between; align-items: center;'>
+                                        <div>
+                                            🔴 <strong>{p_match['give_name']}</strong> (Titolarità {g_pct}%, {int(p_match.get('give_mins', 0))} min/p)
+                                            &nbsp;⇄&nbsp;
+                                            🟢 <strong>{p_match['target_name']}</strong> (Titolarità {t_pct}%, {int(p_match.get('target_mins', 0))} min/p)
+                                        </div>
+                                        <div>
+                                            <span style='color: {d_color}; font-weight: 700;'>Δ Valore Effettivo: {d_val:+.2f}</span>
+                                        </div>
+                                    </div>
+                                    """, unsafe_allow_html=True)
+                                st.caption(f"Valore Mercato Effettivo Complessivo: Offerto **{prop.get('Valore_Mercato_Ceduti', 0):.2f}** vs Richiesto **{prop.get('Valore_Mercato_Ricevuti', 0):.2f}** (Δ **{prop.get('Delta_Valore_Mercato', 0):+.2f}**)")
+
                         # WhatsApp Box
                         with st.expander("💬 Messaggio Pronto da Inviare su WhatsApp all'Avversario", expanded=False):
                             st.caption("Copia e incolla direttamente nella chat per proporre lo scambio:")

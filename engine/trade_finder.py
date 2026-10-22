@@ -106,6 +106,149 @@ def compute_real_starter_status(row, tot_matchdays=7):
         }
 
 
+def compute_continuous_trade_value(player_dict, tot_matchdays=7):
+    """
+    Computes a continuous, objective market trade value based on:
+    1. Base Expected Fantasy Value (xFV).
+    2. Continuous Playing Time & Starting Status Index (I_Tit in [0.12, 1.00])
+       derived from real Serie A match minutes, appearances, and minutes-per-appearance.
+    3. Role Scarcity Factor (Mantra role hierarchy: Pc/A > W/T > Dd/Ds > M/C/E/D/Por).
+    
+    Starters with heavy minutes maintain ~100% of xFV;
+    rotation players get ~70%; late substitutes get ~40-48%; marginals get ~20-25%.
+    """
+    raw_xfv = safe_float(player_dict.get('xFV', player_dict.get('FM_Stagione', 0.0)))
+    pres = safe_float(player_dict.get('Presenze', 0))
+    mins = safe_float(player_dict.get('Minuti_Reali', 0))
+    roles = parse_mantra_roles(player_dict.get('RuoloMantra', ''))
+    
+    tot_team_mins = tot_matchdays * 90.0
+    m_per_app = (mins / pres) if pres > 0 else 0.0
+    pct_mins = (mins / tot_team_mins) if tot_team_mins > 0 else 0.0
+    
+    is_gk = ('Por' in roles)
+    
+    if is_gk:
+        if pres >= 3 or safe_float(player_dict.get('P_Voto', 0)) >= 0.70:
+            i_tit = 1.0
+        elif pres >= 1:
+            i_tit = 0.55
+        else:
+            i_tit = 0.30
+    else:
+        if pres >= 2:
+            m_factor = min(1.0, m_per_app / 65.0)
+            t_factor = min(1.0, pct_mins / 0.45)
+            i_tit = float(np.clip(0.20 + 0.80 * (m_factor * 0.55 + t_factor * 0.45), 0.20, 1.0))
+        elif pres == 1:
+            i_tit = float(np.clip(0.15 + 0.35 * (mins / 90.0), 0.15, 0.45))
+        else:
+            i_tit = 0.12
+
+    # Role Scarcity Multiplier (Goals and strikers are rarest and most decisive)
+    if any(r in ['Pc', 'A'] for r in roles):
+        w_role = 1.15
+    elif any(r in ['W', 'T'] for r in roles):
+        w_role = 1.08
+    elif any(r in ['Dd', 'Ds'] for r in roles):
+        w_role = 1.03
+    else:
+        w_role = 1.00
+
+    effective_val = raw_xfv * (0.28 + 0.72 * i_tit) * w_role
+    return {
+        'raw_xfv': round(raw_xfv, 2),
+        'i_tit': round(i_tit, 2),
+        'm_per_app': round(m_per_app, 1),
+        'pct_mins': round(pct_mins * 100.0, 1),
+        'w_role': round(w_role, 2),
+        'effective_val': round(effective_val, 2)
+    }
+
+
+def evaluate_pairwise_trade_balance(give_pkg, target_pkg, tot_matchdays=7):
+    """
+    Evaluates multi-player trades via continuous Pairwise Ranking Matching (Vasi Comunicanti):
+    1. Computes continuous effective market value for each player.
+    2. Sorts give_pkg and target_pkg in descending order of effective value.
+    3. Matches pairs:
+       - Pair 1 (Anchors): Give[0] vs Target[0] -> delta_1 = Val(Give[0]) - Val(Target[0])
+       - Pair 2 (Complements): Give[1] vs Target[1] -> delta_2 = Val(Give[1]) - Val(Target[1])
+    4. Validates the Vasi Comunicanti balance:
+       - If Pair 1 is balanced (delta_1 ~ 0), Pair 2 CANNOT have a severe deficit (cannot give a bench player for a starter)!
+       - A deficit in secondary pairs is ONLY allowed if the primary anchor provides an equal or greater surplus!
+       - In 1x2 (Give 1, Ask 2): The single given piece MUST have an effective value that covers the extra target player.
+    """
+    give_evals = [{**p, **compute_continuous_trade_value(p, tot_matchdays)} for p in give_pkg]
+    target_evals = [{**p, **compute_continuous_trade_value(p, tot_matchdays)} for p in target_pkg]
+    
+    give_sorted = sorted(give_evals, key=lambda x: x['effective_val'], reverse=True)
+    target_sorted = sorted(target_evals, key=lambda x: x['effective_val'], reverse=True)
+    
+    give_tot_eff = sum(p['effective_val'] for p in give_sorted)
+    target_tot_eff = sum(p['effective_val'] for p in target_sorted)
+    
+    n_give = len(give_sorted)
+    n_target = len(target_sorted)
+    min_len = min(n_give, n_target)
+    
+    pairwise_pairs = []
+    surplus_pool = 0.0
+    is_valid = True
+    rejection_reason = ""
+
+    for i in range(min_len):
+        g = give_sorted[i]
+        t = target_sorted[i]
+        d = g['effective_val'] - t['effective_val']
+        pairwise_pairs.append({
+            'give_name': g['Giocatore'],
+            'give_val': g['effective_val'],
+            'give_itit': g['i_tit'],
+            'give_mins': g.get('m_per_app', 0),
+            'target_name': t['Giocatore'],
+            'target_val': t['effective_val'],
+            'target_itit': t['i_tit'],
+            'target_mins': t.get('m_per_app', 0),
+            'delta': round(d, 2)
+        })
+        
+        # Check Titolarità Asymmetry & Vasi Comunicanti
+        if t['i_tit'] >= 0.70 and g['i_tit'] < 0.55:
+            needed_compensation = t['effective_val'] - g['effective_val']
+            extra_give_avail = sum(p['effective_val'] for p in give_sorted[min_len:]) if n_give > n_target else 0.0
+            tot_surplus_avail = surplus_pool + extra_give_avail
+            if tot_surplus_avail < (needed_compensation * 0.80):
+                is_valid = False
+                rejection_reason = (
+                    f"Squilibrio di titolarità sul {i+1}° slot: offri {g['Giocatore']} (riserva/subentrante, "
+                    f"titolarità {int(g['i_tit']*100)}%) per {t['Giocatore']} (titolare fisso, "
+                    f"titolarità {int(t['i_tit']*100)}%) senza sufficiente surplus di compensazione."
+                )
+                break
+        
+        surplus_pool += d
+
+    if is_valid:
+        if n_target > n_give:
+            extra_target = sum(p['effective_val'] for p in target_sorted[min_len:])
+            if surplus_pool < (extra_target * 0.75):
+                is_valid = False
+                rejection_reason = (
+                    f"Richiesta 1x2 insostenibile: il tuo pezzo principale ({give_sorted[0]['Giocatore']}) "
+                    f"non genera surplus sufficiente per coprire il 2° calciatore richiesto."
+                )
+
+    return {
+        'is_valid': is_valid,
+        'rejection_reason': rejection_reason,
+        'give_tot_eff': round(give_tot_eff, 2),
+        'target_tot_eff': round(target_tot_eff, 2),
+        'delta_eff': round(give_tot_eff - target_tot_eff, 2),
+        'pairwise_pairs': pairwise_pairs
+    }
+
+
 def get_league_release_names(league_data):
     """
     Returns a set of all player names flagged as 'FuoriSerieA' or 'Da_Svincolare'
@@ -1025,10 +1168,26 @@ def simulate_opponent_post_trade(
     opp_new_pts = opt_opp_new['Punti_Attesi_Totali'] if opt_opp_new else 0.0
     delta_opp_pts = round(opp_new_pts - opp_curr_pts, 2)
 
+    # 4. Check Net Starters Lost in Opponent Starting 11
+    curr_titolari_names = set(p['Giocatore'] for p in opt_opp_curr.get('Titolari', [])) if opt_opp_curr else set()
+    new_titolari_names = set(p['Giocatore'] for p in opt_opp_new.get('Titolari', [])) if opt_opp_new else set()
+    
+    opp_starters_giving = [p['Giocatore'] for p in target_players if p['Giocatore'] in curr_titolari_names]
+    opp_starters_received = [p['Giocatore'] for p in give_pkg if p['Giocatore'] in new_titolari_names]
+    
+    net_starters_lost = len(opp_starters_giving) - len(opp_starters_received)
+    has_starter_deficit_flaw = False
+    if net_starters_lost > 0 and delta_opp_pts < 0.20:
+        has_starter_deficit_flaw = True
+        critical_flaws.append(
+            f"⚠️ Perdita netta di titolari negli 11: l'avversario cede {len(opp_starters_giving)} titolari ({', '.join(opp_starters_giving)}) "
+            f"ma ne inserisce solo {len(opp_starters_received)} nei nuovi 11 ({', '.join(opp_starters_received) if opp_starters_received else 'nessuno'})."
+        )
+
     return {
         'is_goal_uncovered': is_goal_uncovered,
         'critical_flaws': critical_flaws,
-        'has_fatal_flaw': is_goal_uncovered or (len(critical_flaws) >= 2),
+        'has_fatal_flaw': is_goal_uncovered or has_starter_deficit_flaw or (len(critical_flaws) >= 2),
         'opp_curr_pts': opp_curr_pts,
         'opp_new_pts': opp_new_pts,
         'delta_opp_pts': delta_opp_pts,
@@ -1117,7 +1276,7 @@ def find_trades_for_target_players(
     opt_opp_curr = optimize_best_mantra_lineup(df_opp_proj)
     opp_curr_pts = opt_opp_curr['Punti_Attesi_Totali'] if opt_opp_curr else 0.0
     opp_curr_modulo = opt_opp_curr['Modulo'] if opt_opp_curr else 'N/D'
-    opp_sim_formations = list(dict.fromkeys([opp_curr_modulo, '3-5-2', '4-3-3', '4-3-1-2', '4-2-3-1']))[:4]
+    opp_sim_formations = list(dict.fromkeys([opp_curr_modulo, '3-5-2', '4-3-3']))[:2]
     
     target_players = []
     for tname in target_player_names:
@@ -1235,24 +1394,25 @@ def find_trades_for_target_players(
                         candidate_packages.append([gk] + list(comb))
     else:
         # Standard Outfield package sizes
+        my_offerable_top = sorted(my_offerable, key=lambda x: safe_float(x.get('xFV', 0)), reverse=True)[:18]
         if num_targets == 1:
             if '1x1' in package_types:
                 for p in my_offerable:
                     candidate_packages.append([p])
             if '2x1' in package_types:
-                for pair in itertools.combinations(my_offerable, 2):
+                for pair in itertools.combinations(my_offerable_top, 2):
                     candidate_packages.append(list(pair))
         elif num_targets == 2:
             if '2x2' in package_types:
-                for pair in itertools.combinations(my_offerable, 2):
+                for pair in itertools.combinations(my_offerable_top, 2):
                     candidate_packages.append(list(pair))
-            for trio in itertools.combinations(my_offerable[:16], 3):
+            for trio in itertools.combinations(my_offerable_top[:12], 3):
                 candidate_packages.append(list(trio))
             for p in my_offerable:
                 if safe_float(p.get('xFV', 0)) >= target_xfv_sum * 0.85:
                     candidate_packages.append([p])
         else:
-            for comb in itertools.combinations(my_offerable[:16], num_targets):
+            for comb in itertools.combinations(my_offerable_top, num_targets):
                 candidate_packages.append(list(comb))
 
     pre_screened = []
@@ -1270,19 +1430,26 @@ def find_trades_for_target_players(
         give_n = len(give_pkg)
 
         # -------------------------------------------------------------
-        # Filter A: Value Fairness Bounds
+        # Filter A: Continuous Pairwise Status & Titolarità Balance (Vasi Comunicanti)
         # -------------------------------------------------------------
+        pairwise_eval = evaluate_pairwise_trade_balance(give_pkg, target_players)
+        if not pairwise_eval['is_valid']:
+            continue
+
+        give_eff_sum = pairwise_eval['give_tot_eff']
+        target_eff_sum = pairwise_eval['target_tot_eff']
+
         if give_n == num_targets:
-            # 1x1 or 2x2: value should be balanced (0.70x to 1.35x)
-            if not (0.70 * target_xfv_sum <= give_xfv_sum <= 1.35 * target_xfv_sum):
+            # 1x1 or 2x2: effective value should be balanced (0.75x to 1.35x)
+            if not (0.75 * target_eff_sum <= give_eff_sum <= 1.35 * target_eff_sum):
                 continue
         elif give_n > num_targets:
             # Multi-to-one (2x1, 3x2): buyer can pay a slight premium (0.80x to 1.55x)
-            if not (0.80 * target_xfv_sum <= give_xfv_sum <= 1.55 * target_xfv_sum):
+            if not (0.80 * target_eff_sum <= give_eff_sum <= 1.55 * target_eff_sum):
                 continue
         else:
-            # One-to-multi: giver gives high value (0.75x to 1.25x)
-            if not (0.75 * target_xfv_sum <= give_xfv_sum <= 1.25 * target_xfv_sum):
+            # One-to-multi: giver gives high value (0.78x to 1.28x)
+            if not (0.78 * target_eff_sum <= give_eff_sum <= 1.28 * target_eff_sum):
                 continue
 
         # -------------------------------------------------------------
@@ -1337,10 +1504,17 @@ def find_trades_for_target_players(
         if por_emergency and any('Por' in parse_mantra_roles(p['RuoloMantra']) for p in give_pkg):
             tier_bonus += 35.0
 
-        pre_score = tier_bonus + (weakness_points * 1.5) - (abs(give_xfv_sum - target_xfv_sum) * 4.0)
+        pre_score = (
+            tier_bonus + 
+            (weakness_points * 1.5) - 
+            (abs(give_eff_sum - target_eff_sum) * 3.5)
+        )
         pre_screened.append({
             'give_pkg': give_pkg,
             'give_xfv_sum': give_xfv_sum,
+            'give_eff_sum': give_eff_sum,
+            'target_eff_sum': target_eff_sum,
+            'pairwise_pairs': pairwise_eval['pairwise_pairs'],
             'give_cost_sum': give_cost_sum,
             'give_roles': give_roles,
             'matched_weak_roles': matched_weak_roles,
@@ -1352,16 +1526,19 @@ def find_trades_for_target_players(
             'pre_score': pre_score
         })
 
-    # Sort pre-screened packages by pre-score and simulate lineup on top 45 candidates for speed
-    pre_screened = sorted(pre_screened, key=lambda x: x['pre_score'], reverse=True)[:45]
+    # Sort pre-screened packages by pre-score and simulate lineup on top 20 candidates for fast responsiveness
+    pre_screened = sorted(pre_screened, key=lambda x: x['pre_score'], reverse=True)[:20]
 
     proposals = []
     # Identify relevant formations for fast simulation (My team)
-    sim_formations = list(dict.fromkeys([my_curr_modulo, '3-5-2', '4-3-3', '4-3-1-2', '4-2-3-1', '3-4-1-2']))[:4]
+    sim_formations = list(dict.fromkeys([my_curr_modulo, '3-5-2', '4-3-3']))[:2]
 
     for item in pre_screened:
         give_pkg = item['give_pkg']
         give_xfv_sum = item['give_xfv_sum']
+        give_eff_sum = item['give_eff_sum']
+        target_eff_sum = item['target_eff_sum']
+        pairwise_pairs = item['pairwise_pairs']
         give_cost_sum = item['give_cost_sum']
         matched_weak_roles = item['matched_weak_roles']
         weakness_points = item['weakness_points']
@@ -1414,7 +1591,7 @@ def find_trades_for_target_players(
 
         # Opponent Appeal Score (0 to 100%)
         base_appeal = 38.0
-        val_incentive = np.clip((give_xfv_sum - target_xfv_sum) * 10.0, -15.0, 25.0)
+        val_incentive = np.clip((give_eff_sum - target_eff_sum) * 6.0, -15.0, 25.0)
         opp_pts_incentive = np.clip(opp_sim['delta_opp_pts'] * 12.0, -25.0, 30.0)
         reassurance_bonus = 20.0 if opp_sim.get('reassurances') else 0.0
         flaw_penalty = 30.0 * len(opp_sim.get('critical_flaws', []))
@@ -1510,6 +1687,10 @@ def find_trades_for_target_players(
             'Totale_xFV_Ceduti': round(give_xfv_sum, 2),
             'Totale_xFV_Ricevuti': round(target_xfv_sum, 2),
             'Delta_xFV': round(target_xfv_sum - give_xfv_sum, 2),
+            'Valore_Mercato_Ceduti': round(give_eff_sum, 2),
+            'Valore_Mercato_Ricevuti': round(target_eff_sum, 2),
+            'Delta_Valore_Mercato': round(target_eff_sum - give_eff_sum, 2),
+            'Accoppiamento_Coppie': pairwise_pairs,
             'Delta_Punti_Titolari': delta_lineup_pts,
             'Modulo_Titolare_Nuovo': opt_my_new.get('Modulo', my_curr_modulo),
             'Punti_Titolari_Nuovi': new_lineup_pts,
