@@ -564,6 +564,35 @@ def analyze_squad_weaknesses(team_name, league_data, df_master, matchday=8):
     if len(ms) >= 6:
         strengths.append(f"Abbondanza di Mediani (M): {len(ms)} M attivi in rosa, ottima moneta di scambio per squadre scoperte.")
 
+    # Check Central Midfielders (C - Mezzali / Costruttori)
+    cs = role_roster_active['C']
+    top_c_fm = max([p.get('FM_Stagione', 0) for p in cs]) if cs else 0
+    if len(cs) < 3:
+        weaknesses.append({
+            'Reparto': 'Centrocampo (Mezzali)',
+            'Ruolo': 'C',
+            'Severita': 'ELEVATA',
+            'Titolo': 'Carenza di Centrocampisti puri / Mezzali (C)',
+            'Diagnosi': f"Hai solo {len(cs)} C attivi in rosa. Molti moduli Mantra (3-5-2, 4-3-3, 4-3-1-2) richiedono da 1 a 2 slot C.",
+            'Obiettivo_Mercato': 'Acquisire un Centrocampista C titolare di inserimento'
+        })
+    elif top_c_fm < 6.4:
+        weaknesses.append({
+            'Reparto': 'Centrocampo (Mezzali)',
+            'Ruolo': 'C',
+            'Severita': 'MEDIA',
+            'Titolo': 'Centrocampisti C con fanta-media modesta',
+            'Diagnosi': f"I tuoi centrocampisti C hanno una fanta-media moderata (FM max {top_c_fm:.2f}). Una mezzala da bonus farebbe fare il salto di qualità.",
+            'Obiettivo_Mercato': 'Puntare a un Centrocampista C di prima fascia con bonus'
+        })
+    elif len(cs) >= 5:
+        strengths.append(f"Centrocampo profondo: {len(cs)} C attivi a disposizione.")
+
+    # Check Braccetti (B - Difesa a 3)
+    bs = role_roster_active['B']
+    if len(bs) >= 2:
+        strengths.append(f"Flessibilità difensiva a 3: {len(bs)} Braccetti (B) attivi per occupare lo slot Dc/B.")
+
     # Check Strikers (Pc - Pure Centre Forwards)
     pcs = role_roster_all['Pc']
     pc_active = role_roster_active['Pc']

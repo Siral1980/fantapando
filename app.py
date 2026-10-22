@@ -1560,7 +1560,8 @@ with tab_scambi:
         
         r_col1, r_col2, r_col3, r_col4 = st.columns([1.1, 1.1, 1.1, 1.3])
         with r_col1:
-            target_role_opts = ["TUTTI"] + list(dict.fromkeys(my_weak_roles + ['Pc', 'M', 'Dc', 'Dd', 'Ds', 'W', 'A', 'T', 'E']))
+            all_mantra_roles = ['Por', 'Dc', 'B', 'Dd', 'Ds', 'E', 'M', 'C', 'W', 'T', 'A', 'Pc']
+            target_role_opts = ["TUTTI"] + list(dict.fromkeys(my_weak_roles + all_mantra_roles))
             selected_target_role = st.selectbox(
                 "Ruolo che vuoi RICEVERE:",
                 options=target_role_opts,
@@ -2665,7 +2666,7 @@ with tab_stats:
                 with bl_col2:
                     filter_role = st.selectbox(
                         "Filtra per Ruolo Reparto:",
-                        options=["TUTTI", "Attaccanti (Pc / A)", "Centrocampisti (C / T / W / M / E)", "Difensori (Dc / Dd / Ds)"],
+                        options=["TUTTI", "Attaccanti (Pc / A)", "Centrocampisti (C / T / W / M / E)", "Difensori (Dc / Dd / Ds / B)", "Portieri (Por)"],
                         key="bl_role_sel"
                     )
                     
@@ -2675,8 +2676,10 @@ with tab_stats:
                     df_opp_bl = df_opp_bl[df_opp_bl['RuoloMantra'].str.contains('Pc|A', na=False)]
                 elif filter_role == "Centrocampisti (C / T / W / M / E)":
                     df_opp_bl = df_opp_bl[df_opp_bl['RuoloMantra'].str.contains('C|T|W|M|E', na=False)]
-                elif filter_role == "Difensori (Dc / Dd / Ds)":
-                    df_opp_bl = df_opp_bl[df_opp_bl['RuoloMantra'].str.contains('Dc|Dd|Ds', na=False)]
+                elif filter_role == "Difensori (Dc / Dd / Ds / B)":
+                    df_opp_bl = df_opp_bl[df_opp_bl['RuoloMantra'].str.contains('Dc|Dd|Ds|B', na=False)]
+                elif filter_role == "Portieri (Por)":
+                    df_opp_bl = df_opp_bl[df_opp_bl['RuoloMantra'].str.contains('Por', na=False)]
                     
                 st.dataframe(
                     df_opp_bl,
