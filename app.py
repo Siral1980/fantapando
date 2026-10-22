@@ -939,16 +939,16 @@ with tab_formazione:
                 if safe_alts:
                     st.markdown("<div style='font-size: 0.95rem; font-weight: 700; color: #38bdf8; margin-top: 6px; margin-bottom: 4px;'>🛡️ Moduli Alternativi Consigliati Più Sicuri (Copertura 100%):</div>", unsafe_allow_html=True)
                     cols_alt = st.columns(len(safe_alts))
-                    for idx_a, alt in enumerate(safe_alts):
+                    for idx_a, safe_alt in enumerate(safe_alts):
                         with cols_alt[idx_a]:
-                            delta_c = "#34d399" if abs(alt['Delta_Punti']) <= 0.8 else "#f59e0b"
+                            delta_c = "#34d399" if abs(safe_alt['Delta_Punti']) <= 0.8 else "#f59e0b"
                             st.markdown(f"""
                             <div style="background: rgba(16, 185, 129, 0.08); border: 1.5px solid #10b981; border-radius: 8px; padding: 10px 14px; height: 100%;">
                                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                                    <span style="font-weight: 800; font-size: 1.05rem; color: #34d399;">🛡️ {alt['Modulo']}</span>
-                                    <span style="font-weight: 700; color: #ffffff;">{alt['Punti_Totali']} pt <span style="color: {delta_c}; font-size: 0.85rem;">({alt['Delta_Punti']:+.2f} pt)</span></span>
+                                    <span style="font-weight: 800; font-size: 1.05rem; color: #34d399;">🛡️ {safe_alt['Modulo']}</span>
+                                    <span style="font-weight: 700; color: #ffffff;">{safe_alt['Punti_Totali']} pt <span style="color: {delta_c}; font-size: 0.85rem;">({safe_alt['Delta_Punti']:+.2f} pt)</span></span>
                                 </div>
-                                <div style="color: #cbd5e1; font-size: 0.82rem; margin-top: 5px;">{alt['Dettaglio']}</div>
+                                <div style="color: #cbd5e1; font-size: 0.82rem; margin-top: 5px;">{safe_alt['Dettaglio']}</div>
                             </div>
                             """, unsafe_allow_html=True)
                     st.caption("💡 *Puoi selezionare il modulo alternativo direttamente dal menu a tendina in alto se preferisci una formazione a zero rischi di inferiorità numerica.*")
