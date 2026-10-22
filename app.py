@@ -1887,7 +1887,35 @@ with tab_scambi:
                         st.markdown("<div style='margin-top: 10px; font-weight: 700; font-size: 0.92rem; color: #38bdf8;'>💡 Perché l'avversario accetta (Leva di Trattativa):</div>", unsafe_allow_html=True)
                         st.markdown(f"<div style='font-size: 0.88rem; color: #cbd5e1; margin-bottom: 6px;'>{prop['Leva_di_Trattativa']}</div>", unsafe_allow_html=True)
 
-                        st.markdown(f"<div style='font-size: 0.84rem; color: #94a3b8; margin-bottom: 10px;'>📊 <strong>Impatto sui tuoi titolari:</strong> La tua formazione tipo proietta <strong>{prop['Punti_Titolari_Nuovi']:.2f} pt</strong> (Modulo {prop['Modulo_Titolare_Nuovo']}, {prop['Copertura_Nuova']}).</div>", unsafe_allow_html=True)
+                        col_imp1, col_imp2 = st.columns(2)
+                        with col_imp1:
+                            st.markdown(f"""
+                            <div style='background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 8px 12px; margin-bottom: 8px;'>
+                                <div style='font-size: 0.78rem; text-transform: uppercase; color: #94a3b8; font-weight: 700;'>📊 La Tua Formazione Titolare</div>
+                                <div style='font-size: 0.95rem; font-weight: 700; color: #ffffff; margin: 2px 0;'>
+                                    {prop['Punti_Titolari_Nuovi']:.2f} pt <span style='font-size: 0.85rem; color: {'#10b981' if prop['Delta_Punti_Titolari'] >= 0 else '#f97316'};'>({prop['Delta_Punti_Titolari']:+.2f} pt)</span>
+                                </div>
+                                <div style='font-size: 0.8rem; color: #94a3b8;'>Modulo {prop['Modulo_Titolare_Nuovo']} • {prop['Copertura_Nuova']}</div>
+                            </div>
+                            """, unsafe_allow_html=True)
+
+                        with col_imp2:
+                            opp_pts_txt = f"{prop.get('Punti_Avversario_Nuovi', 0):.2f} pt"
+                            opp_delta_val = prop.get('Delta_Punti_Avversario', 0)
+                            opp_delta_txt = f"{opp_delta_val:+.2f} pt"
+                            opp_delta_color = "#10b981" if opp_delta_val >= 0 else "#f59e0b"
+                            opp_mod = prop.get('Modulo_Avversario_Nuovo', 'N/D')
+                            reassure_msg = prop['Reassurances_Avversario'][0] if prop.get('Reassurances_Avversario') else "✅ Nessuna nuova criticità creata per l'avversario"
+
+                            st.markdown(f"""
+                            <div style='background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 8px 12px; margin-bottom: 8px;'>
+                                <div style='font-size: 0.78rem; text-transform: uppercase; color: #94a3b8; font-weight: 700;'>👔 Formazione {target_opp_team} Post-Scambio</div>
+                                <div style='font-size: 0.95rem; font-weight: 700; color: #ffffff; margin: 2px 0;'>
+                                    {opp_pts_txt} <span style='font-size: 0.85rem; color: {opp_delta_color};'>({opp_delta_txt})</span>
+                                </div>
+                                <div style='font-size: 0.8rem; color: #4ade80;'>Modulo {opp_mod} • {reassure_msg}</div>
+                            </div>
+                            """, unsafe_allow_html=True)
 
                         # WhatsApp Box
                         with st.expander("💬 Messaggio Pronto da Inviare su WhatsApp all'Avversario", expanded=False):

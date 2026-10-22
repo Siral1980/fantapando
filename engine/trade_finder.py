@@ -655,6 +655,23 @@ def find_win_win_trades(
                 if not is_trade_role_parity_credible(my_give, opp_p):
                     continue
 
+                # 0c. Opponent Criticality Protection: Avoid creating fatal new holes for opponent
+                # Rule: Never steal an opponent's only starting goalkeeper unless providing a goalkeeper in exchange
+                if 'Por' in opp_p_roles and 'Por' not in my_give_roles:
+                    opp_all_pors = [p for p in opp_proj_list if 'Por' in parse_mantra_roles(p.get('RuoloMantra', ''))]
+                    opp_rem_pors = [p for p in opp_all_pors if p['Giocatore'] != opp_p_name]
+                    opp_rem_starters = [p for p in opp_rem_pors if safe_int(p.get('Presenze', 0)) >= 3 or safe_float(p.get('P_Voto', 0)) >= 0.70]
+                    if len(opp_rem_pors) < 2 or len(opp_rem_starters) == 0:
+                        continue # Skip: would leave opponent uncovered in goal!
+
+                # Rule: Avoid stripping opponent of their last Dc, M, or Pc
+                if 'Dc' in opp_p_roles and 'Dc' not in my_give_roles and opp_roles_active.get('Dc', 0) <= 3:
+                    continue
+                if 'M' in opp_p_roles and 'M' not in my_give_roles and opp_roles_active.get('M', 0) <= 2:
+                    continue
+                if 'Pc' in opp_p_roles and 'Pc' not in my_give_roles and opp_roles_active.get('Pc', 0) <= 1:
+                    continue
+
                 # 1. Compute real starter status in Serie A
                 opp_p_status = compute_real_starter_status(opp_p)
                 
@@ -888,6 +905,72 @@ def find_win_win_trades(
     return trade_proposals[:max_proposals]
 
 
+def simulate_opponent_post_trade(
+    opp_team_name,
+    opp_proj_list,
+    target_players,
+    give_pkg,
+    opt_opp_curr=None,
+    allowed_formations=None
+):
+    """
+    Simulates the opponent squad and starting 11 after the trade:
+    1. Verifies that the trade does not leave the opponent uncovered in goal (< 2 Por or 0 starters).
+    2. Verifies that the trade does not create critical deficiencies in core defensive or midfield slots.
+    3. Solves the opponent's new optimal starting 11 and calculates net points gained/lost (delta_opp_pts).
+    4. Evaluates rival appeal and generates tactical reassurance arguments.
+    """
+    target_pnames = set(p['Giocatore'] for p in target_players)
+    opp_new_list = [p for p in opp_proj_list if p['Giocatore'] not in target_pnames] + give_pkg
+
+    # 1. Goalkeeper check
+    opp_pors_before = [p for p in opp_proj_list if 'Por' in parse_mantra_roles(p.get('RuoloMantra', ''))]
+    opp_pors_after = [p for p in opp_new_list if 'Por' in parse_mantra_roles(p.get('RuoloMantra', ''))]
+    opp_starters_before = [p for p in opp_pors_before if safe_int(p.get('Presenze', 0)) >= 3 or safe_float(p.get('P_Voto', 0)) >= 0.70]
+    opp_starters_after = [p for p in opp_pors_after if safe_int(p.get('Presenze', 0)) >= 3 or safe_float(p.get('P_Voto', 0)) >= 0.70]
+
+    target_has_por = any('Por' in parse_mantra_roles(p.get('RuoloMantra', '')) for p in target_players)
+    give_has_por = any('Por' in parse_mantra_roles(p.get('RuoloMantra', '')) for p in give_pkg)
+
+    is_goal_uncovered = False
+    critical_flaws = []
+    reassurances = []
+
+    if target_has_por:
+        if len(opp_pors_after) < 2 or len(opp_starters_after) == 0:
+            is_goal_uncovered = True
+            critical_flaws.append("🚨 Porta scoperta: l'avversario resterebbe con meno di 2 portieri o senza un titolare a voto.")
+        elif give_has_por:
+            por_names = [p['Giocatore'] for p in give_pkg if 'Por' in parse_mantra_roles(p.get('RuoloMantra', ''))]
+            reassurances.append(f"🛡️ Porta salvaguardata al 100%: riceve {', '.join(por_names)} come titolare affidabile.")
+
+    # 2. Outfield core depth checks (Dc, M, Pc)
+    for r, min_safe, label in [('Dc', 3, 'Difensori Centrali'), ('M', 2, 'Mediani'), ('Pc', 1, 'Punte Centrali')]:
+        c_before = sum(1 for p in opp_proj_list if r in parse_mantra_roles(p.get('RuoloMantra', '')) and (safe_int(p.get('Presenze', 0)) >= 2 or safe_float(p.get('P_Voto', 0)) >= 0.50))
+        c_after = sum(1 for p in opp_new_list if r in parse_mantra_roles(p.get('RuoloMantra', '')) and (safe_int(p.get('Presenze', 0)) >= 2 or safe_float(p.get('P_Voto', 0)) >= 0.50))
+        if c_before >= min_safe and c_after < min_safe:
+            critical_flaws.append(f"⚠️ Carenza creata in {label} ({r}): scende a {c_after} giocatori attivi.")
+
+    # 3. Simulate opponent lineup
+    opt_opp_new = optimize_best_mantra_lineup(pd.DataFrame(opp_new_list), allowed_formations=allowed_formations)
+    opp_curr_pts = opt_opp_curr['Punti_Attesi_Totali'] if opt_opp_curr else 0.0
+    opp_new_pts = opt_opp_new['Punti_Attesi_Totali'] if opt_opp_new else 0.0
+    delta_opp_pts = round(opp_new_pts - opp_curr_pts, 2)
+
+    return {
+        'is_goal_uncovered': is_goal_uncovered,
+        'critical_flaws': critical_flaws,
+        'has_fatal_flaw': is_goal_uncovered or (len(critical_flaws) >= 2),
+        'opp_curr_pts': opp_curr_pts,
+        'opp_new_pts': opp_new_pts,
+        'delta_opp_pts': delta_opp_pts,
+        'opp_curr_modulo': opt_opp_curr.get('Modulo', 'N/D') if opt_opp_curr else 'N/D',
+        'opp_new_modulo': opt_opp_new.get('Modulo', 'N/D') if opt_opp_new else 'N/D',
+        'reassurances': reassurances,
+        'opt_opp_new': opt_opp_new
+    }
+
+
 def find_trades_for_target_players(
     my_team_name,
     opp_team_name,
@@ -941,16 +1024,24 @@ def find_trades_for_target_players(
         return []
     df_my_proj = pd.DataFrame(my_proj_list)
 
-    # Current optimal lineup
+    # Current optimal lineup (My team)
     opt_my_curr = optimize_best_mantra_lineup(df_my_proj)
     my_curr_pts = opt_my_curr['Punti_Attesi_Totali'] if opt_my_curr else 0.0
     my_curr_modulo = opt_my_curr['Modulo'] if opt_my_curr else 'N/D'
     my_starters_set = set(p['Giocatore'] for p in opt_my_curr.get('Titolari', []))
     my_surplus_set = set(s['Giocatore'] for s in my_diag.get('Surplus_Cedibili', []))
 
-    # Opponent target players
+    # Opponent target players and baseline lineup
     opp_owned = [p for p in league_data[opp_team_name] if not p.get('InPrestito', False) and p.get('Costo', 1) > 0]
     opp_pnames = set(p['Giocatore'] for p in opp_owned)
+    opp_proj_list = [proj_map[n] for n in opp_pnames if n in proj_map]
+    if not opp_proj_list:
+        return []
+    df_opp_proj = pd.DataFrame(opp_proj_list)
+    opt_opp_curr = optimize_best_mantra_lineup(df_opp_proj)
+    opp_curr_pts = opt_opp_curr['Punti_Attesi_Totali'] if opt_opp_curr else 0.0
+    opp_curr_modulo = opt_opp_curr['Modulo'] if opt_opp_curr else 'N/D'
+    opp_sim_formations = list(dict.fromkeys([opp_curr_modulo, '3-5-2', '4-3-3', '4-3-1-2', '4-2-3-1']))[:4]
     
     target_players = []
     for tname in target_player_names:
@@ -965,9 +1056,20 @@ def find_trades_for_target_players(
     target_cost_sum = sum(safe_int(p.get('Costo', 1)) for p in target_players)
     target_roles = set().union(*[parse_mantra_roles(p.get('RuoloMantra', '')) for p in target_players])
     num_targets = len(target_players)
+    target_pnames_set = set(t['Giocatore'] for t in target_players)
 
-    # 3. Categorize my offerable players (Surplus, Bench, Starters)
+    # Detect if taking target players creates an emergency for the opponent
+    target_has_por = any('Por' in parse_mantra_roles(p.get('RuoloMantra', '')) for p in target_players)
+    opp_pors_before = [p for p in opp_proj_list if 'Por' in parse_mantra_roles(p.get('RuoloMantra', ''))]
+    opp_pors_rem = [p for p in opp_pors_before if p['Giocatore'] not in target_pnames_set]
+    opp_pors_rem_starters = [p for p in opp_pors_rem if safe_int(p.get('Presenze', 0)) >= 3 or safe_float(p.get('P_Voto', 0)) >= 0.70]
+    por_emergency = target_has_por and (len(opp_pors_rem) < 2 or len(opp_pors_rem_starters) == 0)
+
+    # 3. Categorize my offerable players (Surplus, Bench, Starters, Goalkeepers)
     my_offerable = []
+    my_gk_offerable = []
+    my_outfield_offerable = []
+
     for p_row in my_proj_list:
         pname = p_row['Giocatore']
         # Medical check: cannot trade injured or suspended players
@@ -978,53 +1080,96 @@ def find_trades_for_target_players(
         pres = safe_int(p_row.get('Presenze', 0))
         xfv = safe_float(p_row.get('xFV', 0.0))
         roles = parse_mantra_roles(p_row.get('RuoloMantra', ''))
+        is_gk = ('Por' in roles)
         
         # Determine Tier
         if pname in my_surplus_set:
             tier = 'SURPLUS'
         elif pname in my_starters_set:
-            if not allow_starters:
+            # If target includes Por, allow user's starting GK to be traded as counterpart!
+            if not allow_starters and not (is_gk and target_has_por):
                 continue
             tier = 'TITOLARE'
         else:
             tier = 'PANCHINARO'
 
         # Basic activity filter: players with at least some presence or value
-        if pres < 1 and xfv < 5.2 and tier != 'SURPLUS':
+        if not is_gk and pres < 1 and xfv < 5.2 and tier != 'SURPLUS':
             continue
 
         p_info = dict(p_row)
         p_info['Tier'] = tier
         my_offerable.append(p_info)
 
+        if is_gk:
+            my_gk_offerable.append(p_info)
+        else:
+            my_outfield_offerable.append(p_info)
+
     # 4. Generate candidate packages to offer
     candidate_packages = []
 
-    # Decide package sizes
-    if num_targets == 1:
-        # 1x1 offers
-        if '1x1' in package_types:
-            for p in my_offerable:
-                candidate_packages.append([p])
-        # 2x1 offers
-        if '2x1' in package_types:
-            for pair in itertools.combinations(my_offerable, 2):
-                candidate_packages.append(list(pair))
-    elif num_targets == 2:
-        # 2x2 offers
-        if '2x2' in package_types:
-            for pair in itertools.combinations(my_offerable, 2):
-                candidate_packages.append(list(pair))
-        # 3x2 offers
-        for trio in itertools.combinations(my_offerable, 3):
-            candidate_packages.append(list(trio))
-        # 1x2 offers (if an elite player can buy two)
-        for p in my_offerable:
-            if safe_float(p.get('xFV', 0)) >= target_xfv_sum * 0.85:
-                candidate_packages.append([p])
+    if por_emergency:
+        # Crucial Rule: When target creates a goalkeeper emergency for the opponent,
+        # every proposed package MUST include a reliable, active goalkeeper from our squad to avoid leaving their net empty!
+        # (A reserve with 0 appearances cannot solve an emergency).
+        viable_gks = [
+            p for p in my_gk_offerable 
+            if safe_int(p.get('Presenze', 0)) >= 2 or safe_float(p.get('P_Voto', 0)) >= 0.60 or p['Tier'] == 'TITOLARE'
+        ]
+        if not viable_gks and my_gk_offerable:
+            viable_gks = my_gk_offerable
+
+        if viable_gks:
+            if num_targets == 1:
+                if '1x1' in package_types:
+                    for gk in viable_gks:
+                        candidate_packages.append([gk])
+                if '2x1' in package_types:
+                    for gk in viable_gks:
+                        for out in my_outfield_offerable[:16]:
+                            candidate_packages.append([gk, out])
+            elif num_targets == 2:
+                if '2x2' in package_types:
+                    for gk in viable_gks:
+                        for out in my_outfield_offerable[:16]:
+                            candidate_packages.append([gk, out])
+                    if len(viable_gks) >= 2:
+                        for gk_pair in itertools.combinations(viable_gks, 2):
+                            candidate_packages.append(list(gk_pair))
+                # 1x2 offer if user GK alone has high xFV
+                for gk in viable_gks:
+                    if safe_float(gk.get('xFV', 0)) >= target_xfv_sum * 0.70:
+                        candidate_packages.append([gk])
+                # 3x2 offers
+                for gk in viable_gks:
+                    for out_pair in itertools.combinations(my_outfield_offerable[:10], 2):
+                        candidate_packages.append([gk, out_pair[0], out_pair[1]])
+            else:
+                for gk in viable_gks:
+                    for comb in itertools.combinations(my_outfield_offerable[:10], num_targets - 1):
+                        candidate_packages.append([gk] + list(comb))
     else:
-        for comb in itertools.combinations(my_offerable, num_targets):
-            candidate_packages.append(list(comb))
+        # Standard Outfield package sizes
+        if num_targets == 1:
+            if '1x1' in package_types:
+                for p in my_offerable:
+                    candidate_packages.append([p])
+            if '2x1' in package_types:
+                for pair in itertools.combinations(my_offerable, 2):
+                    candidate_packages.append(list(pair))
+        elif num_targets == 2:
+            if '2x2' in package_types:
+                for pair in itertools.combinations(my_offerable, 2):
+                    candidate_packages.append(list(pair))
+            for trio in itertools.combinations(my_offerable[:16], 3):
+                candidate_packages.append(list(trio))
+            for p in my_offerable:
+                if safe_float(p.get('xFV', 0)) >= target_xfv_sum * 0.85:
+                    candidate_packages.append([p])
+        else:
+            for comb in itertools.combinations(my_offerable[:16], num_targets):
+                candidate_packages.append(list(comb))
 
     pre_screened = []
     seen_combos = set()
@@ -1044,16 +1189,16 @@ def find_trades_for_target_players(
         # Filter A: Value Fairness Bounds
         # -------------------------------------------------------------
         if give_n == num_targets:
-            # 1x1 or 2x2: value should be balanced (0.75x to 1.30x)
-            if not (0.75 * target_xfv_sum <= give_xfv_sum <= 1.30 * target_xfv_sum):
+            # 1x1 or 2x2: value should be balanced (0.70x to 1.35x)
+            if not (0.70 * target_xfv_sum <= give_xfv_sum <= 1.35 * target_xfv_sum):
                 continue
         elif give_n > num_targets:
-            # Multi-to-one (2x1, 3x2): buyer can pay a slight premium (0.85x to 1.55x)
-            if not (0.85 * target_xfv_sum <= give_xfv_sum <= 1.55 * target_xfv_sum):
+            # Multi-to-one (2x1, 3x2): buyer can pay a slight premium (0.80x to 1.55x)
+            if not (0.80 * target_xfv_sum <= give_xfv_sum <= 1.55 * target_xfv_sum):
                 continue
         else:
-            # One-to-multi: giver gives high value (0.80x to 1.25x)
-            if not (0.80 * target_xfv_sum <= give_xfv_sum <= 1.25 * target_xfv_sum):
+            # One-to-multi: giver gives high value (0.75x to 1.25x)
+            if not (0.75 * target_xfv_sum <= give_xfv_sum <= 1.25 * target_xfv_sum):
                 continue
 
         # -------------------------------------------------------------
@@ -1083,8 +1228,8 @@ def find_trades_for_target_players(
             if not is_trade_role_parity_credible(give_pkg[0], target_players[0]):
                 continue
 
-        # If offer neither solves an opponent weakness nor offers superior value, skip
-        if not matched_weak_roles and give_xfv_sum < target_xfv_sum:
+        # If offer neither solves an opponent weakness nor offers superior value (and not goalkeeper replacement), skip
+        if not matched_weak_roles and give_xfv_sum < target_xfv_sum and not por_emergency:
             continue
 
         # Package Tier Classification & Surplus Preference
@@ -1104,6 +1249,10 @@ def find_trades_for_target_players(
             badge_tipo = "🔵 CON TITOLARE"
             tier_bonus = 10.0
 
+        # Special bonus if providing goalkeeper to solve goalkeeper emergency
+        if por_emergency and any('Por' in parse_mantra_roles(p['RuoloMantra']) for p in give_pkg):
+            tier_bonus += 35.0
+
         pre_score = tier_bonus + (weakness_points * 1.5) - (abs(give_xfv_sum - target_xfv_sum) * 4.0)
         pre_screened.append({
             'give_pkg': give_pkg,
@@ -1119,11 +1268,11 @@ def find_trades_for_target_players(
             'pre_score': pre_score
         })
 
-    # Sort pre-screened packages by pre-score and simulate lineup ONLY on top 35 candidates for speed
-    pre_screened = sorted(pre_screened, key=lambda x: x['pre_score'], reverse=True)[:35]
+    # Sort pre-screened packages by pre-score and simulate lineup on top 45 candidates for speed
+    pre_screened = sorted(pre_screened, key=lambda x: x['pre_score'], reverse=True)[:45]
 
     proposals = []
-    # Identify relevant formations for fast simulation
+    # Identify relevant formations for fast simulation (My team)
     sim_formations = list(dict.fromkeys([my_curr_modulo, '3-5-2', '4-3-3', '4-3-1-2', '4-2-3-1', '3-4-1-2']))[:4]
 
     for item in pre_screened:
@@ -1138,7 +1287,23 @@ def find_trades_for_target_players(
         tier_bonus = item['tier_bonus']
 
         # -------------------------------------------------------------
-        # Filter C: Fast Simulate My Squad Post-Trade
+        # Filter C: Fast Simulate Opponent Squad Post-Trade (Health & Lineup)
+        # -------------------------------------------------------------
+        opp_sim = simulate_opponent_post_trade(
+            opp_team_name=opp_team_name,
+            opp_proj_list=opp_proj_list,
+            target_players=target_players,
+            give_pkg=give_pkg,
+            opt_opp_curr=opt_opp_curr,
+            allowed_formations=opp_sim_formations
+        )
+
+        # STRICT RULE: Never leave the opponent with an uncovered net or fatal flaw!
+        if opp_sim['is_goal_uncovered'] or opp_sim['has_fatal_flaw']:
+            continue
+
+        # -------------------------------------------------------------
+        # Filter D: Fast Simulate My Squad Post-Trade
         # -------------------------------------------------------------
         give_pnames_set = set(p['Giocatore'] for p in give_pkg)
         my_new_roster_items = [p for p in my_proj_list if p['Giocatore'] not in give_pnames_set] + target_players
@@ -1151,22 +1316,34 @@ def find_trades_for_target_players(
         new_lineup_pts = opt_my_new['Punti_Attesi_Totali']
         delta_lineup_pts = round(new_lineup_pts - my_curr_pts, 2)
 
-        # Starter sacrifice protection: if sacrificing a starter, lineup must NOT lose points!
+        # Starter sacrifice protection: if sacrificing a starter, lineup must NOT lose significant points!
+        # Exception: if the starter is a direct positional replacement for an acquired target (e.g. Por for Por or Pc for Pc),
+        # allow fixture-based single matchday variance down to -1.35 pts.
         has_starter = any(p['Tier'] == 'TITOLARE' for p in give_pkg)
-        if has_starter and delta_lineup_pts < -0.10:
+        is_same_pos_replacement = any(
+            any(r in target_roles for r in parse_mantra_roles(p.get('RuoloMantra', '')))
+            for p in give_pkg if p['Tier'] == 'TITOLARE'
+        )
+        min_allowed_delta = -1.35 if is_same_pos_replacement else -0.15
+        if has_starter and delta_lineup_pts < min_allowed_delta:
             continue
 
         # Opponent Appeal Score (0 to 100%)
         base_appeal = 38.0
         val_incentive = np.clip((give_xfv_sum - target_xfv_sum) * 10.0, -15.0, 25.0)
-        opp_appeal = int(np.clip(base_appeal + weakness_points + val_incentive, 25.0, 98.0))
+        opp_pts_incentive = np.clip(opp_sim['delta_opp_pts'] * 12.0, -25.0, 30.0)
+        reassurance_bonus = 20.0 if opp_sim.get('reassurances') else 0.0
+        flaw_penalty = 30.0 * len(opp_sim.get('critical_flaws', []))
+        opp_appeal = int(np.clip(base_appeal + weakness_points + val_incentive + opp_pts_incentive + reassurance_bonus - flaw_penalty, 15.0, 98.0))
 
         # Overall Trade Ranking Score
         total_score = (
             (opp_appeal * 0.45) +
             (tier_bonus) +
             (delta_lineup_pts * 22.0) +
-            (8.0 if not opt_my_new.get('Ha_Problemi_Copertura', False) else -8.0)
+            (opp_sim['delta_opp_pts'] * 10.0) +
+            (8.0 if not opt_my_new.get('Ha_Problemi_Copertura', False) else -8.0) +
+            (12.0 if not opp_sim.get('critical_flaws') else -20.0)
         )
 
         # -------------------------------------------------------------
@@ -1174,26 +1351,46 @@ def find_trades_for_target_players(
         # -------------------------------------------------------------
         give_str = " + ".join([f"{p['Giocatore']} ({p['RuoloMantra']})" for p in give_pkg])
         target_str = " + ".join([f"{p['Giocatore']} ({p['RuoloMantra']})" for p in target_players])
-        
-        if matched_weak_roles:
+        reassure_txt = ""
+        if opp_sim.get('reassurances'):
+            reassure_txt = f" Inoltre {' '.join(opp_sim['reassurances'])}"
+
+        por_given = [p['Giocatore'] for p in give_pkg if 'Por' in parse_mantra_roles(p.get('RuoloMantra', ''))]
+        out_given = [p['Giocatore'] for p in give_pkg if 'Por' not in parse_mantra_roles(p.get('RuoloMantra', ''))]
+        pts_clause = f" (+{opp_sim['delta_opp_pts']:.2f} pt attesi)" if opp_sim['delta_opp_pts'] > 0 else ""
+
+        if target_has_por and por_given:
+            gk_txt = ", ".join(por_given)
+            out_txt = f", e con {', '.join(out_given)} vi rinforzate in movimento" if out_given else ""
+            leva = (
+                f"Offerta strutturata per salvaguardare la porta avversaria: cedendo {target_str}, l'avversario riceve subito **{gk_txt}** "
+                f"evitando di rimanere scoperto tra i pali{out_txt}. La sua formazione tipo resta al 100% coperta ({opp_sim['opp_new_modulo']}, {opp_sim['delta_opp_pts']:+.2f} pt)."
+            )
+            pitch_msg = (
+                f"Ciao! Ho formulato una proposta pensata per proteggere la vostra formazione: per non lasciarvi scoperti tra i pali "
+                f"dopo aver ceduto {target_str}, vi ho inserito {gk_txt} come titolare fisso in porta{out_txt}. In questo modo la vostra porta "
+                f"resta blindata al 100% e la vostra formazione tipo ne esce solida e competitiva{pts_clause} ({opp_sim['opp_new_modulo']}). Che ne dite?"
+            )
+        elif matched_weak_roles:
             roles_txt = ", ".join(set(matched_weak_roles))
             leva = (
                 f"L'avversario ha carenze su **{roles_txt}** ({'; '.join(solved_bottlenecks[:2])}). "
-                f"Offrendo {give_str} vai a colmare il suo bisogno più urgente mantenendo la trattativa win-win."
+                f"Offrendo {give_str} colmi il suo bisogno più urgente senza creare nuove falle.{reassure_txt}"
             )
             pitch_msg = (
-                f"Ciao! Ho visto che per {opp_team_name} farebbe molto comodo rinforzare lo slot {roles_txt} "
+                f"Ciao! Ho visto che per {opp_team_name} farebbe comodo rinforzare lo slot {roles_txt} "
                 f"dove avete rotazioni corte. Che ne dite se impostiamo uno scambio {give_str} per {target_str}? "
-                f"A voi risolve l'emergenza di formazione garantendo copertura titolare immediata, e per noi quadra a livello tattico. È un ottimo affare per entrambi!"
+                f"A voi risolve l'emergenza di formazione garantendo copertura titolare immediata senza creare nuove falle{pts_clause}, "
+                f"e per noi quadra a livello tattico. È un ottimo affare per entrambi!"
             )
         else:
             leva = (
                 f"Offerta basata su equivalenza di fanta-valore ({give_xfv_sum:.2f} xFV vs {target_xfv_sum:.2f} xFV). "
-                f"L'avversario riceve asset pronti all'uso e tu completi il tuo reparto d'attacco."
+                f"L'avversario riceve asset pronti all'uso e la sua formazione resta integra ({opp_sim['opp_new_modulo']}, {opp_sim['delta_opp_pts']:+.2f} pt attesi).{reassure_txt}"
             )
             pitch_msg = (
                 f"Ciao! Ti andrebbe di valutare uno scambio tra {give_str} per {target_str}? "
-                f"I valori tecnici e le fantamedie sono assolutamente allineati ed entrambi i reparti ne escono bilanciati. Che ne pensi?"
+                f"I valori tecnici sono allineati, la vostra formazione resta coperta e ben bilanciata{pts_clause} ({opp_sim['opp_new_modulo']}). Che ne pensi?"
             )
 
         proposals.append({
@@ -1236,6 +1433,12 @@ def find_trades_for_target_players(
             'Carenze_Risolte': solved_bottlenecks,
             'Leva_di_Trattativa': leva,
             'Messaggio_Trattativa': pitch_msg,
+            # OPPONENT FORMATION POST-TRADE INSIGHTS
+            'Modulo_Avversario_Nuovo': opp_sim['opp_new_modulo'],
+            'Punti_Avversario_Nuovi': opp_sim['opp_new_pts'],
+            'Delta_Punti_Avversario': opp_sim['delta_opp_pts'],
+            'Reassurances_Avversario': opp_sim.get('reassurances', []),
+            'Nuove_Criticita_Avversario': opp_sim.get('critical_flaws', []),
             'Simulazione_Payload': {
                 'give_names': [p['Giocatore'] for p in give_pkg],
                 'receive_names': [p['Giocatore'] for p in target_players]
