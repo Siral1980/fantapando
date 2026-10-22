@@ -102,13 +102,15 @@ def get_master_data(mtime=None, code_ver=None):
     return df_m
 
 @st.cache_data
-def get_cached_calendar(code_ver=None):
+def get_cached_calendar(cal_mtime=0, code_ver=None):
     return get_or_create_calendar()
 
 master_csv_path = os.path.join(APP_DIR, "data", "players_master.csv")
 mtime_val = os.path.getmtime(master_csv_path) if os.path.exists(master_csv_path) else 0
+cal_json_path = os.path.join(APP_DIR, "data", "calendar_serie_a.json")
+cal_mtime_val = os.path.getmtime(cal_json_path) if os.path.exists(cal_json_path) else 0
 df_master = get_master_data(mtime_val, current_code_version)
-calendar = get_cached_calendar(current_code_version)
+calendar = get_cached_calendar(cal_mtime_val, current_code_version)
 
 # -------------------------------------------------------------
 # ONBOARDING / SETUP WIZARD (FIRST LAUNCH OR RECONFIGURATION)

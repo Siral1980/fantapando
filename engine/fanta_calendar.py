@@ -10,6 +10,7 @@ import pandas as pd
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
 CALENDAR_FILE = os.path.join(DATA_DIR, "calendar_serie_a.json")
+UNDERSTAT_FILE = os.path.join(DATA_DIR, "understat_serie_a_2026.json")
 VOTI_FILE = os.path.join(DATA_DIR, "voti_dettaglio.csv")
 
 # 3-Year Historical Baseline Pedigree (2023/24, 2024/25, 2025/26) normalized on a 0-100 scale
@@ -184,17 +185,49 @@ def generate_round_robin_schedule(teams=TEAMS):
         
     return calendar_dict
 
-def get_or_create_calendar():
+def build_calendar_from_understat():
+    """Builds the authentic 38-matchday Serie A calendar from understat_serie_a_2026.json."""
+    if not os.path.exists(UNDERSTAT_FILE):
+        return None
+    try:
+        with open(UNDERSTAT_FILE, 'r', encoding='utf-8') as f:
+            d = json.load(f)
+        dates = d.get('dates', [])
+        if len(dates) < 380:
+            return None
+        team_map = {'AC Milan': 'Milan', 'Parma Calcio 1913': 'Parma'}
+        cal = {}
+        for g in range(1, 39):
+            chunk = dates[(g - 1) * 10 : g * 10]
+            cal[g] = [
+                {
+                    'home': team_map.get(m['h']['title'], m['h']['title']),
+                    'away': team_map.get(m['a']['title'], m['a']['title']),
+                    'datetime': m.get('datetime', '')
+                }
+                for m in chunk
+            ]
+        return cal
+    except Exception:
+        return None
+
+def get_or_create_calendar(force_refresh=False):
     """Loads existing calendar or generates a full 38-matchday Serie A calendar."""
-    if os.path.exists(CALENDAR_FILE):
+    if not force_refresh and os.path.exists(CALENDAR_FILE):
         try:
             with open(CALENDAR_FILE, 'r', encoding='utf-8') as f:
                 data = json.load(f)
-                return {int(k): v for k, v in data.items()}
+                cal = {int(k): v for k, v in data.items()}
+                # Quick verification that calendar matches authentic schedule (e.g. G8 has Inter vs Fiorentina)
+                if 8 in cal and any(m.get('home') == 'Inter' and m.get('away') == 'Fiorentina' for m in cal[8]):
+                    return cal
         except Exception:
             pass
-            
-    calendar = generate_round_robin_schedule()
+
+    calendar = build_calendar_from_understat()
+    if calendar is None:
+        calendar = generate_round_robin_schedule()
+
     os.makedirs(DATA_DIR, exist_ok=True)
     with open(CALENDAR_FILE, 'w', encoding='utf-8') as f:
         json.dump(calendar, f, indent=2)
