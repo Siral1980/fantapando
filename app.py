@@ -30,7 +30,7 @@ from engine.optimizer import (
 )
 from engine.trade_evaluator import evaluate_trade
 from engine.trade_finder import (
-    analyze_squad_weaknesses, find_win_win_trades, RECOMMENDED_QUOTAS
+    analyze_squad_weaknesses, find_win_win_trades, find_trades_for_target_players, RECOMMENDED_QUOTAS
 )
 from engine.roster_manager import (
     load_user_roster, save_user_roster, add_player_to_roster,
@@ -1392,9 +1392,10 @@ with tab_scambi:
         "e scopri le proposte di scambio **Win-Win** con i tuoi avversari di lega generate dall'algoritmo."
     )
     
-    subtab_diag, subtab_radar, subtab_sim = st.tabs([
+    subtab_diag, subtab_radar, subtab_target, subtab_sim = st.tabs([
         "🏥 Diagnosi Punti Deboli & Asset",
         "🤝 Radar Scambi Intelligenti (Win-Win)",
+        "🎯 Scambio Mirato su Obiettivo",
         "⚖️ Simulatore Scambi Libero"
     ])
 
@@ -1724,7 +1725,185 @@ with tab_scambi:
                     st.markdown("</div>", unsafe_allow_html=True)
 
     # -------------------------------------------------------------
-    # SUBTAB 3: SIMULATORE SCAMBI LIBERO
+    # SUBTAB 3: SCAMBIO MIRATO SU OBIETTIVO (REVERSE TRADE FINDER)
+    # -------------------------------------------------------------
+    with subtab_target:
+        st.subheader("🎯 Scambio Mirato su Obiettivo (Reverse Trade Finder)")
+        st.markdown(
+            "Cerca uno o più calciatori che desideri strappare a un avversario di lega. "
+            "L'algoritmo analizza le **criticità strutturali dell'avversario** e formula pacchetti d'offerta su misura per convincerlo, "
+            "dando **priorità ai tuoi esuberi (surplus)** e attingendo a panchinari o titolari solo se necessario per chiudere uno scambio vantaggioso."
+        )
+
+        my_team = get_active_my_team()
+        opp_team_candidates = [t for t in league_teams if t != my_team]
+
+        if not opp_team_candidates:
+            st.info("Carica le rose della tua lega nella sidebar o nel wizard per attivare la funzione di scambio mirato.")
+        else:
+            col_sel_opp, col_sel_targs = st.columns([1, 2])
+            with col_sel_opp:
+                target_opp_team = st.selectbox(
+                    "1. Seleziona Squadra Avversaria:",
+                    options=opp_team_candidates,
+                    key="target_finder_opp_team"
+                )
+
+            # Get target opponent roster
+            opp_roster_df = get_team_roster_df(target_opp_team, df_master)
+            opp_owned_df = opp_roster_df[~opp_roster_df['InPrestito']] if 'InPrestito' in opp_roster_df.columns else opp_roster_df
+            opp_owned_df = opp_owned_df.sort_values(by=['Costo', 'xFV'], ascending=[False, False])
+
+            # Prepare player options
+            opp_player_labels = []
+            label_to_pname = {}
+            for _, r_opp in opp_owned_df.iterrows():
+                pname = r_opp['Giocatore']
+                roles = r_opp.get('RuoloMantra', '')
+                costo = int(r_opp.get('Costo', 0))
+                fm = float(r_opp.get('FM_Stagione', 0.0))
+                label = f"{pname} ({roles}) — {r_opp.get('Squadra', '')} [Costo {costo}, FM {fm:.2f}]"
+                opp_player_labels.append(label)
+                label_to_pname[label] = pname
+
+            with col_sel_targs:
+                selected_labels = st.multiselect(
+                    "2. Scegli il/i Giocatore/i da Chiedere all'Avversario:",
+                    options=opp_player_labels,
+                    key="target_finder_selected_players",
+                    help="Puoi selezionare un singolo obiettivo (es. una prima punta, un top difensore) o un pacchetto di 2 giocatori."
+                )
+                selected_target_pnames = [label_to_pname[lbl] for lbl in selected_labels]
+
+            # Options Row
+            col_opt1, col_opt2 = st.columns([1.6, 1])
+            with col_opt1:
+                allow_starters_flag = st.checkbox(
+                    "Attingi anche ai tuoi Titolari/Panchinari chiave se necessario",
+                    value=True,
+                    help="Se attivo, consente all'algoritmo di inserire nei pacchetti anche giocatori della tua rotazione o titolari se i soli surplus non bastano per valore. Vengono proposti SOLO scambi in cui la tua formazione ne esce complessivamente migliorata o equivalente."
+                )
+            with col_opt2:
+                pkg_size_label = st.selectbox(
+                    "Formato Pacchetto Offerta:",
+                    options=["Tutti i formati (1x1, 2x1, 2x2)", "Solo 1x1 (Scambio Diretto)", "Solo Pacchetti Multipli (2x1, 2x2)"],
+                    key="target_finder_pkg_size"
+                )
+                pkg_types_map = {
+                    "Tutti i formati (1x1, 2x1, 2x2)": ('1x1', '2x1', '2x2'),
+                    "Solo 1x1 (Scambio Diretto)": ('1x1',),
+                    "Solo Pacchetti Multipli (2x1, 2x2)": ('2x1', '2x2')
+                }
+                chosen_pkg_types = pkg_types_map[pkg_size_label]
+
+            # Show Instant Rival Check-up Card
+            with st.expander(f"🔍 Check-up Immediato Carenze di {target_opp_team} (Perché dovrebbero accettare)", expanded=False):
+                opp_diag = analyze_squad_weaknesses(target_opp_team, league_dict, df_master, matchday=selected_giornata)
+                opp_w = opp_diag.get('Punti_Deboli', [])
+                if opp_w:
+                    st.markdown(f"**Criticità emerse nella rosa di {target_opp_team}:**")
+                    for w in opp_w:
+                        sev_badge = "🔴" if w['Severita'] == 'CRITICA' else ("🟠" if w['Severita'] == 'ELEVATA' else "🟡")
+                        st.markdown(f"- {sev_badge} **{w['Reparto']} ({w['Ruolo']})**: {w['Diagnosi']} *({w['Obiettivo_Mercato']})*")
+                else:
+                    st.info(f"{target_opp_team} ha una rosa numericamente completa; accetterà scambi basati su valore tecnico e affinità tattica.")
+
+            st.markdown("---")
+
+            # Execution
+            if not selected_target_pnames:
+                st.info("👆 Seleziona almeno un calciatore dal menu a tendina sopra per generare le proposte di offerta su misura.")
+            else:
+                with st.spinner("Analisi delle criticità dell'avversario e formulazione offerte intelligenti in corso..."):
+                    target_proposals = find_trades_for_target_players(
+                        my_team_name=my_team,
+                        opp_team_name=target_opp_team,
+                        target_player_names=selected_target_pnames,
+                        league_data=league_dict,
+                        df_master=df_master,
+                        matchday=selected_giornata,
+                        allow_starters=allow_starters_flag,
+                        package_types=chosen_pkg_types
+                    )
+
+                if not target_proposals:
+                    st.warning(
+                        f"Non sono state trovate combinazioni compatibili per acquisire **{', '.join(selected_target_pnames)}**. "
+                        "Suggerimento: prova ad attivare l'opzione per includere anche titolari/panchinari, "
+                        "oppure valuta una contropartita diversa."
+                    )
+                else:
+                    st.success(f"🎯 Trovate **{len(target_proposals)} proposte di scambio strutturate** per acquisire **{', '.join(selected_target_pnames)}**!")
+
+                    for p_idx, prop in enumerate(target_proposals):
+                        card_bg = "rgba(16, 185, 129, 0.05)" if "Soli Surplus" in prop['Tipo_Pacchetto'] else "rgba(14, 165, 233, 0.05)"
+                        card_border = "#10b981" if "Soli Surplus" in prop['Tipo_Pacchetto'] else "#0ea5e9"
+                        
+                        st.markdown(f"""
+                        <div style="background: {card_bg}; border: 1.5px solid {card_border}; border-radius: 10px; padding: 16px 20px; margin-bottom: 20px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                                <div>
+                                    <span style="font-weight: 800; font-size: 1.15rem; color: #ffffff;">Offerta #{p_idx+1}</span>
+                                    <span style="margin-left: 10px; background: rgba(255,255,255,0.1); border-radius: 6px; padding: 4px 10px; font-weight: 700; font-size: 0.85rem; color: #38bdf8;">
+                                        {prop['Tipo_Pacchetto']}
+                                    </span>
+                                </div>
+                                <div style="display: flex; gap: 12px; align-items: center;">
+                                    <span style="font-weight: 700; font-size: 0.95rem; color: #f59e0b;">🎯 Appetibilità Avversario: {prop['Appetibilita_Avversario']}%</span>
+                                    <span style="font-weight: 800; font-size: 0.95rem; color: {'#10b981' if prop['Delta_Punti_Titolari'] >= 0 else '#f97316'};">
+                                        📈 Impatto Titolari: {prop['Delta_Punti_Titolari']:+.2f} pt
+                                    </span>
+                                </div>
+                            </div>
+                        """, unsafe_allow_html=True)
+
+                        col_give, col_rec = st.columns(2)
+                        with col_give:
+                            st.markdown("##### 🔴 Cosa Cedi Tu")
+                            for p in prop['Tu_Cedi']:
+                                tier_color = "#10b981" if p['Tier'] == 'SURPLUS' else ("#0ea5e9" if p['Tier'] == 'PANCHINARO' else "#f59e0b")
+                                st.markdown(f"""
+                                <div style="background: rgba(255,255,255,0.04); border-left: 3px solid {tier_color}; padding: 8px 12px; border-radius: 6px; margin-bottom: 6px;">
+                                    <div style="font-weight: 700; color: #ffffff;">{p['Giocatore']} <span style="font-weight: 450; color: #94a3b8; font-size: 0.85rem;">({p['RuoloMantra']} - {p['Squadra']})</span></div>
+                                    <div style="font-size: 0.8rem; color: #cbd5e1;">Status: <strong style="color: {tier_color};">{p['Tier']}</strong> | FM: <strong>{p['FM']:.2f}</strong> | xFV: <strong>{p['xFV']:.2f}</strong> | Costo: <strong>{p['Costo']}</strong></div>
+                                </div>
+                                """, unsafe_allow_html=True)
+                            st.caption(f"Totale xFV Offerto: **{prop['Totale_xFV_Ceduti']}**")
+
+                        with col_rec:
+                            st.markdown(f"##### 🟢 Cosa Ricevi da {target_opp_team}")
+                            for p in prop['Tu_Ricevi']:
+                                st.markdown(f"""
+                                <div style="background: rgba(16, 185, 129, 0.08); border-left: 3px solid #10b981; padding: 8px 12px; border-radius: 6px; margin-bottom: 6px;">
+                                    <div style="font-weight: 700; color: #ffffff;">{p['Giocatore']} <span style="font-weight: 450; color: #94a3b8; font-size: 0.85rem;">({p['RuoloMantra']} - {p['Squadra']})</span></div>
+                                    <div style="font-size: 0.8rem; color: #cbd5e1;">FM: <strong>{p['FM']:.2f}</strong> | xFV: <strong>{p['xFV']:.2f}</strong> | Costo: <strong>{p['Costo']}</strong></div>
+                                </div>
+                                """, unsafe_allow_html=True)
+                            st.caption(f"Totale xFV Ricevuto: **{prop['Totale_xFV_Ricevuti']}** (Δ xFV: **{prop['Delta_xFV']:+.2f}**)")
+
+                        # Tactical rationale & opponent leverage
+                        st.markdown("<div style='margin-top: 10px; font-weight: 700; font-size: 0.92rem; color: #38bdf8;'>💡 Perché l'avversario accetta (Leva di Trattativa):</div>", unsafe_allow_html=True)
+                        st.markdown(f"<div style='font-size: 0.88rem; color: #cbd5e1; margin-bottom: 6px;'>{prop['Leva_di_Trattativa']}</div>", unsafe_allow_html=True)
+
+                        st.markdown(f"<div style='font-size: 0.84rem; color: #94a3b8; margin-bottom: 10px;'>📊 <strong>Impatto sui tuoi titolari:</strong> La tua formazione tipo proietta <strong>{prop['Punti_Titolari_Nuovi']:.2f} pt</strong> (Modulo {prop['Modulo_Titolare_Nuovo']}, {prop['Copertura_Nuova']}).</div>", unsafe_allow_html=True)
+
+                        # WhatsApp Box
+                        with st.expander("💬 Messaggio Pronto da Inviare su WhatsApp all'Avversario", expanded=False):
+                            st.caption("Copia e incolla direttamente nella chat per proporre lo scambio:")
+                            st.code(prop['Messaggio_Trattativa'], language="text")
+
+                        # Prefill Simulator Button
+                        if st.button(f"⚖️ Apri nel Simulatore Scambi Libero", key=f"btn_sim_target_{p_idx}"):
+                            st.session_state['sim_prefill_give'] = prop['Simulazione_Payload']['give_names']
+                            st.session_state['sim_prefill_receive'] = prop['Simulazione_Payload']['receive_names']
+                            st.session_state['sim_prefill_opp'] = target_opp_team
+                            st.session_state['sim_prefill_mode'] = "🤝 Trattativa di Lega (Inter-Squadra)"
+                            st.success("✅ Scambio pre-impostato nel simulatore! Apri la scheda '⚖️ Simulatore Scambi Libero' per l'analisi completa.")
+
+                        st.markdown("</div>", unsafe_allow_html=True)
+
+    # -------------------------------------------------------------
+    # SUBTAB 4: SIMULATORE SCAMBI LIBERO
     # -------------------------------------------------------------
     with subtab_sim:
         st.subheader("⚖️ Simulatore Scambi Libero (1v1, 2v2, Pacchetti)")
