@@ -82,8 +82,12 @@ if '_last_code_version' not in st.session_state:
 elif st.session_state['_last_code_version'] != current_code_version:
     st.cache_data.clear()
     st.cache_resource.clear()
+    import importlib
+    import engine.optimizer
+    importlib.reload(engine.optimizer)
+    from engine.optimizer import MANTRA_FORMATIONS, optimize_best_mantra_lineup
     st.session_state['_last_code_version'] = current_code_version
-    st.toast("🧹 Rilevate modifiche al codice: cache pulita automaticamente!", icon="🔄")
+    st.toast("🧹 Rilevate modifiche al codice: moduli ricaricati e cache pulita automaticamente!", icon="🔄")
 
 @st.cache_data
 def get_master_data(mtime=None, code_ver=None):
