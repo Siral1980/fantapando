@@ -235,8 +235,10 @@ def get_or_create_calendar(force_refresh=False):
 
 def calculate_dynamic_fdr(squadra, avversario, is_home, matchday=6, ratings_cache=None):
     """
-    Calculates the Dynamic Fixture Difficulty Rating (1 to 5) for a match,
-    derived from current standings and 3-year historical finish.
+    Calculates the Dynamic Fixture Difficulty Rating (1 to 5) for a match.
+    Centered on FDR 3 (Neutral) when two teams are of equal strength, driven primarily
+    by the relative power rating gap (delta) between the opponent and the team,
+    modulated by opponent quality tier and home/away factor.
     """
     if ratings_cache is None:
         ratings_cache, _ = compute_dynamic_team_ratings(matchday)
@@ -244,19 +246,22 @@ def calculate_dynamic_fdr(squadra, avversario, is_home, matchday=6, ratings_cach
     p_squadra = ratings_cache.get(squadra, {}).get('Power_Dinamico', 50.0)
     p_avv = ratings_cache.get(avversario, {}).get('Power_Dinamico', 50.0)
     
-    # 1. Base difficulty from opponent's dynamic power (0-100 scale)
-    # Opponent Power: 90 -> 4.8, 70 -> 3.7, 50 -> 2.7, 30 -> 1.6
-    base_diff = 1.0 + (p_avv / 22.0)
+    # 1. Relative rating gap: difference between opponent and team
+    # Range is approx -65 (Inter vs Venezia) to +65 (Venezia vs Inter)
+    # Normalized by 22.0: range -3.0 to +3.0
+    gap = (p_avv - p_squadra) / 22.0
     
-    # 2. Relative strength delta: difference between opponent and team
-    diff_power = (p_avv - p_squadra) / 25.0 # range approx -2.0 to +2.0
+    # 2. Opponent tier nuance: absolute strength relative to league average (50.0)
+    # Range is approx -25 to +40, normalized by 25.0: range -1.0 to +1.6
+    opp_tier = (p_avv - 50.0) / 25.0
     
     # 3. Location factor: Home vs Away
-    # Playing at home lowers difficulty; away raises it
-    loc_factor = -0.55 if is_home else +0.55
+    # Playing at home lowers difficulty (-0.40); playing away raises it (+0.40)
+    loc_factor = -0.40 if is_home else +0.40
     
-    # Continuous score
-    raw_score = base_diff + (diff_power * 0.45) + loc_factor
+    # Continuous score centered on 3.0 (Neutral parity match)
+    # 75% weight on relative differential gap, 25% weight on opponent tier
+    raw_score = 3.0 + (0.75 * gap) + (0.25 * opp_tier) + loc_factor
     
     # Convert to discrete FDR from 1 to 5
     fdr = int(round(raw_score))
