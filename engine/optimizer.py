@@ -24,7 +24,7 @@ MANTRA_FORMATIONS = {
     },
     '4-3-1-2': {
         'def_type': '4-def',
-        'slots': ['Por', 'Dd', 'Ds', 'Dc', 'Dc', 'M', 'M/C', 'C', 'T', 'A/Pc', 'A/Pc'],
+        'slots': ['Por', 'Dd', 'Ds', 'Dc', 'Dc', 'M', 'M/C', 'C', 'T', 'T/A/Pc', 'A/Pc'],
         'max_pc': 2
     },
     '4-2-3-1': {
@@ -92,6 +92,7 @@ SLOT_ROLE_MAP = {
     'W/A': {'W', 'A'},
     'T': {'T'},
     'T/A': {'T', 'A'},
+    'T/A/Pc': {'T', 'A', 'Pc'},
     'A': {'A'},
     'A/Pc': {'A', 'Pc'},
     'Pc': {'Pc'}
@@ -145,9 +146,24 @@ def solve_lineup_for_formation(formation_name, df_projected_roster):
     if not has_por or len(players) < 11:
         return None
         
-    # Check if formation has 'A/Pc' slots
+    # Check if formation has composite attack slots
     cases = []
-    if 'A/Pc' in slots:
+    if 'T/A/Pc' in slots and 'A/Pc' in slots:
+        i_tap = slots.index('T/A/Pc')
+        i_ap = slots.index('A/Pc')
+        subcases = [
+            ('T', 'A'), ('T', 'Pc'),
+            ('A', 'A'), ('A', 'Pc'),
+            ('Pc', 'A')
+        ]
+        if max_pc >= 2:
+            subcases.append(('Pc', 'Pc'))
+        for r1, r2 in subcases:
+            s = list(slots)
+            s[i_tap] = r1
+            s[i_ap] = r2
+            cases.append(s)
+    elif 'A/Pc' in slots:
         indices = [i for i, s in enumerate(slots) if s == 'A/Pc']
         if len(indices) == 1:
             idx = indices[0]
