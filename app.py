@@ -10,6 +10,7 @@ import datetime
 import pandas as pd
 import numpy as np
 import streamlit as st
+import altair as alt
 
 # Setup paths
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -2213,28 +2214,112 @@ with tab_stats:
     # SUB-TAB 2: BUY-LOW & SELL-HIGH GRAFICI
     with sub_t2:
         st.subheader("Scatter Plot: Relazione tra Produzione Reale e Bonus")
+        
+        # Filter options
+        f_col1, f_col2 = st.columns([2, 1])
+        with f_col1:
+            st.caption(
+                "💡 **Passa il cursore sui pallini** per visualizzare il nome del calciatore, la squadra, "
+                "le presenze e il dettaglio di produzione reale vs bonus realizzati. "
+                "La linea tratteggiata rappresenta la perfetta parità (Bonus Reali = Produzione Attesa)."
+            )
+        with f_col2:
+            role_options = ["Tutti i Ruoli", "Attaccanti (A)", "Centrocampisti (C)", "Difensori (D)", "Portieri (P)"]
+            sel_scatter_role = st.selectbox("Filtra per Ruolo Classic:", options=role_options, index=0, key="sel_scat_role")
+            
+        df_plot_base = df_master[df_master['Presenze'] > 0].copy()
+        if sel_scatter_role == "Attaccanti (A)":
+            df_plot_base = df_plot_base[df_plot_base['RuoloClassic'] == 'A']
+        elif sel_scatter_role == "Centrocampisti (C)":
+            df_plot_base = df_plot_base[df_plot_base['RuoloClassic'] == 'C']
+        elif sel_scatter_role == "Difensori (D)":
+            df_plot_base = df_plot_base[df_plot_base['RuoloClassic'] == 'D']
+        elif sel_scatter_role == "Portieri (P)":
+            df_plot_base = df_plot_base[df_plot_base['RuoloClassic'] == 'P']
+
+        role_scale = alt.Scale(
+            domain=['P', 'D', 'C', 'A'],
+            range=['#f59e0b', '#10b981', '#3b82f6', '#ef4444']
+        )
+
         sc_c1, sc_c2 = st.columns(2)
         with sc_c1:
-            st.markdown("**xG Totali vs Gol Fatti (GF)**")
+            st.markdown("##### ⚽ xG Totali vs Gol Fatti (GF)")
             st.caption("*I calciatori sotto la diagonale hanno segnato meno di quanto prodotto (Candidati BUY-LOW).*")
-            st.scatter_chart(
-                df_master[df_master['Presenze'] > 0],
-                x='xG_Tot',
-                y='GF',
-                color='RuoloClassic',
-                size='Presenze'
+            
+            max_xg = float(max(df_plot_base['xG_Tot'].max() if not df_plot_base.empty else 1.0, 
+                               df_plot_base['GF'].max() if not df_plot_base.empty else 1.0) + 1.0)
+            diag_df1 = pd.DataFrame({'x': [0, max_xg], 'y': [0, max_xg]})
+            
+            ref_line1 = alt.Chart(diag_df1).mark_line(
+                strokeDash=[4, 4],
+                color='#94a3b8',
+                opacity=0.6,
+                strokeWidth=1.5
+            ).encode(x='x:Q', y='y:Q')
+            
+            points1 = alt.Chart(df_plot_base).mark_circle(
+                opacity=0.75,
+                stroke='#ffffff',
+                strokeWidth=0.6
+            ).encode(
+                x=alt.X('xG_Tot:Q', title='xG Totali (Gol Attesi)'),
+                y=alt.Y('GF:Q', title='Gol Fatti (GF Reali)'),
+                color=alt.Color('RuoloClassic:N', title='Ruolo', scale=role_scale),
+                size=alt.Size('Presenze:Q', title='Presenze', scale=alt.Scale(range=[40, 260])),
+                tooltip=[
+                    alt.Tooltip('Giocatore:N', title='⚽ Calciatore'),
+                    alt.Tooltip('Squadra:N', title='🛡️ Squadra'),
+                    alt.Tooltip('RuoloMantra:N', title='Ruoli Mantra'),
+                    alt.Tooltip('RuoloClassic:N', title='Ruolo Classic'),
+                    alt.Tooltip('Presenze:Q', title='Presenze'),
+                    alt.Tooltip('xG_Tot:Q', title='xG Totali', format='.2f'),
+                    alt.Tooltip('GF:Q', title='Gol Segnati (GF)'),
+                    alt.Tooltip('Delta_xG:Q', title='Delta xG (GF - xG)', format='+.2f'),
+                    alt.Tooltip('FM_Stagione:Q', title='FantaMedia', format='.2f')
+                ]
             )
+            chart1 = (ref_line1 + points1).properties(height=420).interactive()
+            st.altair_chart(chart1, use_container_width=True, theme="streamlit")
             
         with sc_c2:
-            st.markdown("**xA Totali vs Assist Fatti (ASS)**")
-            st.caption("*Chi produce alti xA ma ha zero assist è penalizzato dalla scarsa mira dei compagni di squadra.*")
-            st.scatter_chart(
-                df_master[df_master['Presenze'] > 0],
-                x='xA_Tot',
-                y='ASS',
-                color='RuoloClassic',
-                size='Presenze'
+            st.markdown("##### 🎯 xA Totali vs Assist Fatti (ASS)")
+            st.caption("*Chi produce alti xA ma ha zero assist è penalizzato dalla scarsa mira dei compagni (Candidati BUY-LOW).*")
+            
+            max_xa = float(max(df_plot_base['xA_Tot'].max() if not df_plot_base.empty else 1.0, 
+                               df_plot_base['ASS'].max() if not df_plot_base.empty else 1.0) + 1.0)
+            diag_df2 = pd.DataFrame({'x': [0, max_xa], 'y': [0, max_xa]})
+            
+            ref_line2 = alt.Chart(diag_df2).mark_line(
+                strokeDash=[4, 4],
+                color='#94a3b8',
+                opacity=0.6,
+                strokeWidth=1.5
+            ).encode(x='x:Q', y='y:Q')
+            
+            points2 = alt.Chart(df_plot_base).mark_circle(
+                opacity=0.75,
+                stroke='#ffffff',
+                strokeWidth=0.6
+            ).encode(
+                x=alt.X('xA_Tot:Q', title='xA Totali (Assist Attesi)'),
+                y=alt.Y('ASS:Q', title='Assist Fatti (ASS Reali)'),
+                color=alt.Color('RuoloClassic:N', title='Ruolo', scale=role_scale),
+                size=alt.Size('Presenze:Q', title='Presenze', scale=alt.Scale(range=[40, 260])),
+                tooltip=[
+                    alt.Tooltip('Giocatore:N', title='🎯 Calciatore'),
+                    alt.Tooltip('Squadra:N', title='🛡️ Squadra'),
+                    alt.Tooltip('RuoloMantra:N', title='Ruoli Mantra'),
+                    alt.Tooltip('RuoloClassic:N', title='Ruolo Classic'),
+                    alt.Tooltip('Presenze:Q', title='Presenze'),
+                    alt.Tooltip('xA_Tot:Q', title='xA Totali', format='.2f'),
+                    alt.Tooltip('ASS:Q', title='Assist Serviti (ASS)'),
+                    alt.Tooltip('Delta_xA:Q', title='Delta xA (ASS - xA)', format='+.2f'),
+                    alt.Tooltip('FM_Stagione:Q', title='FantaMedia', format='.2f')
+                ]
             )
+            chart2 = (ref_line2 + points2).properties(height=420).interactive()
+            st.altair_chart(chart2, use_container_width=True, theme="streamlit")
 
         st.subheader("Radar Segnali di Mercato")
         signal_filter = st.radio(
