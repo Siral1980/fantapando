@@ -806,7 +806,12 @@ def get_team_roster_df(team_name, league_data_or_master=None, df_master=None):
     for p in players:
         p_name = p['Giocatore']
         cost = p['Costo']
-        is_out = p.get('FuoriSerieA', False)
+        is_out = bool(
+            p.get('FuoriSerieA', False) or 
+            p.get('Da_Svincolare', False) or 
+            '*' in str(p.get('NomeGrezzo', '')) or 
+            '*' in str(p.get('Giocatore', ''))
+        )
 
         m_info = stats_map.get(p_name, {})
         loan_info = loan_map.get((team_name, p_name), None)
@@ -896,7 +901,10 @@ def get_league_summary(league_data_or_master=None, df_master=None):
         tot_cost = sum(p.get('Costo', 0) for p in players)
         n_loans_in = sum(1 for p in players if p.get('Costo', 0) == 0)
         n_loans_out = sum(1 for p in players if loan_map.get((team, p['Giocatore']), {}).get('Stato_Prestito') == 'Prestito OUT')
-        n_out_serie_a = sum(1 for p in players if p.get('FuoriSerieA', False))
+        n_out_serie_a = sum(
+            1 for p in players 
+            if p.get('FuoriSerieA', False) or p.get('Da_Svincolare', False) or '*' in str(p.get('NomeGrezzo', '')) or '*' in str(p.get('Giocatore', ''))
+        )
 
         summary_rows.append({
             'Squadra': team,

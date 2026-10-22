@@ -1749,9 +1749,18 @@ with tab_scambi:
                     key="target_finder_opp_team"
                 )
 
-            # Get target opponent roster
+            # Get target opponent roster (exclude loans and players to release / out of Serie A)
             opp_roster_df = get_team_roster_df(target_opp_team, df_master)
-            opp_owned_df = opp_roster_df[~opp_roster_df['InPrestito']] if 'InPrestito' in opp_roster_df.columns else opp_roster_df
+            mask_opp = pd.Series(True, index=opp_roster_df.index)
+            if 'InPrestito' in opp_roster_df.columns:
+                mask_opp &= ~opp_roster_df['InPrestito'].astype(bool)
+            if 'Da_Svincolare' in opp_roster_df.columns:
+                mask_opp &= ~opp_roster_df['Da_Svincolare'].astype(bool)
+            if 'FuoriSerieA' in opp_roster_df.columns:
+                mask_opp &= ~opp_roster_df['FuoriSerieA'].astype(bool)
+            if 'Giocatore' in opp_roster_df.columns:
+                mask_opp &= ~opp_roster_df['Giocatore'].astype(str).str.contains(r'\*')
+            opp_owned_df = opp_roster_df[mask_opp]
             sort_cols = [c for c in ['Costo', 'FM_Stagione', 'MV_Stagione'] if c in opp_owned_df.columns]
             if sort_cols:
                 opp_owned_df = opp_owned_df.sort_values(by=sort_cols, ascending=[False] * len(sort_cols))
@@ -1965,8 +1974,17 @@ with tab_scambi:
             with col_sc1:
                 st.subheader(f"🔴 La Tua Squadra ({my_team})")
                 my_team_df = get_team_roster_df(my_team, df_master)
-                # Exclude borrowed players from tradeable give list (cannot trade away players on loan)
-                my_team_owned = my_team_df[~my_team_df['InPrestito']] if 'InPrestito' in my_team_df.columns else my_team_df
+                # Exclude borrowed players and players to release from tradeable give list
+                my_mask = pd.Series(True, index=my_team_df.index)
+                if 'InPrestito' in my_team_df.columns:
+                    my_mask &= ~my_team_df['InPrestito'].astype(bool)
+                if 'Da_Svincolare' in my_team_df.columns:
+                    my_mask &= ~my_team_df['Da_Svincolare'].astype(bool)
+                if 'FuoriSerieA' in my_team_df.columns:
+                    my_mask &= ~my_team_df['FuoriSerieA'].astype(bool)
+                if 'Giocatore' in my_team_df.columns:
+                    my_mask &= ~my_team_df['Giocatore'].astype(str).str.contains(r'\*')
+                my_team_owned = my_team_df[my_mask]
                 my_team_players = sorted(my_team_owned['Giocatore'].unique().tolist())
                 valid_prefill_give = [p for p in prefill_give if p in my_team_players]
                 give_selection = st.multiselect(
@@ -1986,8 +2004,17 @@ with tab_scambi:
                 )
                 st.subheader(f"🟢 Rosa Avversaria ({selected_opp})")
                 opp_team_df = get_team_roster_df(selected_opp, df_master)
-                # Exclude borrowed players from opponent receive list (must negotiate with the card owner)
-                opp_team_owned = opp_team_df[~opp_team_df['InPrestito']] if 'InPrestito' in opp_team_df.columns else opp_team_df
+                # Exclude borrowed players and players to release from opponent receive list
+                opp_mask = pd.Series(True, index=opp_team_df.index)
+                if 'InPrestito' in opp_team_df.columns:
+                    opp_mask &= ~opp_team_df['InPrestito'].astype(bool)
+                if 'Da_Svincolare' in opp_team_df.columns:
+                    opp_mask &= ~opp_team_df['Da_Svincolare'].astype(bool)
+                if 'FuoriSerieA' in opp_team_df.columns:
+                    opp_mask &= ~opp_team_df['FuoriSerieA'].astype(bool)
+                if 'Giocatore' in opp_team_df.columns:
+                    opp_mask &= ~opp_team_df['Giocatore'].astype(str).str.contains(r'\*')
+                opp_team_owned = opp_team_df[opp_mask]
                 opp_team_players = sorted(opp_team_owned['Giocatore'].unique().tolist())
                 valid_prefill_rec = [p for p in prefill_receive if p in opp_team_players]
                 receive_selection = st.multiselect(

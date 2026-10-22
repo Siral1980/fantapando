@@ -106,6 +106,56 @@ def compute_real_starter_status(row, tot_matchdays=7):
         }
 
 
+def get_league_release_names(league_data):
+    """
+    Returns a set of all player names flagged as 'FuoriSerieA' or 'Da_Svincolare'
+    (or marked with '*' in the official league roster export).
+    These players must NEVER be proposed or accepted in trades.
+    """
+    release_names = set()
+    if not league_data or not isinstance(league_data, dict):
+        return release_names
+    for team, players in league_data.items():
+        if isinstance(players, list):
+            for p in players:
+                if isinstance(p, dict):
+                    if (
+                        p.get('FuoriSerieA', False) or 
+                        p.get('Da_Svincolare', False) or 
+                        '*' in str(p.get('NomeGrezzo', '')) or 
+                        '*' in str(p.get('Giocatore', ''))
+                    ):
+                        g_clean = str(p.get('Giocatore', '')).replace('*', '').strip()
+                        raw_clean = str(p.get('NomeGrezzo', '')).replace('*', '').strip()
+                        if g_clean:
+                            release_names.add(g_clean)
+                        if raw_clean:
+                            release_names.add(raw_clean)
+    return release_names
+
+
+def is_player_to_release(p, release_names=None):
+    """Helper to check if a player dict or player name is marked as out of Serie A / to be released."""
+    if isinstance(p, str):
+        g = p.replace('*', '').strip()
+        if '*' in p:
+            return True
+        if release_names and g in release_names:
+            return True
+        return False
+    if not isinstance(p, dict):
+        return False
+    if p.get('FuoriSerieA', False) or p.get('Da_Svincolare', False):
+        return True
+    g = str(p.get('Giocatore', '')).replace('*', '').strip()
+    raw = str(p.get('NomeGrezzo', '')).replace('*', '').strip()
+    if '*' in str(p.get('NomeGrezzo', '')) or '*' in str(p.get('Giocatore', '')):
+        return True
+    if release_names and (g in release_names or raw in release_names):
+        return True
+    return False
+
+
 def analyze_squad_weaknesses(team_name, league_data, df_master, matchday=8):
     """
     Performs a deep diagnostic analysis of a fantasy team's roster:
@@ -116,9 +166,14 @@ def analyze_squad_weaknesses(team_name, league_data, df_master, matchday=8):
     if team_name not in league_data:
         return {'error': f"Squadra '{team_name}' non trovata nella lega."}
 
+    release_names = get_league_release_names(league_data)
     team_players_all = league_data[team_name]
     # For market/trade analysis, only consider owned assets (Costo > 0, not temporary loans from other clubs)
-    team_players = [p for p in team_players_all if not p.get('InPrestito', False) and p.get('Costo', 1) > 0]
+    # and exclude players marked as out of Serie A / to be released
+    team_players = [
+        p for p in team_players_all 
+        if not p.get('InPrestito', False) and p.get('Costo', 1) > 0 and not is_player_to_release(p, release_names)
+    ]
     player_names = [p['Giocatore'] for p in team_players]
     
     df_squad = df_master[df_master['Giocatore'].isin(player_names)].copy()
@@ -343,6 +398,10 @@ def analyze_squad_weaknesses(team_name, league_data, df_master, matchday=8):
     for _, b_row in bench_df.iterrows():
         pname = b_row['Giocatore']
         
+        # Release check: NEVER offer players to be released / out of Serie A
+        if is_player_to_release(b_row.to_dict(), release_names) or is_player_to_release(pname, release_names):
+            continue
+
         # Medical Availability: CANNOT offer injured or suspended players in cession!
         from engine.injuries_manager import classify_injury_status
         inj_status = classify_injury_status(pname)
@@ -542,7 +601,11 @@ def find_win_win_trades(
     if not my_weak_roles:
         my_weak_roles = {'Pc', 'M', 'Dc', 'Dd', 'Ds'}
 
+    release_names = get_league_release_names(league_data)
     my_surplus_players = my_diag['Surplus_Cedibili']
+    if not my_surplus_players:
+        return []
+    my_surplus_players = [p for p in my_surplus_players if not is_player_to_release(p, release_names)]
     if not my_surplus_players:
         return []
 
@@ -574,8 +637,11 @@ def find_win_win_trades(
         if opp_team_filter and opp_team_filter != 'TUTTI' and opp_team != opp_team_filter:
             continue
 
-        # Only owned assets can be traded: exclude temporary loans (InPrestito == True or Costo == 0)
-        opp_players_owned = [p for p in opp_players if not p.get('InPrestito', False) and p.get('Costo', 1) > 0]
+        # Only owned assets can be traded: exclude temporary loans and to-be-released players
+        opp_players_owned = [
+            p for p in opp_players 
+            if not p.get('InPrestito', False) and p.get('Costo', 1) > 0 and not is_player_to_release(p, release_names)
+        ]
         opp_pnames = [p['Giocatore'] for p in opp_players_owned]
         opp_proj_list = []
         for name in opp_pnames:
@@ -613,6 +679,8 @@ def find_win_win_trades(
             # Loop over opponent players
             for opp_p in opp_proj_list:
                 opp_p_name = opp_p['Giocatore']
+                if is_player_to_release(opp_p, release_names) or is_player_to_release(opp_p_name, release_names):
+                    continue
                 opp_p_roles = parse_mantra_roles(opp_p.get('RuoloMantra', ''))
                 
                 # Filter by target role if specified by user
@@ -1000,6 +1068,8 @@ def find_trades_for_target_players(
     if opp_team_name not in league_data or my_team_name not in league_data:
         return []
 
+    release_names = get_league_release_names(league_data)
+
     # 1. Diagnose opponent squad
     opp_diag = analyze_squad_weaknesses(opp_team_name, league_data, df_master, matchday=matchday)
     if 'error' in opp_diag:
@@ -1016,8 +1086,11 @@ def find_trades_for_target_players(
         df_all_proj = batch_predict_xfv(df_master, matchday=matchday)
     proj_map = {row['Giocatore']: row.to_dict() for _, row in df_all_proj.iterrows()}
 
-    # My squad players (owned assets only)
-    my_owned = [p for p in league_data[my_team_name] if not p.get('InPrestito', False) and p.get('Costo', 1) > 0]
+    # My squad players (owned assets only, excluding to-be-released)
+    my_owned = [
+        p for p in league_data[my_team_name] 
+        if not p.get('InPrestito', False) and p.get('Costo', 1) > 0 and not is_player_to_release(p, release_names)
+    ]
     my_pnames = [p['Giocatore'] for p in my_owned]
     my_proj_list = [proj_map[n] for n in my_pnames if n in proj_map]
     if not my_proj_list:
@@ -1031,8 +1104,11 @@ def find_trades_for_target_players(
     my_starters_set = set(p['Giocatore'] for p in opt_my_curr.get('Titolari', []))
     my_surplus_set = set(s['Giocatore'] for s in my_diag.get('Surplus_Cedibili', []))
 
-    # Opponent target players and baseline lineup
-    opp_owned = [p for p in league_data[opp_team_name] if not p.get('InPrestito', False) and p.get('Costo', 1) > 0]
+    # Opponent target players and baseline lineup (owned assets only, excluding to-be-released)
+    opp_owned = [
+        p for p in league_data[opp_team_name] 
+        if not p.get('InPrestito', False) and p.get('Costo', 1) > 0 and not is_player_to_release(p, release_names)
+    ]
     opp_pnames = set(p['Giocatore'] for p in opp_owned)
     opp_proj_list = [proj_map[n] for n in opp_pnames if n in proj_map]
     if not opp_proj_list:
@@ -1045,8 +1121,12 @@ def find_trades_for_target_players(
     
     target_players = []
     for tname in target_player_names:
+        if is_player_to_release(tname, release_names):
+            continue
         if tname in opp_pnames and tname in proj_map:
             p_data = dict(proj_map[tname])
+            if is_player_to_release(p_data, release_names):
+                continue
             target_players.append(p_data)
 
     if not target_players:
@@ -1072,6 +1152,10 @@ def find_trades_for_target_players(
 
     for p_row in my_proj_list:
         pname = p_row['Giocatore']
+        # Release check: NEVER offer players to be released / out of Serie A
+        if is_player_to_release(p_row, release_names) or is_player_to_release(pname, release_names):
+            continue
+
         # Medical check: cannot trade injured or suspended players
         inj = classify_injury_status(pname)
         if not inj.get('Can_Be_Traded_Out', True):
