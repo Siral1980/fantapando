@@ -1558,7 +1558,7 @@ with tab_scambi:
         my_weak_roles = [w['Ruolo'] for w in my_diag.get('Punti_Deboli', [])]
         surplus_pnames = [p['Giocatore'] for p in my_diag.get('Surplus_Cedibili', [])]
         
-        r_col1, r_col2, r_col3, r_col4 = st.columns([1.1, 1.1, 1.1, 1.3])
+        r_col1, r_col2, r_col3, r_col4, r_col5 = st.columns([1.1, 1.1, 1.2, 1.3, 1.3])
         with r_col1:
             all_mantra_roles = ['Por', 'Dc', 'B', 'Dd', 'Ds', 'E', 'M', 'C', 'W', 'T', 'A', 'Pc']
             target_role_opts = ["TUTTI"] + list(dict.fromkeys(my_weak_roles + all_mantra_roles))
@@ -1585,6 +1585,19 @@ with tab_scambi:
                 help="Scegli se trattare con un avversario specifico o scansionare l'intera lega."
             )
         with r_col4:
+            format_filter_map = {
+                "🎯 Tutti i Formati (1x1, 2x2, 2x1, 1x2)": "TUTTI",
+                "🔄 Solo Scambi Multipli (2x2, 2x1, 1x2)": "SOLO_MULTIPLI",
+                "⚖️ Solo Scambi Singoli (1x1)": "SOLO_SINGOLI"
+            }
+            selected_format_label = st.selectbox(
+                "Formato Scambio:",
+                options=list(format_filter_map.keys()),
+                index=0,
+                help="Scegli se vedere tutti i formati, oppure focalizzarti su scambi singoli (1x1) o pacchetti multipli (combo titolari + riserve, 2x1, 1x2)."
+            )
+            selected_format_filter = format_filter_map[selected_format_label]
+        with r_col5:
             starter_filter_map = {
                 "🟡 Titolari + Co-Titolari (>40 min/p) [Consigliato]": "TITOLARI_E_CO",
                 "🟢 Solo Titolari Fissi (>55 min/p)": "TITOLARI_SOLO",
@@ -1609,6 +1622,7 @@ with tab_scambi:
                 give_player_filter=selected_give_player,
                 opp_team_filter=selected_opp_team,
                 min_starter_filter=selected_starter_filter,
+                trade_format_filter=selected_format_filter,
                 max_proposals=30
             )
             
@@ -1620,9 +1634,15 @@ with tab_scambi:
             for idx, prop in enumerate(proposals[:15], 1):
                 opp = prop['Squadra_Avversaria']
                 score = prop['Score']
-                cedi = prop['Tu_Cedi']
-                ricevi = prop['Tu_Ricevi']
-                delta_xfv = prop['Delta_xFV']
+                give_list = prop.get('Tu_Cedi_List', [prop['Tu_Cedi']])
+                rec_list = prop.get('Tu_Ricevi_List', [prop['Tu_Ricevi']])
+                label_tipo = prop.get('Label_Tipo', '⚖️ Scambio Diretto (1x1)')
+                tipo_scambio = prop.get('Tipo_Scambio', '1x1')
+                tot_c_give = prop.get('Tot_Costo_Cedi', sum(p.get('Costo', 0) for p in give_list))
+                tot_c_rec = prop.get('Tot_Costo_Ricevi', sum(p.get('Costo', 0) for p in rec_list))
+                tot_x_give = prop.get('Tot_xFV_Cedi', round(sum(p.get('xFV', 0.0) for p in give_list), 2))
+                tot_x_rec = prop.get('Tot_xFV_Ricevi', round(sum(p.get('xFV', 0.0) for p in rec_list), 2))
+                delta_xfv = prop.get('Delta_xFV', round(tot_x_rec - tot_x_give, 2))
                 
                 with st.container():
                     st.markdown(f"""
@@ -1630,7 +1650,8 @@ with tab_scambi:
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #334155; padding-bottom: 8px;">
                             <div>
                                 <span style="font-size: 1.15rem; font-weight: 700; color: #f8fafc;">#{idx} Proposta con: <span style="color: #38bdf8;">{opp}</span></span>
-                                <span style="margin-left: 10px; background: #0284c7; color: white; padding: 2px 8px; border-radius: 6px; font-size: 0.78rem; font-weight: 600;">Ruolo: {prop['Ruolo_Target']}</span>
+                                <span style="margin-left: 8px; background: #6366f1; color: white; padding: 2px 8px; border-radius: 6px; font-size: 0.78rem; font-weight: 600;">{label_tipo}</span>
+                                <span style="margin-left: 6px; background: #0284c7; color: white; padding: 2px 8px; border-radius: 6px; font-size: 0.78rem; font-weight: 600;">Ruolo: {prop['Ruolo_Target']}</span>
                             </div>
                             <div>
                                 <span style="background: #10b981; color: white; padding: 4px 10px; border-radius: 12px; font-weight: 700; font-size: 0.85rem;">
@@ -1643,65 +1664,77 @@ with tab_scambi:
                     # Columns for Cedi and Ricevi
                     c_give, c_rec = st.columns(2)
                     with c_give:
-                        sig_badge = f"<span style='background:#f97316;color:white;padding:1px 6px;border-radius:4px;font-size:0.75rem;font-weight:bold;'>{cedi['Signal']}</span>" if 'SELL-HIGH' in cedi['Signal'] else ""
-                        if 'Por' in cedi.get('RuoloMantra', ''):
-                            adv_give_html = f"<div style='color: #38bdf8; font-size: 0.80rem; margin-top: 2px;'>🧤 G.Prevented: <b>{cedi.get('Goals_Prevented', 0.0):+.2f} ({cedi.get('Goals_Prevented_90', 0.0):+.2f}/90)</b> | Parate: <b>{cedi.get('Pct_Parate', 70.0):.1f}%</b> | Blunders: <b>{cedi.get('Errors_Leading_To_Goal', 0)}</b></div>"
-                        else:
-                            adv_give_html = f"<div style='color: #6ee7b7; font-size: 0.80rem; margin-top: 2px;'>⚽ xG: <b>{cedi.get('xG_Tot', 0.0):.2f} ({cedi.get('xG_90', 0.0):.2f}/90)</b> | Tiri: <b>{cedi.get('Tiri_90', 0.0):.1f}/90</b> | ΔxG: <b>{cedi.get('Delta_xG', 0.0):+.2f}</b></div>"
+                        n_g = len(give_list)
                         st.markdown(f"""
-                        <div style="background: rgba(239, 68, 68, 0.08); border-left: 4px solid #ef4444; padding: 10px 14px; border-radius: 6px;">
-                            <div style="font-size: 0.82rem; color: #ef4444; font-weight: bold; text-transform: uppercase;">🔴 Tu Cedi</div>
-                            <div style="font-size: 1.1rem; font-weight: bold; color: #f8fafc;">{cedi['Giocatore']} {sig_badge}</div>
-                            <div style="color: #cbd5e1; font-size: 0.88rem;">{cedi['Squadra']} — <b>{cedi['RuoloMantra']}</b></div>
-                            <div style="color: #94a3b8; font-size: 0.82rem; margin-top: 4px;">xFV Giornata: <b>{cedi['xFV']:.2f}</b> | FM Stagione: <b>{cedi['FM']:.2f}</b></div>
-                            {adv_give_html}
+                        <div style="font-size: 0.82rem; color: #ef4444; font-weight: bold; text-transform: uppercase; margin-bottom: 6px;">
+                            🔴 Tu Cedi ({n_g} calciator{'e' if n_g == 1 else 'i'}) | Tot Costo: <b>{tot_c_give} cr</b> | Tot xFV: <b>{tot_x_give:.2f}</b>
                         </div>
                         """, unsafe_allow_html=True)
+                        for cedi in give_list:
+                            sig_badge = f"<span style='background:#f97316;color:white;padding:1px 6px;border-radius:4px;font-size:0.75rem;font-weight:bold;'>{cedi.get('Signal', '')}</span>" if 'SELL-HIGH' in cedi.get('Signal', '') else ""
+                            if 'Por' in cedi.get('RuoloMantra', ''):
+                                adv_give_html = f"<div style='color: #38bdf8; font-size: 0.80rem; margin-top: 2px;'>🧤 G.Prevented: <b>{cedi.get('Goals_Prevented', 0.0):+.2f} ({cedi.get('Goals_Prevented_90', 0.0):+.2f}/90)</b> | Parate: <b>{cedi.get('Pct_Parate', 70.0):.1f}%</b> | Blunders: <b>{cedi.get('Errors_Leading_To_Goal', 0)}</b></div>"
+                            else:
+                                adv_give_html = f"<div style='color: #6ee7b7; font-size: 0.80rem; margin-top: 2px;'>⚽ xG: <b>{cedi.get('xG_Tot', 0.0):.2f} ({cedi.get('xG_90', 0.0):.2f}/90)</b> | Tiri: <b>{cedi.get('Tiri_90', 0.0):.1f}/90</b> | ΔxG: <b>{cedi.get('Delta_xG', 0.0):+.2f}</b></div>"
+                            st.markdown(f"""
+                            <div style="background: rgba(239, 68, 68, 0.08); border-left: 4px solid #ef4444; padding: 10px 14px; border-radius: 6px; margin-bottom: 8px;">
+                                <div style="font-size: 1.05rem; font-weight: bold; color: #f8fafc;">
+                                    {cedi['Giocatore']} {sig_badge}
+                                    <span style="font-size: 0.78rem; color: #94a3b8; font-weight: normal;">(Costo: {cedi.get('Costo', 0)} cr)</span>
+                                </div>
+                                <div style="color: #cbd5e1; font-size: 0.85rem;">{cedi['Squadra']} — <b>{cedi['RuoloMantra']}</b></div>
+                                <div style="color: #94a3b8; font-size: 0.80rem; margin-top: 2px;">xFV Giornata: <b>{cedi['xFV']:.2f}</b> | FM: <b>{cedi['FM']:.2f}</b></div>
+                                {adv_give_html}
+                            </div>
+                            """, unsafe_allow_html=True)
                         
                     with c_rec:
                         delta_color = "#10b981" if delta_xfv >= 0 else "#f59e0b"
-                        sig_rec_badge = f"<span style='background:#0284c7;color:white;padding:1px 6px;border-radius:4px;font-size:0.75rem;font-weight:bold;'>BUY-LOW</span>" if ricevi['Is_Buy_Low'] else ""
-                        bench_badge = "<span style='background:#475569;color:white;padding:1px 6px;border-radius:4px;font-size:0.75rem;'>Panchina Avversaria</span>" if ricevi['Is_Bench_In_Opponent'] else ""
-                        
-                        # Real Starter Status Badge
-                        status_tit = ricevi.get('Status_Titolarita', 'TITOLARE')
-                        tit_color = {
-                            'TITOLARE': '#16a34a',
-                            'CO_TITOLARE': '#ca8a04',
-                            'SUBENTRANTE': '#ea580c',
-                            'MARGINALE': '#dc2626'
-                        }.get(status_tit, '#64748b')
-                        tit_badge = f"<span style='background:{tit_color};color:white;padding:1px 6px;border-radius:4px;font-size:0.75rem;font-weight:bold;'>{ricevi.get('Badge_Titolarita', status_tit)}</span>"
-                        stash_badge = f"<span style='background:#d97706;color:white;padding:1px 6px;border-radius:4px;font-size:0.75rem;font-weight:bold;'>🩹 STASH INFORTUNIO</span>" if ricevi.get('Is_Stash_Injury') else ""
-
-                        if 'Por' in ricevi.get('RuoloMantra', ''):
-                            adv_rec_html = f"<div style='color: #38bdf8; font-size: 0.80rem; margin-top: 2px;'>🧤 G.Prevented: <b>{ricevi.get('Goals_Prevented', 0.0):+.2f} ({ricevi.get('Goals_Prevented_90', 0.0):+.2f}/90)</b> | Parate: <b>{ricevi.get('Pct_Parate', 70.0):.1f}%</b> | Blunders: <b>{ricevi.get('Errors_Leading_To_Goal', 0)}</b></div>"
-                        else:
-                            adv_rec_html = f"<div style='color: #6ee7b7; font-size: 0.80rem; margin-top: 2px;'>⚽ xG: <b>{ricevi.get('xG_Tot', 0.0):.2f} ({ricevi.get('xG_90', 0.0):.2f}/90)</b> | KP: <b>{ricevi.get('Key_Passes_90', 0.0):.1f}/90</b> | ΔxG: <b>{ricevi.get('Delta_xG', 0.0):+.2f}</b></div>"
-
+                        n_r = len(rec_list)
                         st.markdown(f"""
-                        <div style="background: rgba(16, 185, 129, 0.08); border-left: 4px solid #10b981; padding: 10px 14px; border-radius: 6px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <span style="font-size: 0.82rem; color: #10b981; font-weight: bold; text-transform: uppercase;">🟢 Tu Ricevi</span>
-                                <span style="color: {delta_color}; font-weight: bold; font-size: 0.85rem;">Delta: {'+' if delta_xfv > 0 else ''}{delta_xfv} xFV</span>
-                            </div>
-                            <div style="font-size: 1.1rem; font-weight: bold; color: #f8fafc; margin: 3px 0;">
-                                {ricevi['Giocatore']} {tit_badge} {stash_badge} {sig_rec_badge} {bench_badge}
-                            </div>
-                            <div style="color: #cbd5e1; font-size: 0.88rem;">{ricevi['Squadra']} — <b>{ricevi['RuoloMantra']}</b></div>
-                            <div style="color: #94a3b8; font-size: 0.82rem; margin-top: 4px;">
-                                xFV Giornata: <b>{ricevi['xFV']:.2f}</b> | FM: <b>{ricevi['FM']:.2f}</b> | Sufficienze: <b>{ricevi.get('Pct_Sufficienza', 0)}%</b>
-                            </div>
-                            {adv_rec_html}
-                            <div style="color: #38bdf8; font-size: 0.80rem; margin-top: 2px;">
-                                ⏱️ Minuti Reali: <b>~{ricevi.get('Min_Per_Pres', 0)} min/partita</b> ({ricevi.get('Pct_Minuti', 0)}% dei minuti totali)
-                            </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                            <span style="font-size: 0.82rem; color: #10b981; font-weight: bold; text-transform: uppercase;">
+                                🟢 Tu Ricevi ({n_r} calciator{'e' if n_r == 1 else 'i'}) | Tot Costo: <b>{tot_c_rec} cr</b>
+                            </span>
+                            <span style="color: {delta_color}; font-weight: bold; font-size: 0.85rem;">
+                                Delta: {'+' if delta_xfv > 0 else ''}{delta_xfv} xFV
+                            </span>
                         </div>
                         """, unsafe_allow_html=True)
-                        if ricevi.get('Is_Stash_Injury'):
-                            st.caption(f"🩹 *Opportunità Stash: {ricevi['Giocatore']} ha un problema fisico lieve ({ricevi.get('Injury_Detail', 'rientro a breve')}). Ottima occasione per strappare un giocatore di valore a un avversario che cerca titolari sani subito.*")
-                        elif ricevi.get('Is_Subentrante'):
-                            st.caption("⚠️ *Attenzione: questo giocatore è una riserva/subentrante in Serie A (entra solo negli spezzoni finali).*")
+                        for ricevi in rec_list:
+                            sig_rec_badge = f"<span style='background:#0284c7;color:white;padding:1px 6px;border-radius:4px;font-size:0.75rem;font-weight:bold;'>BUY-LOW</span>" if ricevi.get('Is_Buy_Low') else ""
+                            bench_badge = "<span style='background:#475569;color:white;padding:1px 6px;border-radius:4px;font-size:0.75rem;'>Panchina Avversaria</span>" if ricevi.get('Is_Bench_In_Opponent') else ""
+                            status_tit = ricevi.get('Status_Titolarita', 'TITOLARE')
+                            tit_color = {
+                                'TITOLARE': '#16a34a',
+                                'CO_TITOLARE': '#ca8a04',
+                                'SUBENTRANTE': '#ea580c',
+                                'MARGINALE': '#dc2626'
+                            }.get(status_tit, '#64748b')
+                            tit_badge = f"<span style='background:{tit_color};color:white;padding:1px 6px;border-radius:4px;font-size:0.75rem;font-weight:bold;'>{ricevi.get('Badge_Titolarita', status_tit)}</span>"
+                            stash_badge = f"<span style='background:#d97706;color:white;padding:1px 6px;border-radius:4px;font-size:0.75rem;font-weight:bold;'>🩹 STASH INFORTUNIO</span>" if ricevi.get('Is_Stash_Injury') else ""
+
+                            if 'Por' in ricevi.get('RuoloMantra', ''):
+                                adv_rec_html = f"<div style='color: #38bdf8; font-size: 0.80rem; margin-top: 2px;'>🧤 G.Prevented: <b>{ricevi.get('Goals_Prevented', 0.0):+.2f} ({ricevi.get('Goals_Prevented_90', 0.0):+.2f}/90)</b> | Parate: <b>{ricevi.get('Pct_Parate', 70.0):.1f}%</b> | Blunders: <b>{ricevi.get('Errors_Leading_To_Goal', 0)}</b></div>"
+                            else:
+                                adv_rec_html = f"<div style='color: #6ee7b7; font-size: 0.80rem; margin-top: 2px;'>⚽ xG: <b>{ricevi.get('xG_Tot', 0.0):.2f} ({ricevi.get('xG_90', 0.0):.2f}/90)</b> | KP: <b>{ricevi.get('Key_Passes_90', 0.0):.1f}/90</b> | ΔxG: <b>{ricevi.get('Delta_xG', 0.0):+.2f}</b></div>"
+
+                            st.markdown(f"""
+                            <div style="background: rgba(16, 185, 129, 0.08); border-left: 4px solid #10b981; padding: 10px 14px; border-radius: 6px; margin-bottom: 8px;">
+                                <div style="font-size: 1.05rem; font-weight: bold; color: #f8fafc;">
+                                    {ricevi['Giocatore']} {tit_badge} {stash_badge} {sig_rec_badge} {bench_badge}
+                                    <span style="font-size: 0.78rem; color: #94a3b8; font-weight: normal;">(Costo: {ricevi.get('Costo', 0)} cr)</span>
+                                </div>
+                                <div style="color: #cbd5e1; font-size: 0.85rem;">{ricevi['Squadra']} — <b>{ricevi['RuoloMantra']}</b></div>
+                                <div style="color: #94a3b8; font-size: 0.80rem; margin-top: 2px;">
+                                    xFV Giornata: <b>{ricevi['xFV']:.2f}</b> | FM: <b>{ricevi['FM']:.2f}</b> | Sufficienze: <b>{ricevi.get('Pct_Sufficienza', 0)}%</b>
+                                </div>
+                                {adv_rec_html}
+                                <div style="color: #38bdf8; font-size: 0.78rem; margin-top: 2px;">
+                                    ⏱️ Minuti Reali: <b>~{ricevi.get('Min_Per_Pres', 0)} min/partita</b> ({ricevi.get('Pct_Minuti', 0)}% dei minuti totali)
+                                </div>
+                            </div>
+                            """, unsafe_allow_html=True)
                         
                     st.markdown("<div style='margin-top: 10px; font-weight: 600; font-size: 0.9rem; color: #e2e8f0;'>💡 Perché ha senso per entrambi:</div>", unsafe_allow_html=True)
                     for m in prop['Motivazioni']:
@@ -1717,11 +1750,11 @@ with tab_scambi:
                     btn_col1, btn_col2 = st.columns([1, 3])
                     with btn_col1:
                         if st.button(f"⚖️ Simula nel Valutatore", key=f"btn_sim_{idx}"):
-                            st.session_state['sim_prefill_give'] = [cedi['Giocatore']]
-                            st.session_state['sim_prefill_receive'] = [ricevi['Giocatore']]
+                            st.session_state['sim_prefill_give'] = [p['Giocatore'] for p in give_list]
+                            st.session_state['sim_prefill_receive'] = [p['Giocatore'] for p in rec_list]
                             st.session_state['sim_prefill_opp'] = opp
                             st.session_state['sim_prefill_mode'] = "🤝 Trattativa di Lega (Inter-Squadra)"
-                            st.success(f"✅ Scambio tra {cedi['Giocatore']} e {ricevi['Giocatore']} pre-impostato! Apri la scheda '⚖️ Simulatore Scambi Libero' per l'analisi completa.")
+                            st.success(f"✅ Scambio con {opp} pre-impostato! Apri la scheda '⚖️ Simulatore Scambi Libero' per l'analisi completa.")
                             
                     st.markdown("</div>", unsafe_allow_html=True)
 

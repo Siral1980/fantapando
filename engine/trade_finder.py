@@ -394,6 +394,9 @@ def analyze_squad_weaknesses(team_name, league_data, df_master, matchday=8):
     if df_squad.empty:
         return {'error': "Nessun calciatore della squadra trovato nel database master."}
 
+    cost_lookup = {p['Giocatore']: int(p.get('Costo', 1) or 1) for p in team_players if 'Giocatore' in p}
+    df_squad['Costo'] = df_squad['Giocatore'].map(cost_lookup).fillna(1).astype(int)
+
     # Project squad performance for the target matchday
     df_proj = batch_predict_xfv(df_squad, matchday=matchday)
     
@@ -730,10 +733,52 @@ def _get_department_name(roles):
     return 'in rosa'
 
 
+def _format_trade_player(p, is_opponent=False):
+    """Formats player dictionary for trade proposals with full stats and starter status."""
+    from engine.injuries_manager import classify_injury_status
+    status_info = compute_real_starter_status(p)
+    inj_info = classify_injury_status(p['Giocatore']) if is_opponent else {}
+    is_buy_low = ('BUY-LOW' in str(p.get('Signal', '')))
+    
+    return {
+        'Giocatore': p['Giocatore'],
+        'Squadra': p.get('Squadra', ''),
+        'RuoloMantra': p.get('RuoloMantra', ''),
+        'Costo': safe_int(p.get('Costo', 0)),
+        'xFV': round(safe_float(p.get('xFV', 0.0)), 2),
+        'FM': round(safe_float(p.get('FM', p.get('FM_Stagione', 0.0))), 2),
+        'Signal': str(p.get('Signal', 'NEUTRO')),
+        'Tier': p.get('Tier', 'TITOLARE'),
+        'Status_Titolarita': status_info['Status'],
+        'Badge_Titolarita': status_info['Badge'],
+        'Label_Titolarita': status_info['Label'],
+        'Min_Per_Pres': status_info['Min_Per_Pres'],
+        'Pct_Minuti': status_info['Pct_Minuti'],
+        'Pct_Sufficienza': round(safe_float(p.get('Pct_Sufficienza', 50.0)), 1),
+        'Is_Subentrante': not status_info['Is_Real_Starter'],
+        'Is_Buy_Low': is_buy_low,
+        'Is_Injured': inj_info.get('Is_Injured', False),
+        'Is_Stash_Injury': inj_info.get('Is_Injured', False) and not inj_info.get('Is_Long_Term', False),
+        'Injury_Detail': inj_info.get('Dettaglio', ''),
+        'Injury_Severity': inj_info.get('Severity_Label', 'DISPONIBILE'),
+        'Is_Bench_In_Opponent': p.get('Is_Bench_In_Opponent', False),
+        'Goals_Prevented': safe_float(p.get('Goals_Prevented', 0.0)),
+        'Goals_Prevented_90': safe_float(p.get('Goals_Prevented_90', 0.0)),
+        'Errors_Leading_To_Goal': safe_int(p.get('Errors_Leading_To_Goal', 0)),
+        'Pct_Parate': safe_float(p.get('Pct_Parate', 70.0)),
+        'xG_Tot': safe_float(p.get('xG_Tot', 0.0)),
+        'xG_90': safe_float(p.get('xG_90', 0.0)),
+        'Delta_xG': safe_float(p.get('Delta_xG', 0.0)),
+        'Tiri_90': safe_float(p.get('Tiri_90', 0.0)),
+        'Key_Passes_90': safe_float(p.get('Key_Passes_90', 0.0)),
+        'xA_90': safe_float(p.get('xA_90', 0.0))
+    }
+
+
 def is_trade_role_parity_credible(give_dict, receive_dict):
     """
-    Validates whether a proposed 1-to-1 swap respects Fantacalcio Mantra role hierarchy
-    and fantasy football market credibility:
+    Validates whether a proposed 1-to-1 swap respects Fantacalcio Mantra role hierarchy,
+    capital investment parity, and fantasy football market credibility:
     - Tier 1: Pc, A (Centre Forwards and Second Strikers - Scarcest assets, +3 goal impact)
     - Tier 2: W, T (Attacking Wings and Trequartisti)
     - Tier 3: M, C, E, Dc, Dd, Ds (Midfield and Defensive Tactical Foundation)
@@ -744,6 +789,8 @@ def is_trade_role_parity_credible(give_dict, receive_dict):
     Rule 2: Nobody trades an established starting W or T for a zero-bonus defensive midfielder or bench defender.
     Rule 3: Tactical cross-exchanges within M, C, E, Dc, Dd, Ds are credible if xFV is balanced.
     Rule 4: Por is only exchanged for other Por or comparable tactical assets.
+    Rule 5: Extreme auction cost disparity (e.g. Costo 3 for Costo 232) is strictly rejected.
+    Rule 6: Starting status parity: a marginal/deep bench player cannot be swapped 1x1 for an established Serie A starter.
     """
     give_roles = parse_mantra_roles(give_dict.get('RuoloMantra', ''))
     rec_roles = parse_mantra_roles(receive_dict.get('RuoloMantra', ''))
@@ -754,109 +801,158 @@ def is_trade_role_parity_credible(give_dict, receive_dict):
     is_rec_wing_t = any(r in ['W', 'T'] for r in rec_roles)
     is_give_wing_t = any(r in ['W', 'T'] for r in give_roles)
     
+    is_rec_gk = 'Por' in rec_roles
+    is_give_gk = 'Por' in give_roles
+
     give_fm = float(give_dict.get('FM', give_dict.get('FM_Stagione', 0)) or 0)
     give_xfv = float(give_dict.get('xFV', 0) or 0)
-    give_gf = int(give_dict.get('GF', 0) or 0)
-    give_costo = int(give_dict.get('Costo', 0) or 0)
-    
-    # Top di Reparto criteria (e.g. McTominay, Calhanoglu, Dimarco, Barella, Koopmeiners, Pulisic):
+    give_gf = safe_int(give_dict.get('GF', 0))
+    give_costo = safe_int(give_dict.get('Costo', 0))
+    give_pres = safe_int(give_dict.get('Presenze', 0))
+
+    rec_fm = float(receive_dict.get('FM', receive_dict.get('FM_Stagione', 0)) or 0)
+    rec_xfv = float(receive_dict.get('xFV', 0) or 0)
+    rec_gf = safe_int(receive_dict.get('GF', 0))
+    rec_costo = safe_int(receive_dict.get('Costo', 0))
+    rec_pres = safe_int(receive_dict.get('Presenze', 0))
+
+    # -------------------------------------------------------------
+    # 0. GOALKEEPER SANITY & INTEGRITY
+    # -------------------------------------------------------------
+    if is_rec_gk != is_give_gk:
+        rec_is_starter_gk = is_rec_gk and (rec_pres >= 4 or rec_costo >= 20)
+        give_is_starter_gk = is_give_gk and (give_pres >= 4 or give_costo >= 20)
+        # Outfield for backup/reserve GK is completely unrealistic
+        if is_rec_gk and not rec_is_starter_gk:
+            return False
+        if is_give_gk and not give_is_starter_gk:
+            return False
+        # Star striker for goalkeeper 1x1 is also rejected in real leagues
+        if (is_give_striker and give_costo >= 40) or (is_rec_striker and rec_costo >= 40):
+            return False
+
+    # -------------------------------------------------------------
+    # 1. CAPITAL INVESTMENT & AUCTION COST DISPARITY (1x1)
+    # -------------------------------------------------------------
+    if rec_costo >= 80:
+        # Top star/bomber requires substantial value in return (at least 35% of cost or 35+ credits with high FM)
+        if give_costo < 0.35 * rec_costo and not (give_costo >= 35 and give_fm >= 6.60):
+            return False
+    elif rec_costo >= 40:
+        if give_costo < 0.25 * rec_costo and give_costo < 18:
+            return False
+
+    if give_costo >= 80:
+        if rec_costo < 0.25 * give_costo and rec_costo < 25:
+            return False
+
+    # -------------------------------------------------------------
+    # 2. REAL STARTER STATUS PARITY (1x1)
+    # -------------------------------------------------------------
+    give_status = compute_real_starter_status(give_dict)['Status']
+    rec_status = compute_real_starter_status(receive_dict)['Status']
+    if rec_status == 'TITOLARE' and give_status == 'MARGINALE':
+        return False
+    if rec_status == 'TITOLARE' and give_status == 'SUBENTRANTE' and give_costo < 25:
+        return False
+    if give_status == 'MARGINALE' and rec_status in ['TITOLARE', 'CO_TITOLARE']:
+        return False
+
+    # Top di Reparto criteria:
     is_give_top_dept = (
         give_gf >= 2 or 
         (give_fm >= 6.70 and give_xfv >= 5.8) or 
         (give_costo >= 16 and give_fm >= 6.30)
     )
-    
-    # 1. TARGET IS A STRIKER (Pc or A)
+
+    # -------------------------------------------------------------
+    # 3. TARGET IS A STRIKER (Pc or A)
+    # -------------------------------------------------------------
     if is_rec_striker:
         # A) You give another striker (Pc or A)
         if is_give_striker:
+            max_c = max(give_costo, rec_costo, 1)
+            min_c = min(give_costo, rec_costo)
+            if max_c >= 50 and (min_c / max_c) < 0.25:
+                return False
             return True
-        # B) You give an elite attacking wing / trequartista (W or T with strong fantasy output)
+        # B) You give an elite attacking wing / trequartista (W or T)
         if is_give_wing_t:
             if give_xfv >= 5.5 and (give_fm >= 6.35 or give_gf >= 1 or give_costo >= 14):
+                if rec_costo >= 100 and give_costo < 35:
+                    return False
                 return True
             return False
         # C) You give a Top di Reparto from midfield or defense
         if is_give_top_dept:
+            if rec_costo >= 120 and give_costo < 45:
+                return False
             return True
-        # Standard M, C, D, or Por for a Pc/A is REJECTED
         return False
-        
-    # 2. TARGET IS AN ATTACKING WING OR TREQUARTISTA (W or T)
+
+    # -------------------------------------------------------------
+    # 4. TARGET IS AN ATTACKING WING OR TREQUARTISTA (W or T)
+    # -------------------------------------------------------------
     if is_rec_wing_t:
-        # A) You give a striker (Pc, A) or another W/T
         if is_give_striker or is_give_wing_t:
             return True
-        # B) You give a quality central midfielder (C) or attacking wing-back (E) with bonus threat
         is_give_c_e = any(r in ['C', 'E'] for r in give_roles)
         if is_give_c_e and (give_fm >= 6.30 or give_gf >= 1 or give_xfv >= 5.6):
             return True
-        # C) You give a top defensive midfielder (M) or top defender (D)
         if is_give_top_dept or (give_fm >= 6.55 and give_xfv >= 5.7):
             return True
-        # Ordinary M or D without bonus for W/T is unrealistic
         return False
 
-    # 3. TARGET IS A GOALKEEPER (Por)
-    if 'Por' in rec_roles:
-        # If target is a top starting goalkeeper (e.g. Maignan, Sommer, Di Gregorio with auction Costo >= 20 or 4+ starts):
-        rec_costo = int(receive_dict.get('Costo', 0) or 0)
-        rec_pres = int(receive_dict.get('Presenze', 0) or 0)
+    # -------------------------------------------------------------
+    # 5. TARGET IS A GOALKEEPER (Por)
+    # -------------------------------------------------------------
+    if is_rec_gk:
+        if is_give_gk:
+            return True
         is_rec_top_gk = (rec_costo >= 20 or rec_pres >= 4)
         if is_rec_top_gk:
-            # A fantasy manager will not trade a top starting GK for an ordinary bench defender or midfielder
-            if 'Por' in give_roles:
-                return True
             if is_give_striker or is_give_top_dept:
                 return True
             if is_give_wing_t and give_xfv >= 5.6 and (give_costo >= 16 or give_fm >= 6.4):
                 return True
             return False
-        return True
+        return False
 
-    # 4. TARGET IS TACTICAL MIDFIELD OR DEFENSE (M, C, E, Dc, Dd, Ds)
-    # Tactical balance exchanges are credible if values are close
+    # -------------------------------------------------------------
+    # 6. TARGET IS TACTICAL MIDFIELD OR DEFENSE (M, C, E, Dc, Dd, Ds)
+    # -------------------------------------------------------------
     return True
 
 
 def find_win_win_trades(
     my_team_name, league_data, df_master, matchday=8, 
     target_role_filter=None, give_player_filter=None, opp_team_filter=None, 
-    min_starter_filter='TITOLARI_E_CO', df_all_proj=None, max_proposals=30
+    min_starter_filter='TITOLARI_E_CO', trade_format_filter='TUTTI',
+    df_all_proj=None, max_proposals=30
 ):
     """
-    Automated Win-Win Trade Finder:
+    Automated Win-Win Trade Finder (Radar Scambi Intelligenti):
     Scans opponent teams in the fantasy league.
-    Finds trades where:
-    - You offer a player from your SURPLUS (who currently sits on your bench or whose role you have in abundance).
-    - The opponent has a DEFICIENCY in that role (so your player is an instant upgrade for them).
-    - You receive a player in a role that improves your squad (Pc, M, Dd, Ds, Dc).
-    - Filters by real Serie A starter status to prevent recommending subentranti (e.g. Lucca, Nzola, Kevin Carlos).
+    Finds mutually advantageous trades across single (1x1) and multi-player formats (2x2, 2x1, 1x2):
+    - 1x1: Strictly balanced 1-for-1 swaps respecting market credibility and auction cost parity.
+    - 2x2: Combo Titolare + Riserva (Vasi Comunicanti): swaps a surplus starter + rotation piece for a target starter + depth piece, unlocking minutes for an existing bench reserve.
+    - 2x1: Upgrade di Reparto: offers two solid starters/surplus players that fix multiple opponent holes for 1 elite target.
+    - 1x2: Ristrutturazione Modulo / Profondità: trades 1 high-value piece from an overstocked role for 2 reliable starters.
     
     Returns prioritized list of mutually advantageous trade proposals with tactical negotiation arguments.
     """
+    import itertools
+    from engine.injuries_manager import classify_injury_status
+
     my_diag = analyze_squad_weaknesses(my_team_name, league_data, df_master, matchday=matchday)
     if 'error' in my_diag:
         return []
 
-    my_weak_roles = set(w['Ruolo'] for w in my_diag['Punti_Deboli'])
-    # If no strict numerical weakness, consider natural upgrade target roles
+    my_weak_roles = set(w['Ruolo'] for w in my_diag.get('Punti_Deboli', []))
     if not my_weak_roles:
         my_weak_roles = {'Pc', 'M', 'Dc', 'Dd', 'Ds'}
 
     release_names = get_league_release_names(league_data)
-    my_surplus_players = my_diag['Surplus_Cedibili']
-    if not my_surplus_players:
-        return []
-    my_surplus_players = [p for p in my_surplus_players if not is_player_to_release(p, release_names)]
-    if not my_surplus_players:
-        return []
-
-    # Filter by specific player to give if requested
-    if give_player_filter and give_player_filter != 'TUTTI':
-        my_surplus_players = [p for p in my_surplus_players if p['Giocatore'] == give_player_filter]
-        if not my_surplus_players:
-            return []
 
     # Pre-project all players in df_master for matchday if not provided
     if df_all_proj is None or df_all_proj.empty:
@@ -869,21 +965,87 @@ def find_win_win_trades(
         for p in t_players:
             if 'Giocatore' in p and 'Costo' in p:
                 name = p['Giocatore']
-                cost = int(p['Costo'] or 0)
+                cost = safe_int(p.get('Costo', 0))
                 costo_map[name] = max(costo_map.get(name, 0), cost)
 
-    trade_proposals = []
+    for name, p_data in proj_map.items():
+        if name in costo_map:
+            p_data['Costo'] = costo_map[name]
 
+    # Diagnose My Team optimal lineup & offerable players
+    my_owned = [
+        p for p in league_data.get(my_team_name, [])
+        if not p.get('InPrestito', False) and safe_int(p.get('Costo', 1)) > 0 and not is_player_to_release(p, release_names)
+    ]
+    my_pnames = [p['Giocatore'] for p in my_owned]
+    my_proj_list = [proj_map[n] for n in my_pnames if n in proj_map]
+    if not my_proj_list:
+        return []
+    df_my_proj = pd.DataFrame(my_proj_list)
+    opt_my_curr = optimize_best_mantra_lineup(df_my_proj)
+    my_starters_set = set(p['Giocatore'] for p in opt_my_curr.get('Titolari', []))
+    my_surplus_set = set(s['Giocatore'] for s in my_diag.get('Surplus_Cedibili', []))
+
+    # User active roles count to identify safe departments where starters can be traded
+    my_roles_active = {}
+    for p in my_proj_list:
+        if safe_int(p.get('Presenze', 0)) >= 2 or safe_float(p.get('P_Voto', 0)) >= 0.50:
+            for r in parse_mantra_roles(p.get('RuoloMantra', '')):
+                my_roles_active[r] = my_roles_active.get(r, 0) + 1
+
+    my_offerable = []
+    for p_row in my_proj_list:
+        pname = p_row['Giocatore']
+        if is_player_to_release(p_row, release_names) or is_player_to_release(pname, release_names):
+            continue
+        inj = classify_injury_status(pname)
+        if not inj.get('Can_Be_Traded_Out', True):
+            continue
+
+        pres = safe_int(p_row.get('Presenze', 0))
+        xfv = safe_float(p_row.get('xFV', 0.0))
+        roles = parse_mantra_roles(p_row.get('RuoloMantra', ''))
+        is_gk = ('Por' in roles)
+
+        if pname in my_surplus_set:
+            tier = 'SURPLUS'
+        elif pname in my_starters_set:
+            # Starter: only offer if squad has deep coverage in that role (>= 4 active)
+            has_depth = any(my_roles_active.get(r, 0) >= 4 for r in roles)
+            if not has_depth and not is_gk:
+                continue
+            tier = 'TITOLARE'
+        else:
+            tier = 'PANCHINARO'
+
+        if not is_gk and pres < 1 and xfv < 5.2 and tier != 'SURPLUS':
+            continue
+
+        p_info = dict(p_row)
+        p_info['Tier'] = tier
+        my_offerable.append(p_info)
+
+    if not my_offerable:
+        return []
+
+    # Filter offerable players by specific give player if requested
+    if give_player_filter and give_player_filter != 'TUTTI':
+        if not any(p['Giocatore'] == give_player_filter for p in my_offerable):
+            return []
+
+    trade_proposals = []
+    seen_trade_signatures = set()
+
+    # Iterate over opponent teams
     for opp_team, opp_players in league_data.items():
         if opp_team == my_team_name:
             continue
         if opp_team_filter and opp_team_filter != 'TUTTI' and opp_team != opp_team_filter:
             continue
 
-        # Only owned assets can be traded: exclude temporary loans and to-be-released players
         opp_players_owned = [
             p for p in opp_players 
-            if not p.get('InPrestito', False) and p.get('Costo', 1) > 0 and not is_player_to_release(p, release_names)
+            if not p.get('InPrestito', False) and safe_int(p.get('Costo', 1)) > 0 and not is_player_to_release(p, release_names)
         ]
         opp_pnames = [p['Giocatore'] for p in opp_players_owned]
         opp_proj_list = []
@@ -897,335 +1059,491 @@ def find_win_win_trades(
             continue
             
         df_opp_proj = pd.DataFrame(opp_proj_list)
-        # Fast presumptive starters: top 11 by xFV
         opp_starters = set(df_opp_proj.sort_values('xFV', ascending=False).head(11)['Giocatore'])
+
+        opp_diag = analyze_squad_weaknesses(opp_team, league_data, df_master, matchday=matchday)
+        opp_weak_roles = {w['Ruolo']: w.get('Severita', 'MEDIA') for w in opp_diag.get('Punti_Deboli', [])}
+        opp_surplus_pnames = set(s['Giocatore'] for s in opp_diag.get('Surplus_Cedibili', []))
 
         # Count opponent active roles
         opp_roles_active = {}
         for p in opp_proj_list:
-            is_active = (p.get('Presenze', 0) >= 2 or p.get('P_Voto', 0) >= 0.50)
+            is_active = (safe_int(p.get('Presenze', 0)) >= 2 or safe_float(p.get('P_Voto', 0)) >= 0.50)
             for r in parse_mantra_roles(p.get('RuoloMantra', '')):
                 if is_active:
                     opp_roles_active[r] = opp_roles_active.get(r, 0) + 1
 
-        # Check where opponent is short (Deficiency) and where they are rich (Surplus)
-        for my_give in my_surplus_players:
-            my_give_roles = parse_mantra_roles(my_give['RuoloMantra'])
-            
-            # Opponent short in role I offer?
-            opp_short_roles = [
-                r for r in my_give_roles 
-                if r in RECOMMENDED_QUOTAS and opp_roles_active.get(r, 0) <= RECOMMENDED_QUOTAS[r]['min_active']
-            ]
-            opp_needs_my_give = len(opp_short_roles) > 0
-            
-            # Loop over opponent players
-            for opp_p in opp_proj_list:
-                opp_p_name = opp_p['Giocatore']
-                if is_player_to_release(opp_p, release_names) or is_player_to_release(opp_p_name, release_names):
+        # Identify opponent target candidates that solve user's needs
+        opp_target_candidates = []
+        for opp_p in opp_proj_list:
+            opp_p_name = opp_p['Giocatore']
+            if is_player_to_release(opp_p, release_names) or is_player_to_release(opp_p_name, release_names):
+                continue
+            opp_p_roles = parse_mantra_roles(opp_p.get('RuoloMantra', ''))
+
+            # Filter by target role if specified
+            if target_role_filter and target_role_filter != 'TUTTI':
+                if target_role_filter not in opp_p_roles:
                     continue
-                opp_p_roles = parse_mantra_roles(opp_p.get('RuoloMantra', ''))
-                
-                # Filter by target role if specified by user
-                if target_role_filter and target_role_filter != 'TUTTI':
-                    if target_role_filter not in opp_p_roles:
-                        continue
-                elif not target_role_filter:
-                    # Default when no filter is provided: prioritize squad weaknesses
-                    if my_weak_roles and not opp_p_roles.intersection(my_weak_roles):
-                        continue
-
-                # 0. Check medical availability for opponent player
-                from engine.injuries_manager import classify_injury_status
-                opp_inj = classify_injury_status(opp_p_name)
-
-                # Disallow long-term injuries (>= 3 weeks, surgery, cruciate, months out)
-                if opp_inj['Is_Long_Term']:
+            elif not target_role_filter:
+                if my_weak_roles and not opp_p_roles.intersection(my_weak_roles):
                     continue
 
-                # Disallow suspended players if looking to solve urgent weakness
-                if opp_inj.get('Stato') == 'Squalificato':
+            # Medical check
+            opp_inj = classify_injury_status(opp_p_name)
+            if opp_inj['Is_Long_Term'] or opp_inj.get('Stato') == 'Squalificato':
+                continue
+
+            # Criticality protection for opponent: don't take their last keeper or striker
+            if 'Por' in opp_p_roles:
+                opp_all_pors = [p for p in opp_proj_list if 'Por' in parse_mantra_roles(p.get('RuoloMantra', ''))]
+                opp_rem_starters = [p for p in opp_all_pors if p['Giocatore'] != opp_p_name and (safe_int(p.get('Presenze', 0)) >= 3 or safe_float(p.get('P_Voto', 0)) >= 0.70)]
+                if len(opp_rem_starters) == 0:
                     continue
+            if 'Pc' in opp_p_roles and opp_roles_active.get('Pc', 0) <= 1:
+                continue
 
-                is_opp_injured = opp_inj['Is_Injured']
-                is_stash_injury = False
+            opp_p_status = compute_real_starter_status(opp_p)
+            if min_starter_filter == 'TITOLARI_SOLO' and opp_p_status['Status'] != 'TITOLARE':
+                continue
+            elif min_starter_filter == 'TITOLARI_E_CO' and opp_p_status['Status'] not in ['TITOLARE', 'CO_TITOLARE']:
+                continue
+            elif min_starter_filter == 'TUTTI' and opp_p_status['Status'] == 'MARGINALE':
+                continue
 
-                if is_opp_injured:
-                    # If the user has a CRITICAL deficiency in this role, an injured player cannot solve it immediately!
-                    role_has_critical_weakness = any(
-                        w['Ruolo'] in opp_p_roles and w.get('Severita') in ('CRITICA', 'ELEVATA')
-                        for w in my_diag['Punti_Deboli']
-                    )
-                    if role_has_critical_weakness:
-                        continue  # Cannot solve an urgent hole with an unavailable player
-                    
-                    # If it's a minor/short-term injury for depth or upgrade, it's a smart "Stash" strategy
-                    is_stash_injury = True
+            opp_target_candidates.append(opp_p)
 
-                # 0b. Role Parity & Hierarchy Credibility Check
-                if not is_trade_role_parity_credible(my_give, opp_p):
+        if not opp_target_candidates:
+            continue
+
+        # Opponent secondary surplus/bench pieces for multi-player deals
+        opp_secondary_pieces = [
+            p for p in opp_proj_list
+            if not is_player_to_release(p, release_names) and
+               'Por' not in parse_mantra_roles(p.get('RuoloMantra', '')) and
+               (p['Giocatore'] in opp_surplus_pnames or safe_float(p.get('xFV', 0)) <= 5.8)
+        ]
+
+        # -------------------------------------------------------------
+        # GENERATION 1: 1x1 TRADES (Scambi Singoli Equilibrati)
+        # -------------------------------------------------------------
+        if trade_format_filter in ['TUTTI', 'SOLO_SINGOLI']:
+            my_1x1_offers = [p for p in my_offerable if p['Tier'] in ['SURPLUS', 'PANCHINARO']]
+            if not my_1x1_offers:
+                my_1x1_offers = my_offerable
+
+            for my_give in my_1x1_offers:
+                if give_player_filter and give_player_filter != 'TUTTI' and my_give['Giocatore'] != give_player_filter:
                     continue
+                my_give_roles = parse_mantra_roles(my_give['RuoloMantra'])
+                opp_needs_my_give = any(r in opp_weak_roles for r in my_give_roles)
 
-                # 0c. Opponent Criticality Protection: Avoid creating fatal new holes for opponent
-                # Rule: Never steal an opponent's only starting goalkeeper unless providing a goalkeeper in exchange
-                if 'Por' in opp_p_roles and 'Por' not in my_give_roles:
-                    opp_all_pors = [p for p in opp_proj_list if 'Por' in parse_mantra_roles(p.get('RuoloMantra', ''))]
-                    opp_rem_pors = [p for p in opp_all_pors if p['Giocatore'] != opp_p_name]
-                    opp_rem_starters = [p for p in opp_rem_pors if safe_int(p.get('Presenze', 0)) >= 3 or safe_float(p.get('P_Voto', 0)) >= 0.70]
-                    if len(opp_rem_pors) < 2 or len(opp_rem_starters) == 0:
-                        continue # Skip: would leave opponent uncovered in goal!
+                for opp_p in opp_target_candidates:
+                    opp_p_name = opp_p['Giocatore']
+                    opp_p_roles = parse_mantra_roles(opp_p.get('RuoloMantra', ''))
 
-                # Rule: Avoid stripping opponent of their last Dc, M, or Pc
-                if 'Dc' in opp_p_roles and 'Dc' not in my_give_roles and opp_roles_active.get('Dc', 0) <= 3:
-                    continue
-                if 'M' in opp_p_roles and 'M' not in my_give_roles and opp_roles_active.get('M', 0) <= 2:
-                    continue
-                if 'Pc' in opp_p_roles and 'Pc' not in my_give_roles and opp_roles_active.get('Pc', 0) <= 1:
-                    continue
-
-                # 1. Compute real starter status in Serie A
-                opp_p_status = compute_real_starter_status(opp_p)
-                
-                # Filter by user's starter status preference
-                if min_starter_filter == 'TITOLARI_SOLO':
-                    if opp_p_status['Status'] != 'TITOLARE':
-                        continue
-                elif min_starter_filter == 'TITOLARI_E_CO':
-                    if opp_p_status['Status'] not in ['TITOLARE', 'CO_TITOLARE']:
-                        continue
-                elif min_starter_filter == 'TUTTI':
-                    # Allow all, but exclude completely marginal players (< 2 apps)
-                    if opp_p_status['Status'] == 'MARGINALE':
+                    # Role Parity & Hierarchy Credibility Check
+                    if not is_trade_role_parity_credible(my_give, opp_p):
                         continue
 
-                opp_p_xfv = float(opp_p.get('xFV', 0))
-                my_give_xfv = float(my_give['xFV'])
-                
-                # Check realistic exchange parity (within 1.85 xFV points)
-                xfv_gap = opp_p_xfv - my_give_xfv
-                if abs(xfv_gap) > 1.85:
-                    continue
+                    # xFV Parity Check
+                    my_give_xfv = safe_float(my_give.get('xFV', 0.0))
+                    opp_p_xfv = safe_float(opp_p.get('xFV', 0.0))
+                    if abs(opp_p_xfv - my_give_xfv) > 1.85:
+                        continue
 
-                # Don't swap same weak role unless it's a significant upgrade
-                same_weak_roles = my_give_roles.intersection(opp_p_roles).intersection(my_weak_roles)
-                if same_weak_roles and opp_p_xfv <= my_give_xfv + 0.3:
-                    continue
+                    # Don't swap same weak role without improvement
+                    same_weak = my_give_roles.intersection(opp_p_roles).intersection(my_weak_roles)
+                    if same_weak and opp_p_xfv <= my_give_xfv + 0.3:
+                        continue
 
-                is_on_opp_bench = (opp_p_name not in opp_starters)
-                is_buy_low = ('BUY-LOW' in str(opp_p.get('Signal', '')))
-                is_sell_high = ('SELL-HIGH' in my_give.get('Signal', ''))
-                opp_pct_suff = float(opp_p.get('Pct_Sufficienza', 50.0))
-                
-                # Calculate Win-Win Score
-                score = 50.0
-                reasons = []
-                
-                # A. Opponent Need satisfaction (High leverage)
-                if opp_needs_my_give:
-                    score += 35.0
-                    short_str = "/".join(opp_short_roles)
-                    cnt = opp_roles_active.get(opp_short_roles[0], 0)
-                    reasons.append(f"Bisogno forte di {opp_team}: hanno solo {cnt} giocatori attivi in {short_str} e cercano urgentemente un titolare")
-                elif any(opp_roles_active.get(r, 0) <= 3 for r in my_give_roles):
-                    score += 15.0
-                    reasons.append(f"{opp_team} ha rotazioni corte nel ruolo di {my_give['Giocatore']}")
+                    sig_key = (opp_team, (my_give['Giocatore'],), (opp_p_name,))
+                    if sig_key in seen_trade_signatures:
+                        continue
+                    seen_trade_signatures.add(sig_key)
 
-                # B. Real Starter Quality & Weakness Resolution
-                matching_weakness = [w for w in my_diag['Punti_Deboli'] if w['Ruolo'] in opp_p_roles]
-                if opp_p_status['Status'] == 'TITOLARE':
-                    score += 35.0
-                    reasons.append(f"🟢 Titolare inamovibile in Serie A: media di {opp_p_status['Min_Per_Pres']} min/partita ({opp_p_status['Pct_Minuti']}% dei minuti totali)")
-                    if matching_weakness:
-                        w_obj = matching_weakness[0]
-                        score += 30.0 if w_obj['Severita'] == 'CRITICA' else 20.0
-                        reasons.append(f"Risolve un tuo punto debole: colma la carenza in {w_obj['Reparto']} ({w_obj['Ruolo']}) con un titolare fisso")
-                    else:
-                        reasons.append(f"Rinforzo di livello: inserisci un titolare comprovato nel reparto {list(opp_p_roles)[0]}")
-                elif opp_p_status['Status'] == 'CO_TITOLARE':
-                    score += 20.0
-                    reasons.append(f"🟡 Co-titolare / rotazione frequente in Serie A: media di {opp_p_status['Min_Per_Pres']} min/partita ({opp_p_status['Pct_Minuti']}% minuti)")
-                    if matching_weakness:
-                        w_obj = matching_weakness[0]
-                        score += 20.0 if w_obj['Severita'] == 'CRITICA' else 15.0
-                        reasons.append(f"Risolve un tuo punto debole: garantisce una solida opzione in {w_obj['Reparto']} ({w_obj['Ruolo']})")
-                elif opp_p_status['Status'] == 'SUPER_SUB':
-                    score += 15.0
-                    reasons.append(
-                        f"⚡ Jolly da bonus / Super-Sub: pur partendo spesso dalla panchina ({opp_p_status['Min_Per_Pres']} min/partita), "
-                        f"vanta una pericolosità d'élite ({opp_xg90:.2f} xG/90, {opp_xa90:.2f} xA/90) ad alto potenziale di bonus immediati"
-                    )
-                else: # SUBENTRANTE / MARGINALE
-                    # If user has a critical weakness in this department, a subentrante does NOT solve it!
-                    score -= 30.0
-                    reasons.append(f"⚠️ Subentrante / Riserva in Serie A: gioca solo ~{opp_p_status['Min_Per_Pres']} min a partita; non garantisce titolarità")
-
-                # C. Rating sufficiency reliability
-                if opp_pct_suff >= 60.0:
-                    score += 15.0
-                    reasons.append(f"🛡️ Alta affidabilità di voto: {opp_pct_suff:.1f}% di partite con voto >= 6.0")
-                elif opp_pct_suff < 35.0:
-                    score -= 25.0
-                    reasons.append(f"⚠️ Rischio insufficienze: solo il {opp_pct_suff:.1f}% di voti >= 6.0")
-
-                # D. Advanced GK and Outfield Metrics Evaluation
-                opp_gp = safe_float(opp_p.get('Goals_Prevented', 0.0))
-                opp_gp90 = safe_float(opp_p.get('Goals_Prevented_90', 0.0))
-                opp_errs = safe_int(opp_p.get('Errors_Leading_To_Goal', 0))
-                opp_save_pct = safe_float(opp_p.get('Pct_Parate', 70.0))
-                opp_xg_tot = safe_float(opp_p.get('xG_Tot', 0.0))
-                opp_xg90 = safe_float(opp_p.get('xG_90', 0.0))
-                opp_delta_xg = safe_float(opp_p.get('Delta_xG', 0.0))
-                opp_tiri = safe_float(opp_p.get('Tiri_90', 0.0))
-                opp_kp = safe_float(opp_p.get('Key_Passes_90', 0.0))
-                opp_xa90 = safe_float(opp_p.get('xA_90', 0.0))
-
-                if 'Por' in opp_p_roles:
-                    if opp_gp >= +2.0:
+                    # Win-Win Score & Rationale
+                    score = 50.0
+                    reasons = []
+                    if opp_needs_my_give:
                         score += 35.0
-                        reasons.append(f"🧤 Shot-stopping d'élite: {opp_p_name} vanta {opp_gp:+.2f} gol evitati ({opp_gp90:+.2f}/90) e {opp_save_pct:.1f}% di parate")
-                    elif opp_gp <= -1.0:
-                        score -= 30.0
-                        reasons.append(f"⚠️ Sotto-performance al tiro: {opp_p_name} ha concesso {abs(opp_gp):.2f} gol in più del previsto (PSxG)")
-                    
-                    if opp_errs > 0:
-                        score -= 35.0 * opp_errs
-                        reasons.append(f"⚠️ Rischio papere: {opp_p_name} ha all'attivo {opp_errs} blunders decisivi (voto <= 5.0)")
-                    elif opp_errs == 0 and opp_gp >= +0.5:
+                        reasons.append(f"Bisogno forte di {opp_team}: il ruolo di {my_give['Giocatore']} ({my_give['RuoloMantra']}) è un punto debole nella loro rosa")
+                    elif any(opp_roles_active.get(r, 0) <= 3 for r in my_give_roles):
                         score += 15.0
-                        reasons.append(f"🛡️ Massima sicurezza tra i pali: zero errori decisivi e resa positiva sui tiri")
-                else:
-                    opp_mins_tot = safe_float(opp_p.get('Minuti_Reali', 0.0))
-                    if opp_tiri >= 2.0 or opp_xg90 >= 0.25:
-                        score += 15.0
-                        reasons.append(f"🔥 Rendimento offensivo: {opp_tiri:.1f} tiri e {opp_xg90:.2f} xG/90 min (Volume stagionale: {opp_xg_tot:.2f} xG)")
-                    elif opp_kp >= 1.5 or opp_xa90 >= 0.15:
-                        score += 12.0
-                        reasons.append(f"🎯 Macchina da assist: {opp_kp:.1f} passaggi chiave e {opp_xa90:.2f} xA/90 min (Volume stagionale: {safe_float(opp_p.get('xA_Tot', 0.0)):.2f} xA)")
+                        reasons.append(f"{opp_team} ha rotazioni corte nel ruolo di {my_give['Giocatore']}")
 
-                    if 0 < opp_mins_tot < 270:
-                        reasons.append(f"⚠️ Campione ridotto: i parametri per 90 minuti di {opp_p_name} sono calcolati su soli {int(opp_mins_tot)} minuti totali (valutazione normalizzata bayesiana).")
+                    opp_p_status = compute_real_starter_status(opp_p)
+                    matching_weakness = [w for w in my_diag.get('Punti_Deboli', []) if w['Ruolo'] in opp_p_roles]
+                    if opp_p_status['Status'] == 'TITOLARE':
+                        score += 35.0
+                        reasons.append(f"🟢 Titolare inamovibile in Serie A ({opp_p_status['Min_Per_Pres']} min/partita)")
+                        if matching_weakness:
+                            score += 30.0 if matching_weakness[0]['Severita'] == 'CRITICA' else 20.0
+                            reasons.append(f"Risolve un tuo punto debole: colma la carenza in {matching_weakness[0]['Reparto']} ({matching_weakness[0]['Ruolo']})")
+                    elif opp_p_status['Status'] == 'CO_TITOLARE':
+                        score += 20.0
+                        reasons.append(f"🟡 Co-titolare / rotazione frequente in Serie A ({opp_p_status['Min_Per_Pres']} min/partita)")
 
-                # E. Buy-Low leverage (Great opportunity)
-                if is_buy_low:
-                    score += 25.0
-                    reasons.append(f"Opportunità BUY-LOW: {opp_p_name} produce molto volume (xG {opp_xg_tot:.2f}) ma ha segnato meno per sfortuna (ΔxG {opp_delta_xg:+.2f}); perfetto da acquistare a sconto")
+                    opp_inj = classify_injury_status(opp_p_name)
+                    is_stash = opp_inj.get('Is_Injured', False) and not opp_inj.get('Is_Long_Term', False)
+                    if is_stash:
+                        score += 20.0
+                        reasons.append(f"🩹 Opportunità Stash: {opp_p_name} è momentaneamente infortunato lieve ({opp_inj.get('Dettaglio', 'rientro a breve')}), prendibile a prezzo di saldo")
 
-                # E2. Short-term Injury Stash leverage
-                if is_stash_injury:
-                    score += 20.0
-                    inj_det = opp_inj.get('Dettaglio', 'rientro previsto a breve')
-                    reasons.append(f"🩹 Opportunità STASH (Infortunio lieve): {opp_p_name} è ai box ({inj_det}); ottima occasione per strapparlo a prezzo di saldo da una rivale che necessita di voti immediati")
-
-                # F. Sell-High leverage (Smart cash-in)
-                if is_sell_high:
-                    score += 15.0
-                    reasons.append(f"Momento SELL-HIGH: cedi {my_give['Giocatore']} al picco del valore dopo gol fortunati oltre l'xG")
-
-                # G. Bench utilization in fantasy team (only valuable if the player is genuinely good!)
-                if is_on_opp_bench and opp_p_status['Is_Real_Starter']:
-                    score += 15.0
-                    reasons.append(f"{opp_p_name} è attualmente sacrificato in panchina da {opp_team}: saranno più propensi a cederlo")
-
-                # H. xFV Parity bonus
-                if opp_p_xfv >= my_give_xfv:
-                    score += 10.0
-                    reasons.append(f"Guadagno statistico netto: +{round(opp_p_xfv - my_give_xfv, 2)} xFV sul cartellino")
-                else:
-                    score += 5.0
-
-                # Formulate ready-to-use negotiation pitch
-                target_role_str = "/".join(list(opp_p_roles))
-                opp_dept_name = _get_department_name(opp_p_roles)
-                short_str = "/".join(opp_short_roles) if opp_short_roles else my_give['RuoloMantra']
-                
-                if 'Por' in opp_p_roles:
-                    target_desc = f"un portiere solido come {opp_p_name} ({opp_gp:+.2f} gol evitati vs PSxG)"
-                elif opp_p_status['Status'] == 'TITOLARE':
-                    target_desc = f"un titolare fisso come {opp_p_name} (gioca oltre {int(opp_p_status['Min_Per_Pres'])} min a partita)"
-                elif opp_p_status['Status'] == 'CO_TITOLARE':
-                    target_desc = f"una valida rotazione come {opp_p_name} ({int(opp_p_status['Min_Per_Pres'])} min a partita)"
-                elif opp_p_status['Status'] == 'SUPER_SUB':
-                    target_desc = f"un super-sub ad alto impatto come {opp_p_name} ({opp_xg90:.2f} xG/90)"
-                else:
-                    target_desc = f"un cambio numerico come {opp_p_name}"
-
-                if is_stash_injury:
-                    inj_det = opp_inj.get('Dettaglio', 'rientro a breve')
+                    opp_dept_name = _get_department_name(opp_p_roles)
+                    short_str = "/".join(list(my_give_roles))
                     pitch = (
-                        f"Ciao! Ho visto che {opp_p_name} è momentaneamente ai box ({inj_det}), mentre a voi servono punti "
-                        f"e titolari pronti subito nello slot {short_str}. Vi andrebbe di valutare uno scambio con {my_give['Giocatore']}, "
-                        f"che è integro, titolare e garantisce voto fin da subito? A voi risolve l'emergenza di formazione per i prossimi turni, "
-                        f"e noi possiamo attendere con calma il suo rientro. Che ne dite?"
-                    )
-                else:
-                    pitch = (
-                        f"Ciao! Ho notato che per {opp_team} farebbe comodo rinforzare lo slot {short_str} (avete poche rotazioni lì), "
+                        f"Ciao! Ho notato che per {opp_team} farebbe comodo rinforzare lo slot {short_str}, "
                         f"mentre avete buone alternative {opp_dept_name}. Vi andrebbe di valutare uno scambio alla pari tra {my_give['Giocatore']} e {opp_p_name}? "
-                        f"A voi garantisce un titolare affidabile dove siete scoperti, e a noi permetterebbe di inserire {target_desc}. È un'ottima soluzione win-win per entrambi!"
+                        f"A voi garantisce un titolare affidabile dove siete scoperti, e a noi permette di inserire {opp_p_name}. Che ne dite?"
                     )
 
-                trade_proposals.append({
-                    'Score': round(score, 1),
-                    'Squadra_Avversaria': opp_team,
-                    'Is_Stash_Injury': is_stash_injury,
-                    'Tu_Cedi': {
-                        'Giocatore': my_give['Giocatore'],
-                        'Squadra': my_give['Squadra'],
-                        'RuoloMantra': my_give['RuoloMantra'],
-                        'xFV': my_give['xFV'],
-                        'FM': my_give['FM_Stagione'],
-                        'Signal': my_give['Signal'],
-                        'Goals_Prevented': safe_float(my_give.get('Goals_Prevented', 0.0)),
-                        'Goals_Prevented_90': safe_float(my_give.get('Goals_Prevented_90', 0.0)),
-                        'Errors_Leading_To_Goal': safe_int(my_give.get('Errors_Leading_To_Goal', 0)),
-                        'Pct_Parate': safe_float(my_give.get('Pct_Parate', 70.0)),
-                        'xG_Tot': safe_float(my_give.get('xG_Tot', 0.0)),
-                        'xG_90': safe_float(my_give.get('xG_90', 0.0)),
-                        'Delta_xG': safe_float(my_give.get('Delta_xG', 0.0)),
-                        'Tiri_90': safe_float(my_give.get('Tiri_90', 0.0)),
-                        'Key_Passes_90': safe_float(my_give.get('Key_Passes_90', 0.0)),
-                        'xA_90': safe_float(my_give.get('xA_90', 0.0))
-                    },
-                    'Tu_Ricevi': {
-                        'Giocatore': opp_p_name,
-                        'Squadra': opp_p.get('Squadra', ''),
-                        'RuoloMantra': opp_p.get('RuoloMantra', ''),
-                        'xFV': opp_p_xfv,
-                        'FM': float(opp_p.get('FM_Stagione', 0)),
-                        'Signal': str(opp_p.get('Signal', 'NEUTRO')),
-                        'Is_Buy_Low': is_buy_low,
-                        'Is_Injured': is_opp_injured,
-                        'Is_Stash_Injury': is_stash_injury,
-                        'Injury_Detail': opp_inj.get('Dettaglio', ''),
-                        'Injury_Severity': opp_inj.get('Severity_Label', 'DISPONIBILE'),
-                        'Is_Bench_In_Opponent': is_on_opp_bench,
-                        'Status_Titolarita': opp_p_status['Status'],
-                        'Badge_Titolarita': opp_p_status['Badge'],
-                        'Label_Titolarita': opp_p_status['Label'],
-                        'Min_Per_Pres': opp_p_status['Min_Per_Pres'],
-                        'Pct_Minuti': opp_p_status['Pct_Minuti'],
-                        'Pct_Sufficienza': opp_pct_suff,
-                        'Is_Subentrante': not opp_p_status['Is_Real_Starter'],
-                        'Goals_Prevented': opp_gp,
-                        'Goals_Prevented_90': opp_gp90,
-                        'Errors_Leading_To_Goal': opp_errs,
-                        'Pct_Parate': opp_save_pct,
-                        'xG_Tot': opp_xg_tot,
-                        'xG_90': opp_xg90,
-                        'Delta_xG': opp_delta_xg,
-                        'Tiri_90': opp_tiri,
-                        'Key_Passes_90': opp_kp,
-                        'xA_90': opp_xa90
-                    },
-                    'Ruolo_Target': list(opp_p_roles)[0] if opp_p_roles else 'N/D',
-                    'Delta_xFV': round(opp_p_xfv - my_give_xfv, 2),
-                    'Motivazioni': reasons,
-                    'Messaggio_Trattativa': pitch
-                })
+                    give_fmt = _format_trade_player(my_give, is_opponent=False)
+                    rec_fmt = _format_trade_player(opp_p, is_opponent=True)
 
-    # Sort proposals by highest Win-Win score
-    trade_proposals = sorted(trade_proposals, key=lambda x: x['Score'], reverse=True)
-    return trade_proposals[:max_proposals]
+                    trade_proposals.append({
+                        'Score': round(score, 1),
+                        'Squadra_Avversaria': opp_team,
+                        'Tipo_Scambio': '1x1',
+                        'Label_Tipo': '⚖️ Scambio Diretto (1x1)',
+                        'Is_Stash_Injury': is_stash,
+                        'Tu_Cedi_List': [give_fmt],
+                        'Tu_Ricevi_List': [rec_fmt],
+                        'Tu_Cedi': give_fmt,
+                        'Tu_Ricevi': rec_fmt,
+                        'Tot_Costo_Cedi': give_fmt['Costo'],
+                        'Tot_Costo_Ricevi': rec_fmt['Costo'],
+                        'Tot_xFV_Cedi': give_fmt['xFV'],
+                        'Tot_xFV_Ricevi': rec_fmt['xFV'],
+                        'Delta_xFV': round(rec_fmt['xFV'] - give_fmt['xFV'], 2),
+                        'Ruolo_Target': list(opp_p_roles)[0] if opp_p_roles else 'N/D',
+                        'Motivazioni': reasons,
+                        'Messaggio_Trattativa': pitch,
+                        'Simulazione_Payload': {
+                            'give_names': [give_fmt['Giocatore']],
+                            'receive_names': [rec_fmt['Giocatore']],
+                            'opp_team': opp_team
+                        }
+                    })
+
+        # -------------------------------------------------------------
+        # GENERATION 2: 2x2 COMBO TITOLARE + RISERVA (Vasi Comunicanti)
+        # -------------------------------------------------------------
+        if trade_format_filter in ['TUTTI', 'SOLO_MULTIPLI']:
+            seen_2x2_anchors = set()
+            primary_give_candidates = [
+                p for p in my_offerable 
+                if any(r in opp_weak_roles for r in parse_mantra_roles(p.get('RuoloMantra', ''))) or p['Tier'] == 'SURPLUS'
+            ]
+            primary_give_candidates = sorted(primary_give_candidates, key=lambda x: safe_float(x.get('xFV', 0)), reverse=True)[:6]
+            secondary_give_candidates = [p for p in my_offerable if p['Tier'] in ['SURPLUS', 'PANCHINARO']][:8]
+
+            for g1 in primary_give_candidates:
+                g1_name = g1['Giocatore']
+                for g2 in secondary_give_candidates:
+                    g2_name = g2['Giocatore']
+                    if g1_name == g2_name:
+                        continue
+                    if give_player_filter and give_player_filter != 'TUTTI' and give_player_filter not in [g1_name, g2_name]:
+                        continue
+
+                    give_pkg = [g1, g2]
+
+                    for t1 in opp_target_candidates[:6]:
+                        t1_name = t1['Giocatore']
+                        anchor_key = (opp_team, g1_name, t1_name)
+                        if anchor_key in seen_2x2_anchors:
+                            continue
+                        for t2 in opp_secondary_pieces[:6]:
+                            t2_name = t2['Giocatore']
+                            if t1_name == t2_name:
+                                continue
+
+                            rec_pkg = [t1, t2]
+
+                            sig_key = (opp_team, tuple(sorted([g1_name, g2_name])), tuple(sorted([t1_name, t2_name])))
+                            if sig_key in seen_trade_signatures:
+                                continue
+
+                            # Rule: Do not mix Goalkeepers and Outfielders in 2x2 multi-deals
+                            give_has_por = any('Por' in parse_mantra_roles(p.get('RuoloMantra', '')) for p in give_pkg)
+                            rec_has_por = any('Por' in parse_mantra_roles(p.get('RuoloMantra', '')) for p in rec_pkg)
+                            if give_has_por != rec_has_por:
+                                continue
+
+                            # Rule: Capital investment balance in 2x2 (avoid extreme multi-package cost asymmetry)
+                            tot_c_give_test = sum(safe_int(p.get('Costo', 0)) for p in give_pkg)
+                            tot_c_rec_test = sum(safe_int(p.get('Costo', 0)) for p in rec_pkg)
+                            max_c_2x2 = max(tot_c_give_test, tot_c_rec_test, 1)
+                            min_c_2x2 = min(tot_c_give_test, tot_c_rec_test)
+                            if max_c_2x2 >= 80 and (min_c_2x2 / max_c_2x2) < 0.28:
+                                continue
+
+                            pw = evaluate_pairwise_trade_balance(give_pkg, rec_pkg)
+                            if not pw['is_valid']:
+                                continue
+
+                            seen_trade_signatures.add(sig_key)
+
+                            g1_roles = parse_mantra_roles(g1.get('RuoloMantra', ''))
+                            t1_roles = parse_mantra_roles(t1.get('RuoloMantra', ''))
+                            t1_status = compute_real_starter_status(t1)
+
+                            score = 65.0
+                            reasons = []
+
+                            if any(r in opp_weak_roles for r in g1_roles):
+                                score += 35.0
+                                reasons.append(f"Risolve debolezza chiave di {opp_team}: {g1_name} ({g1['RuoloMantra']}) copre una lacuna grave del loro 11 titolare")
+                            if t1_status['Status'] == 'TITOLARE':
+                                score += 35.0
+                                reasons.append(f"🟢 Ti assicuri un titolare inamovibile ({t1_name}: {t1_status['Min_Per_Pres']} min/p)")
+                            elif t1_status['Status'] == 'CO_TITOLARE':
+                                score += 20.0
+                                reasons.append(f"🟡 Ti assicuri una rotazione costante ({t1_name})")
+
+                            score += 25.0
+                            reasons.append(
+                                f"🔄 Combo Vasi Comunicanti: scambi un titolare/top esubero coperto ({g1_name}) più una riserva ({g2_name}) "
+                                f"per acquisire il titolare desiderato ({t1_name}) senza sguarnire la rosa, liberando spazio per le riserve già in rosa."
+                            )
+
+                            pitch = (
+                                f"Ciao! Per bilanciare al meglio le nostre rose senza creare buchi di formazione, vi andrebbe di valutare uno scambio multiplo 2x2? "
+                                f"Da parte nostra inseriamo {g1_name} ({g1['RuoloMantra']}) che vi sistema subito la titolarità dove siete corti, più {g2_name} ({g2['RuoloMantra']}) come valida rotazione. "
+                                f"In cambio accoglieremmo {t1_name} ({t1['RuoloMantra']}) e {t2_name} ({t2['RuoloMantra']}). Così entrambi rinforziamo l'11 titolare e manteniamo coperte le riserve!"
+                            )
+
+                            g1_fmt = _format_trade_player(g1, is_opponent=False)
+                            g2_fmt = _format_trade_player(g2, is_opponent=False)
+                            t1_fmt = _format_trade_player(t1, is_opponent=True)
+                            t2_fmt = _format_trade_player(t2, is_opponent=True)
+
+                            give_list = [g1_fmt, g2_fmt]
+                            rec_list = [t1_fmt, t2_fmt]
+
+                            tot_c_give = sum(p['Costo'] for p in give_list)
+                            tot_c_rec = sum(p['Costo'] for p in rec_list)
+                            tot_x_give = round(sum(p['xFV'] for p in give_list), 2)
+                            tot_x_rec = round(sum(p['xFV'] for p in rec_list), 2)
+
+                            seen_2x2_anchors.add(anchor_key)
+                            trade_proposals.append({
+                                'Score': round(score, 1),
+                                'Squadra_Avversaria': opp_team,
+                                'Tipo_Scambio': '2x2',
+                                'Label_Tipo': '🔄 Combo Titolare + Riserva (2x2)',
+                                'Is_Stash_Injury': t1_fmt['Is_Stash_Injury'] or t2_fmt['Is_Stash_Injury'],
+                                'Tu_Cedi_List': give_list,
+                                'Tu_Ricevi_List': rec_list,
+                                'Tu_Cedi': g1_fmt,
+                                'Tu_Ricevi': t1_fmt,
+                                'Tot_Costo_Cedi': tot_c_give,
+                                'Tot_Costo_Ricevi': tot_c_rec,
+                                'Tot_xFV_Cedi': tot_x_give,
+                                'Tot_xFV_Ricevi': tot_x_rec,
+                                'Delta_xFV': round(tot_x_rec - tot_x_give, 2),
+                                'Ruolo_Target': list(t1_roles)[0] if t1_roles else 'N/D',
+                                'Motivazioni': reasons,
+                                'Messaggio_Trattativa': pitch,
+                                'Simulazione_Payload': {
+                                    'give_names': [g1_name, g2_name],
+                                    'receive_names': [t1_name, t2_name],
+                                    'opp_team': opp_team
+                                }
+                            })
+
+        # -------------------------------------------------------------
+        # GENERATION 3: 2x1 TRADES (Upgrade di Reparto / Due per Uno)
+        # -------------------------------------------------------------
+        if trade_format_filter in ['TUTTI', 'SOLO_MULTIPLI']:
+            seen_2x1_targets = set()
+            high_targets = [t for t in opp_target_candidates if safe_int(t.get('Costo', 0)) >= 35 or safe_float(t.get('xFV', 0)) >= 6.0]
+            my_top_offers = sorted(my_offerable, key=lambda x: safe_float(x.get('xFV', 0)), reverse=True)[:10]
+
+            for t1 in high_targets[:6]:
+                t1_name = t1['Giocatore']
+                target_key = (opp_team, t1_name)
+                if target_key in seen_2x1_targets:
+                    continue
+                t1_roles = parse_mantra_roles(t1.get('RuoloMantra', ''))
+                t1_status = compute_real_starter_status(t1)
+
+                for pair in itertools.combinations(my_top_offers, 2):
+                    g1, g2 = pair
+                    g1_name, g2_name = g1['Giocatore'], g2['Giocatore']
+                    if give_player_filter and give_player_filter != 'TUTTI' and give_player_filter not in [g1_name, g2_name]:
+                        continue
+
+                    give_pkg = [g1, g2]
+                    rec_pkg = [t1]
+
+                    sig_key = (opp_team, tuple(sorted([g1_name, g2_name])), (t1_name,))
+                    if sig_key in seen_trade_signatures:
+                        continue
+
+                    pw = evaluate_pairwise_trade_balance(give_pkg, rec_pkg)
+                    if not pw['is_valid']:
+                        continue
+
+                    g_roles_all = set().union(*[parse_mantra_roles(p.get('RuoloMantra', '')) for p in give_pkg])
+                    solved_w = [r for r in g_roles_all if r in opp_weak_roles]
+                    if not solved_w:
+                        continue
+
+                    seen_trade_signatures.add(sig_key)
+
+                    score = 70.0
+                    reasons = []
+                    score += 35.0
+                    reasons.append(f"Risolve molteplici falle di {opp_team}: offri due giocatori complementari che coprono {', '.join(solved_w)}")
+                    score += 30.0
+                    reasons.append(f"🚀 Upgrade di Reparto: inserisci un top asset ({t1_name}) aumentando il picco qualitativo dei tuoi titolari")
+                    reasons.append(f"📈 Libera uno slot a voto, consentendo alle tue riserve di reparto di scalare titolari.")
+
+                    pitch = (
+                        f"Ciao! Visto che a {opp_team} farebbe comodo rinforzare contemporaneamente più reparti scoperti, vi andrebbe di valutare un'offerta 2 per 1? "
+                        f"Siamo pronti a mettere sul piatto sia {g1_name} ({g1['RuoloMantra']}) che {g2_name} ({g2['RuoloMantra']}) in cambio di {t1_name}. "
+                        f"Ricevete due titolari pronti che aumentano il vostro punteggio medio ogni giornata e coprono i buchi di rosa!"
+                    )
+
+                    g1_fmt = _format_trade_player(g1, is_opponent=False)
+                    g2_fmt = _format_trade_player(g2, is_opponent=False)
+                    t1_fmt = _format_trade_player(t1, is_opponent=True)
+
+                    give_list = [g1_fmt, g2_fmt]
+                    rec_list = [t1_fmt]
+
+                    tot_c_give = sum(p['Costo'] for p in give_list)
+                    tot_c_rec = sum(p['Costo'] for p in rec_list)
+                    tot_x_give = round(sum(p['xFV'] for p in give_list), 2)
+                    tot_x_rec = round(sum(p['xFV'] for p in rec_list), 2)
+
+                    seen_2x1_targets.add(target_key)
+                    trade_proposals.append({
+                        'Score': round(score, 1),
+                        'Squadra_Avversaria': opp_team,
+                        'Tipo_Scambio': '2x1',
+                        'Label_Tipo': '🚀 Upgrade Reparto (2x1)',
+                        'Is_Stash_Injury': t1_fmt['Is_Stash_Injury'],
+                        'Tu_Cedi_List': give_list,
+                        'Tu_Ricevi_List': rec_list,
+                        'Tu_Cedi': g1_fmt,
+                        'Tu_Ricevi': t1_fmt,
+                        'Tot_Costo_Cedi': tot_c_give,
+                        'Tot_Costo_Ricevi': tot_c_rec,
+                        'Tot_xFV_Cedi': tot_x_give,
+                        'Tot_xFV_Ricevi': tot_x_rec,
+                        'Delta_xFV': round(tot_x_rec - tot_x_give, 2),
+                        'Ruolo_Target': list(t1_roles)[0] if t1_roles else 'N/D',
+                        'Motivazioni': reasons,
+                        'Messaggio_Trattativa': pitch,
+                        'Simulazione_Payload': {
+                            'give_names': [g1_name, g2_name],
+                            'receive_names': [t1_name],
+                            'opp_team': opp_team
+                        }
+                    })
+
+        # -------------------------------------------------------------
+        # GENERATION 4: 1x2 TRADES (Ristrutturazione Modulo / Profondità)
+        # -------------------------------------------------------------
+        if trade_format_filter in ['TUTTI', 'SOLO_MULTIPLI']:
+            high_give = [p for p in my_offerable if safe_int(p.get('Costo', 0)) >= 45 or safe_float(p.get('xFV', 0)) >= 6.2]
+            for g1 in high_give[:4]:
+                g1_name = g1['Giocatore']
+                if give_player_filter and give_player_filter != 'TUTTI' and give_player_filter != g1_name:
+                    continue
+
+                for pair in itertools.combinations(opp_target_candidates[:8], 2):
+                    t1, t2 = pair
+                    t1_name, t2_name = t1['Giocatore'], t2['Giocatore']
+
+                    give_pkg = [g1]
+                    rec_pkg = [t1, t2]
+
+                    sig_key = (opp_team, (g1_name,), tuple(sorted([t1_name, t2_name])))
+                    if sig_key in seen_trade_signatures:
+                        continue
+
+                    pw = evaluate_pairwise_trade_balance(give_pkg, rec_pkg)
+                    if not pw['is_valid']:
+                        continue
+
+                    seen_trade_signatures.add(sig_key)
+
+                    score = 65.0
+                    reasons = [
+                        f"Ristrutturazione / Profondità: cedi un top di reparto sovraffollato ({g1_name}) "
+                        f"per ottenere 2 titolari ({t1_name} + {t2_name}) che completano diversi reparti scoperti."
+                    ]
+
+                    pitch = (
+                        f"Ciao! Visto che avete ottima abbondanza nei ruoli di {t1_name} e {t2_name}, mentre vi servirebbe un pilastro di assoluto livello come {g1_name} ({g1['RuoloMantra']}), "
+                        f"vi andrebbe di valutare un pacchetto in cui vi cediamo {g1_name} per accogliere {t1_name} e {t2_name}? Vi garantisce un top player inamovibile per fare il salto di qualità!"
+                    )
+
+                    g1_fmt = _format_trade_player(g1, is_opponent=False)
+                    t1_fmt = _format_trade_player(t1, is_opponent=True)
+                    t2_fmt = _format_trade_player(t2, is_opponent=True)
+
+                    give_list = [g1_fmt]
+                    rec_list = [t1_fmt, t2_fmt]
+
+                    tot_c_give = sum(p['Costo'] for p in give_list)
+                    tot_c_rec = sum(p['Costo'] for p in rec_list)
+                    tot_x_give = round(sum(p['xFV'] for p in give_list), 2)
+                    tot_x_rec = round(sum(p['xFV'] for p in rec_list), 2)
+
+                    trade_proposals.append({
+                        'Score': round(score, 1),
+                        'Squadra_Avversaria': opp_team,
+                        'Tipo_Scambio': '1x2',
+                        'Label_Tipo': '📐 Ristrutturazione Modulo (1x2)',
+                        'Is_Stash_Injury': t1_fmt['Is_Stash_Injury'] or t2_fmt['Is_Stash_Injury'],
+                        'Tu_Cedi_List': give_list,
+                        'Tu_Ricevi_List': rec_list,
+                        'Tu_Cedi': g1_fmt,
+                        'Tu_Ricevi': t1_fmt,
+                        'Tot_Costo_Cedi': tot_c_give,
+                        'Tot_Costo_Ricevi': tot_c_rec,
+                        'Tot_xFV_Cedi': tot_x_give,
+                        'Tot_xFV_Ricevi': tot_x_rec,
+                        'Delta_xFV': round(tot_x_rec - tot_x_give, 2),
+                        'Ruolo_Target': list(parse_mantra_roles(t1.get('RuoloMantra', '')))[0] if t1.get('RuoloMantra') else 'N/D',
+                        'Motivazioni': reasons,
+                        'Messaggio_Trattativa': pitch,
+                        'Simulazione_Payload': {
+                            'give_names': [g1_name],
+                            'receive_names': [t1_name, t2_name],
+                            'opp_team': opp_team
+                        }
+                    })
+
+    # Balance proposals across opponent teams so no single rival monopolizes the list
+    team_counts = {}
+    balanced_proposals = []
+    sorted_proposals = sorted(trade_proposals, key=lambda x: x['Score'], reverse=True)
+    
+    # Pass 1: take up to 2-3 proposals per rival team to guarantee diverse league options
+    for p in sorted_proposals:
+        t = p['Squadra_Avversaria']
+        if team_counts.get(t, 0) < 3:
+            balanced_proposals.append(p)
+            team_counts[t] = team_counts.get(t, 0) + 1
+        if len(balanced_proposals) >= max_proposals:
+            break
+            
+    # Pass 2: if still under max_proposals, fill remaining spots
+    if len(balanced_proposals) < max_proposals:
+        for p in sorted_proposals:
+            if p not in balanced_proposals:
+                balanced_proposals.append(p)
+                if len(balanced_proposals) >= max_proposals:
+                    break
+                    
+    return balanced_proposals
+
 
 
 def simulate_opponent_post_trade(
