@@ -45,7 +45,9 @@ from engine.league_manager import (
     get_active_my_team, set_active_my_team, get_team_roster_df, get_league_summary,
     build_loan_registry, get_out_of_serie_a_summary, sync_user_roster_from_league,
     render_league_upload_section, get_league_metadata, save_league_metadata,
-    terminate_loan, add_or_update_loan
+    terminate_loan, add_or_update_loan,
+    get_available_leagues, get_active_league_id, set_active_league_id,
+    create_new_league, delete_league
 )
 from engine.understat_loader import sync_understat_metrics, get_understat_teams_metrics
 from engine.injuries_manager import (
@@ -251,6 +253,68 @@ if is_setup_mode:
 # -------------------------------------------------------------
 st.sidebar.title("⚽ FantaMantra AI")
 st.sidebar.caption("Statistical & Tactical Engine con D-Factor")
+
+# -------------------------------------------------------------
+# MULTI-LEAGUE SELECTOR & MANAGEMENT
+# -------------------------------------------------------------
+leagues_dict = get_available_leagues()
+league_ids = list(leagues_dict.keys())
+active_league = get_active_league_id()
+
+if active_league not in league_ids:
+    active_league = league_ids[0]
+
+curr_league_idx = league_ids.index(active_league)
+
+selected_league_id = st.sidebar.selectbox(
+    "🏆 Lega Attiva:",
+    options=league_ids,
+    index=curr_league_idx,
+    format_func=lambda x: f"🏆 {leagues_dict.get(x, {}).get('name', x)}",
+    key="sb_active_league_select",
+    help="Seleziona la lega da visualizzare e gestire. I dati delle rose, le formazioni e gli scambi sono completamente isolati tra leghe diverse."
+)
+
+if selected_league_id != active_league:
+    set_active_league_id(selected_league_id, persist_disk=True)
+    st.rerun()
+
+with st.sidebar.expander("⚙️ Gestione Leghe", expanded=False):
+    st.markdown(f"**Lega corrente**: `{leagues_dict[active_league]['name']}` (`{active_league}`)")
+    st.caption(f"🔗 Link diretto a questa lega: `?league={active_league}`")
+    
+    st.markdown("---")
+    st.markdown("**➕ Crea Nuova Lega**")
+    with st.form("new_league_form"):
+        new_lg_name = st.text_input("Nome della nuova lega:", placeholder="es. Fanta Amici 2026")
+        create_btn = st.form_submit_button("Crea Nuova Lega", type="primary")
+        if create_btn:
+            if not new_lg_name.strip():
+                st.warning("Inserisci un nome valido.")
+            else:
+                ok, new_lid, msg = create_new_league(new_lg_name.strip())
+                if ok:
+                    st.success(msg)
+                    st.rerun()
+                else:
+                    st.error(msg)
+                    
+    if len(league_ids) > 1:
+        st.markdown("---")
+        st.markdown("**🗑️ Elimina Lega**")
+        del_target = st.selectbox(
+            "Seleziona lega da eliminare:",
+            options=[lid for lid in league_ids if lid != active_league],
+            format_func=lambda x: leagues_dict.get(x, {}).get('name', x),
+            key="del_league_target"
+        )
+        if st.button("🗑️ Elimina Definitivamente", type="secondary"):
+            ok_del, del_msg = delete_league(del_target)
+            if ok_del:
+                st.success(del_msg)
+                st.rerun()
+            else:
+                st.error(del_msg)
 
 # Calcolo automatico della giornata in base a data odierna e calendario ufficiale Serie A
 auto_giornata, matchday_info = get_matchday_from_date()

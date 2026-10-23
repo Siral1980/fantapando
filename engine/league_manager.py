@@ -25,9 +25,326 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from engine.roster_manager import save_user_roster, normalize_str, match_player_name
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
-LEAGUE_FILE = os.path.join(DATA_DIR, "league_rosters.json")
-CONFIG_FILE = os.path.join(DATA_DIR, "league_config.json")
-METADATA_FILE = os.path.join(DATA_DIR, "league_metadata.json")
+LEAGUES_DIR = os.path.join(DATA_DIR, "leagues")
+REGISTRY_FILE = os.path.join(LEAGUES_DIR, "leagues_registry.json")
+ACTIVE_LEAGUE_FILE = os.path.join(DATA_DIR, "active_league.json")
+
+# Root fallback / compatibility files:
+ROOT_LEAGUE_FILE = os.path.join(DATA_DIR, "league_rosters.json")
+ROOT_CONFIG_FILE = os.path.join(DATA_DIR, "league_config.json")
+ROOT_METADATA_FILE = os.path.join(DATA_DIR, "league_metadata.json")
+ROOT_USER_ROSTER_FILE = os.path.join(DATA_DIR, "user_roster.json")
+
+# Backwards compatibility aliases
+LEAGUE_FILE = ROOT_LEAGUE_FILE
+CONFIG_FILE = ROOT_CONFIG_FILE
+METADATA_FILE = ROOT_METADATA_FILE
+
+
+def sanitize_league_id(name):
+    """Generates a clean filesystem-friendly directory name for a league."""
+    if not name:
+        return "Nuova_Lega"
+    clean = re.sub(r'[^a-zA-Z0-9_\-\s]', '', str(name)).strip()
+    clean = re.sub(r'\s+', '_', clean)
+    return clean or "Nuova_Lega"
+
+
+def ensure_default_league_migrated():
+    """Ensures data/leagues/ directory and leagues_registry.json exist, migrating default files if needed."""
+    os.makedirs(LEAGUES_DIR, exist_ok=True)
+    
+    registry = {}
+    if os.path.exists(REGISTRY_FILE):
+        try:
+            with open(REGISTRY_FILE, 'r', encoding='utf-8') as f:
+                registry = json.load(f)
+        except Exception:
+            registry = {}
+
+    default_league_id = "Lega_Principale"
+    default_dir = os.path.join(LEAGUES_DIR, default_league_id)
+    os.makedirs(default_dir, exist_ok=True)
+
+    if default_league_id not in registry:
+        registry[default_league_id] = {
+            "id": default_league_id,
+            "name": "Lega Principale",
+            "created_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        }
+        try:
+            with open(REGISTRY_FILE, 'w', encoding='utf-8') as f:
+                json.dump(registry, f, indent=2, ensure_ascii=False)
+        except Exception:
+            pass
+
+    # Copy root files into default league dir if they don't exist there yet
+    for root_f, dst_f in [
+        (ROOT_LEAGUE_FILE, os.path.join(default_dir, "league_rosters.json")),
+        (ROOT_CONFIG_FILE, os.path.join(default_dir, "league_config.json")),
+        (ROOT_METADATA_FILE, os.path.join(default_dir, "league_metadata.json")),
+        (ROOT_USER_ROSTER_FILE, os.path.join(default_dir, "user_roster.json")),
+    ]:
+        if os.path.exists(root_f) and not os.path.exists(dst_f):
+            try:
+                import shutil
+                shutil.copy2(root_f, dst_f)
+            except Exception:
+                pass
+
+    if not os.path.exists(ACTIVE_LEAGUE_FILE):
+        try:
+            with open(ACTIVE_LEAGUE_FILE, 'w', encoding='utf-8') as f:
+                json.dump({"active_league": default_league_id}, f, indent=2)
+        except Exception:
+            pass
+
+    return registry
+
+
+def get_available_leagues():
+    """Returns dictionary of available leagues from registry."""
+    ensure_default_league_migrated()
+    if os.path.exists(REGISTRY_FILE):
+        try:
+            with open(REGISTRY_FILE, 'r', encoding='utf-8') as f:
+                reg = json.load(f)
+                if isinstance(reg, dict) and len(reg) > 0:
+                    return reg
+        except Exception:
+            pass
+    return {"Lega_Principale": {"id": "Lega_Principale", "name": "Lega Principale"}}
+
+
+def get_active_league_id():
+    """
+    Resolves the active league ID:
+    1. Streamlit session_state['active_league_id']
+    2. Streamlit URL query parameter ?league=...
+    3. File active_league.json
+    4. First league in registry or 'Lega_Principale'
+    """
+    leagues = get_available_leagues()
+    
+    try:
+        import streamlit as st
+        # 1. Session state
+        if 'active_league_id' in st.session_state and st.session_state['active_league_id'] in leagues:
+            return st.session_state['active_league_id']
+            
+        # 2. Query param
+        if hasattr(st, 'query_params') and 'league' in st.query_params:
+            url_league = st.query_params.get('league')
+            if isinstance(url_league, list) and len(url_league) > 0:
+                url_league = url_league[0]
+            if url_league and url_league in leagues:
+                st.session_state['active_league_id'] = url_league
+                return url_league
+    except Exception:
+        pass
+
+    # 3. Disk fallback
+    if os.path.exists(ACTIVE_LEAGUE_FILE):
+        try:
+            with open(ACTIVE_LEAGUE_FILE, 'r', encoding='utf-8') as f:
+                d = json.load(f)
+                cand = d.get('active_league')
+                if cand in leagues:
+                    return cand
+        except Exception:
+            pass
+
+    if "Lega_Principale" in leagues:
+        return "Lega_Principale"
+    return list(leagues.keys())[0] if leagues else "Lega_Principale"
+
+
+def get_league_paths(league_id=None):
+    """Returns a dict of filesystem paths for a specific league or the currently active league."""
+    ensure_default_league_migrated()
+    if not league_id:
+        league_id = get_active_league_id()
+    
+    ldir = os.path.join(LEAGUES_DIR, league_id)
+    os.makedirs(ldir, exist_ok=True)
+    return {
+        'id': league_id,
+        'dir': ldir,
+        'rosters': os.path.join(ldir, "league_rosters.json"),
+        'config': os.path.join(ldir, "league_config.json"),
+        'metadata': os.path.join(ldir, "league_metadata.json"),
+        'user_roster': os.path.join(ldir, "user_roster.json")
+    }
+
+
+def set_active_league_id(league_id, persist_disk=True):
+    """
+    Sets the active league ID, updates session_state, URL query_params,
+    and optionally persists to active_league.json and syncs root files.
+    Automatically aligns active_my_team with the newly selected league.
+    """
+    leagues = get_available_leagues()
+    if league_id not in leagues:
+        return get_active_league_id()
+
+    paths = get_league_paths(league_id)
+
+    # Read configured team for this league
+    league_team = None
+    if os.path.exists(paths['config']):
+        try:
+            with open(paths['config'], 'r', encoding='utf-8') as f:
+                league_team = json.load(f).get('my_team')
+        except Exception:
+            pass
+
+    try:
+        import streamlit as st
+        st.session_state['active_league_id'] = league_id
+        if hasattr(st, 'query_params'):
+            st.query_params['league'] = league_id
+        # Clear custom session override if user switches to a stored league
+        st.session_state.pop('custom_league_data', None)
+        st.session_state.pop('custom_league_meta', None)
+        
+        if league_team:
+            st.session_state['active_my_team'] = league_team
+            if hasattr(st, 'query_params'):
+                st.query_params['team'] = league_team
+        else:
+            st.session_state.pop('active_my_team', None)
+
+        # Clear stale widget state across tabs
+        stale_keys = [
+            'diag_team_select',
+            'inspect_team_select',
+            'sim_multiselect_give_league',
+            'sim_selectbox_opp',
+            'sim_multiselect_receive_league',
+            'sim_multiselect_give_all',
+            'roster_player_card_select',
+            'override_sel_p',
+            'bl_rival_sel'
+        ]
+        for k in stale_keys:
+            st.session_state.pop(k, None)
+    except Exception:
+        pass
+
+    if persist_disk:
+        os.makedirs(DATA_DIR, exist_ok=True)
+        try:
+            with open(ACTIVE_LEAGUE_FILE, 'w', encoding='utf-8') as f:
+                json.dump({"active_league": league_id}, f, indent=2)
+        except Exception:
+            pass
+
+    # Mirror files to root data/ for backwards compatibility
+    for src, dst in [
+        (paths['rosters'], ROOT_LEAGUE_FILE),
+        (paths['config'], ROOT_CONFIG_FILE),
+        (paths['metadata'], ROOT_METADATA_FILE),
+        (paths['user_roster'], ROOT_USER_ROSTER_FILE),
+    ]:
+        if os.path.exists(src):
+            try:
+                import shutil
+                shutil.copy2(src, dst)
+            except Exception:
+                pass
+
+    return league_id
+
+
+def create_new_league(display_name, parsed_rosters=None, my_team=None):
+    """
+    Creates a new league in the registry and filesystem, optionally initializing it with parsed rosters.
+    Returns (success, league_id, message).
+    """
+    name = str(display_name).strip()
+    if not name:
+        return False, None, "Il nome della lega non può essere vuoto."
+
+    base_id = sanitize_league_id(name)
+    registry = get_available_leagues()
+
+    # Ensure unique ID
+    league_id = base_id
+    counter = 2
+    while league_id in registry:
+        league_id = f"{base_id}_{counter}"
+        counter += 1
+
+    ldir = os.path.join(LEAGUES_DIR, league_id)
+    os.makedirs(ldir, exist_ok=True)
+
+    registry[league_id] = {
+        "id": league_id,
+        "name": name,
+        "created_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    }
+
+    with open(REGISTRY_FILE, 'w', encoding='utf-8') as f:
+        json.dump(registry, f, indent=2, ensure_ascii=False)
+
+    paths = get_league_paths(league_id)
+
+    if parsed_rosters:
+        with open(paths['rosters'], 'w', encoding='utf-8') as f:
+            json.dump(parsed_rosters, f, indent=2, ensure_ascii=False)
+
+        meta = {
+            'last_updated': datetime.datetime.now().strftime("%d/%m/%Y alle ore %H:%M"),
+            'source': f"Creazione Lega ({name})",
+            'filename': f"{name}.xlsx"
+        }
+        with open(paths['metadata'], 'w', encoding='utf-8') as f:
+            json.dump(meta, f, indent=2, ensure_ascii=False)
+
+        if not my_team and parsed_rosters:
+            my_team = list(parsed_rosters.keys())[0]
+
+        if my_team and my_team in parsed_rosters:
+            with open(paths['config'], 'w', encoding='utf-8') as f:
+                json.dump({'my_team': my_team}, f, indent=2)
+            pnames = [p['Giocatore'] for p in parsed_rosters[my_team]]
+            with open(paths['user_roster'], 'w', encoding='utf-8') as f:
+                json.dump(pnames, f, indent=2, ensure_ascii=False)
+
+    set_active_league_id(league_id, persist_disk=True)
+    return True, league_id, f"Lega '{name}' creata e attivata con successo!"
+
+
+def delete_league(league_id):
+    """
+    Deletes a league from registry and disk.
+    Cannot delete if only 1 league exists.
+    """
+    registry = get_available_leagues()
+    if len(registry) <= 1:
+        return False, "Impossibile eliminare l'unica lega presente."
+    if league_id not in registry:
+        return False, "Lega non trovata."
+
+    del registry[league_id]
+    with open(REGISTRY_FILE, 'w', encoding='utf-8') as f:
+        json.dump(registry, f, indent=2, ensure_ascii=False)
+
+    ldir = os.path.join(LEAGUES_DIR, league_id)
+    if os.path.exists(ldir):
+        try:
+            import shutil
+            shutil.rmtree(ldir, ignore_errors=True)
+        except Exception:
+            pass
+
+    # If the active league was deleted, switch to the first remaining one
+    active_now = get_active_league_id()
+    if active_now == league_id:
+        remaining = list(registry.keys())[0]
+        set_active_league_id(remaining, persist_disk=True)
+
+    return True, f"Lega eliminata con successo."
 
 
 def clean_player_name(val):
@@ -476,19 +793,27 @@ def parse_official_league_excel(file_or_path, df_master):
 parse_multi_column_league_csv = parse_official_league_excel
 
 
-def save_league_rosters(league_data):
-    """Saves parsed league rosters into league_rosters.json."""
-    os.makedirs(DATA_DIR, exist_ok=True)
-    with open(LEAGUE_FILE, 'w', encoding='utf-8') as f:
+def save_league_rosters(league_data, league_id=None):
+    """Saves parsed league rosters into the active league's directory and mirrors to root."""
+    paths = get_league_paths(league_id)
+    with open(paths['rosters'], 'w', encoding='utf-8') as f:
         json.dump(league_data, f, indent=2, ensure_ascii=False)
+    # Mirror to root for compatibility
+    try:
+        os.makedirs(DATA_DIR, exist_ok=True)
+        with open(ROOT_LEAGUE_FILE, 'w', encoding='utf-8') as f:
+            json.dump(league_data, f, indent=2, ensure_ascii=False)
+    except Exception:
+        pass
     return league_data
 
 
-def load_league_rosters():
+def load_league_rosters(league_id=None):
     """
     Loads league data. Prioritizes session-specific custom league data
     (allowing friends from other leagues to upload their own file in their session
     without overwriting the shared server league).
+    Otherwise loads from the active league directory.
     """
     try:
         import streamlit as st
@@ -497,60 +822,101 @@ def load_league_rosters():
     except Exception:
         pass
 
-    if os.path.exists(LEAGUE_FILE):
+    paths = get_league_paths(league_id)
+    active_rosters_file = paths['rosters']
+
+    if os.path.exists(active_rosters_file):
         try:
-            with open(LEAGUE_FILE, 'r', encoding='utf-8') as f:
+            with open(active_rosters_file, 'r', encoding='utf-8') as f:
                 data = json.load(f)
                 if isinstance(data, dict) and len(data) > 0:
                     return data
         except Exception as e:
-            print(f"Error loading league data: {e}")
+            print(f"Error loading league data from {active_rosters_file}: {e}")
+
+    # Fallback to root LEAGUE_FILE
+    if os.path.exists(ROOT_LEAGUE_FILE):
+        try:
+            with open(ROOT_LEAGUE_FILE, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                if isinstance(data, dict) and len(data) > 0:
+                    return data
+        except Exception as e:
+            print(f"Error loading league data from {ROOT_LEAGUE_FILE}: {e}")
     return {}
 
 
-def get_active_my_team():
+def get_active_my_team(league_id=None):
     """
-    Returns the user's selected team for their specific session.
+    Returns the user's selected team for their specific session and active league.
+    Validates that the returned team actually exists in the active league's rosters.
     Prioritizes:
-    1. Streamlit session_state: st.session_state['active_my_team'] (user's explicit selection)
-    2. Streamlit URL query parameter: ?team=TeamName (on initial load)
-    3. File on disk (default fallback): data/league_config.json
-    4. Default: 'Bluelock'
+    1. Streamlit session_state: st.session_state['active_my_team'] (if valid for this league)
+    2. Streamlit URL query parameter: ?team=TeamName (if valid for this league)
+    3. File on disk for active league: data/leagues/<league_id>/league_config.json
+    4. Root fallback: data/league_config.json
+    5. 'Bluelock' or first team in active league
     """
+    rosters = load_league_rosters(league_id)
+    valid_teams = set(rosters.keys()) if rosters else set()
+
     try:
         import streamlit as st
-        # 1. Session State has TOP priority (user's active choice during session)
+        # 1. Session State has TOP priority (if valid for current league)
         if 'active_my_team' in st.session_state and st.session_state['active_my_team']:
-            return st.session_state['active_my_team']
+            team_cand = st.session_state['active_my_team']
+            if not valid_teams or team_cand in valid_teams:
+                return team_cand
 
-        # 2. URL Query Parameter (initial load if session state not set yet)
+        # 2. URL Query Parameter
         if hasattr(st, 'query_params') and 'team' in st.query_params:
             url_team = st.query_params.get('team')
             if isinstance(url_team, list) and len(url_team) > 0:
                 url_team = url_team[0]
             if url_team and isinstance(url_team, str):
-                st.session_state['active_my_team'] = url_team
-                return url_team
+                if not valid_teams or url_team in valid_teams:
+                    st.session_state['active_my_team'] = url_team
+                    return url_team
     except Exception:
         pass
 
-    # 3. Disk fallback (default team when server boots up)
-    if os.path.exists(CONFIG_FILE):
+    # 3. Active league disk config
+    paths = get_league_paths(league_id)
+    if os.path.exists(paths['config']):
         try:
-            with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
+            with open(paths['config'], 'r', encoding='utf-8') as f:
                 cfg = json.load(f)
-                val = cfg.get('my_team', 'Bluelock')
-                if val:
+                val = cfg.get('my_team')
+                if val and (not valid_teams or val in valid_teams):
                     return val
         except Exception:
             pass
+
+    # 4. Root fallback
+    if os.path.exists(ROOT_CONFIG_FILE):
+        try:
+            with open(ROOT_CONFIG_FILE, 'r', encoding='utf-8') as f:
+                cfg = json.load(f)
+                val = cfg.get('my_team')
+                if val and (not valid_teams or val in valid_teams):
+                    return val
+        except Exception:
+            pass
+
+    # 5. First team in active league if available
+    if 'Bluelock' in valid_teams:
+        return 'Bluelock'
+    if valid_teams:
+        return list(valid_teams)[0]
+
     return 'Bluelock'
 
 
-def set_active_my_team(team_name, persist_disk=False):
+def set_active_my_team(team_name, persist_disk=False, league_id=None):
     """
     Sets the active team for the user's current session in st.session_state.
-    Cleans up any stale widget state across tabs so all tabs immediately sync to the new team.
+    Cleans up any stale widget state across tabs.
+    Optionally persists to the active league's config and root config.
     """
     try:
         import streamlit as st
@@ -576,28 +942,44 @@ def set_active_my_team(team_name, persist_disk=False):
         pass
 
     if persist_disk:
-        os.makedirs(DATA_DIR, exist_ok=True)
-        with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
-            json.dump({'my_team': team_name}, f, indent=2)
+        paths = get_league_paths(league_id)
+        try:
+            with open(paths['config'], 'w', encoding='utf-8') as f:
+                json.dump({'my_team': team_name}, f, indent=2)
+        except Exception:
+            pass
+        try:
+            with open(ROOT_CONFIG_FILE, 'w', encoding='utf-8') as f:
+                json.dump({'my_team': team_name}, f, indent=2)
+        except Exception:
+            pass
 
     return team_name
 
 
-def save_league_metadata(source="File Excel Fantacalcio.it", filename=None):
-    """Stores provenance timestamp and source of the current rosters."""
-    os.makedirs(DATA_DIR, exist_ok=True)
+def save_league_metadata(source="File Excel Fantacalcio.it", filename=None, league_id=None):
+    """Stores provenance timestamp and source of the current rosters in active league and root."""
+    paths = get_league_paths(league_id)
     meta = {
         'last_updated': datetime.datetime.now().strftime("%d/%m/%Y alle ore %H:%M"),
         'source': source,
         'filename': filename or "Rose_Lega_Ufficiale"
     }
-    with open(METADATA_FILE, 'w', encoding='utf-8') as f:
-        json.dump(meta, f, indent=2, ensure_ascii=False)
+    try:
+        with open(paths['metadata'], 'w', encoding='utf-8') as f:
+            json.dump(meta, f, indent=2, ensure_ascii=False)
+    except Exception:
+        pass
+    try:
+        with open(ROOT_METADATA_FILE, 'w', encoding='utf-8') as f:
+            json.dump(meta, f, indent=2, ensure_ascii=False)
+    except Exception:
+        pass
     return meta
 
 
-def get_league_metadata():
-    """Returns provenance and freshness info of current rosters."""
+def get_league_metadata(league_id=None):
+    """Returns provenance and freshness info of current active league rosters."""
     try:
         import streamlit as st
         if 'custom_league_meta' in st.session_state and st.session_state['custom_league_meta']:
@@ -605,19 +987,29 @@ def get_league_metadata():
     except Exception:
         pass
 
-    if os.path.exists(METADATA_FILE):
+    paths = get_league_paths(league_id)
+    if os.path.exists(paths['metadata']):
         try:
-            with open(METADATA_FILE, 'r', encoding='utf-8') as f:
+            with open(paths['metadata'], 'r', encoding='utf-8') as f:
                 return json.load(f)
         except Exception:
             pass
-    if os.path.exists(LEAGUE_FILE):
-        mtime = datetime.datetime.fromtimestamp(os.path.getmtime(LEAGUE_FILE))
+
+    if os.path.exists(paths['rosters']):
+        mtime = datetime.datetime.fromtimestamp(os.path.getmtime(paths['rosters']))
         return {
             'last_updated': mtime.strftime("%d/%m/%Y alle ore %H:%M"),
             'source': "File Excel/JSON su disco",
-            'filename': "league_rosters.json"
+            'filename': os.path.basename(paths['rosters'])
         }
+
+    if os.path.exists(ROOT_METADATA_FILE):
+        try:
+            with open(ROOT_METADATA_FILE, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception:
+            pass
+
     return {
         'last_updated': "Non disponibile",
         'source': "Non configurato",
@@ -680,14 +1072,14 @@ def add_or_update_loan(player_name, owner_team, borrower_team):
     return True, f"Prestito di {player_name} da {owner_team} a {borrower_team} registrato con successo!"
 
 
-def sync_user_roster_from_league(league_data=None, team_name='Bluelock'):
+def sync_user_roster_from_league(league_data=None, team_name='Bluelock', league_id=None):
     """Synchronizes user_roster.json directly from the specified team in league_data."""
     if league_data is None:
-        league_data = load_league_rosters()
+        league_data = load_league_rosters(league_id)
     if team_name in league_data:
         pnames = [p['Giocatore'] for p in league_data[team_name]]
-        save_user_roster(pnames)
-        set_active_my_team(team_name)
+        save_user_roster(pnames, league_id=league_id)
+        set_active_my_team(team_name, persist_disk=True, league_id=league_id)
         return pnames
     return []
 
@@ -932,6 +1324,7 @@ def get_league_summary(league_data_or_master=None, df_master=None):
 def render_league_upload_section(key_prefix, df_master, label_title="📥 Carica / Aggiorna File delle Rose (.xlsx, .xls, .csv)"):
     """
     Renders an interactive, foolproof upload and confirmation widget for league rosters.
+    Supports updating current league, creating a new named league, or guest session.
     """
     import streamlit as st
     with st.expander(label_title, expanded=False):
@@ -957,6 +1350,9 @@ def render_league_upload_section(key_prefix, df_master, label_title="📥 Carica
                     
                     teams_found = list(parsed_data.keys())
                     current_active = get_active_my_team()
+                    active_lid = get_active_league_id()
+                    avail_leagues = get_available_leagues()
+                    curr_league_name = avail_leagues.get(active_lid, {}).get('name', active_lid)
                     
                     # Choose default index (prefer 'Bluelock' if present, or current_active)
                     def_idx = 0
@@ -966,15 +1362,24 @@ def render_league_upload_section(key_prefix, df_master, label_title="📥 Carica
                         def_idx = teams_found.index(current_active)
                         
                     scope_choice = st.radio(
-                        "Ambito di applicazione del file:",
+                        "Destinazione delle rose caricate:",
                         options=[
-                            "👤 Solo per questa mia sessione (ideale se sei di un'altra lega o per fare prove)",
-                            "💾 Salva come lega principale (aggiorna i dati per tutti gli utenti)"
+                            f"💾 Salva e aggiorna la lega attiva: '{curr_league_name}'",
+                            "➕ Salva come NUOVA LEGA separata (crea un archivio indipendente)",
+                            "👤 Solo per questa mia sessione (ospite temporaneo, non tocca il disco)"
                         ],
-                        index=0 if 'custom_league_data' in st.session_state else 1,
+                        index=0 if 'custom_league_data' not in st.session_state else 2,
                         key=f"{key_prefix}_scope_choice",
-                        help="Se scegli 'Solo per questa mia sessione', potrai usare l'intera app con la tua lega senza sovrascrivere i dati della lega principale."
+                        help="Puoi aggiornare la lega corrente oppure creare una lega completamente autonoma (es. 'Lega Fantacalcio 2')."
                     )
+
+                    new_lg_custom_name = ""
+                    if scope_choice.startswith("➕"):
+                        new_lg_custom_name = st.text_input(
+                            "Nome della nuova lega da creare:",
+                            value=f"Lega {getattr(uploaded_file, 'name', 'Nuova').split('.')[0].replace('_', ' ').title()}",
+                            key=f"{key_prefix}_new_league_name_input"
+                        )
 
                     sel_col1, sel_col2 = st.columns([1.5, 1])
                     with sel_col1:
@@ -987,20 +1392,18 @@ def render_league_upload_section(key_prefix, df_master, label_title="📥 Carica
                     with sel_col2:
                         st.markdown("<br>", unsafe_allow_html=True)
                         apply_btn = st.button(
-                            f"🚀 Applica Rose (Mia Rosa: {target_team})",
+                            f"🚀 Salva ed Entra (Mia Rosa: {target_team})",
                             type="primary",
                             key=f"{key_prefix}_apply_btn",
                             width='stretch'
                         )
 
-                    is_session_only = scope_choice.startswith("👤")
-
                     # Handle upload save
-                    file_sig = f"{getattr(uploaded_file, 'name', '')}_{getattr(uploaded_file, 'size', 0)}_{scope_choice}"
+                    file_sig = f"{getattr(uploaded_file, 'name', '')}_{getattr(uploaded_file, 'size', 0)}_{scope_choice}_{new_lg_custom_name}"
                     saved_sig_key = f"{key_prefix}_saved_file_sig"
-                    if st.session_state.get(saved_sig_key) != file_sig or apply_btn:
+                    if apply_btn:
                         fname = getattr(uploaded_file, 'name', 'File_Rose_Lega')
-                        if is_session_only:
+                        if scope_choice.startswith("👤"):
                             st.session_state['custom_league_data'] = parsed_data
                             set_active_my_team(target_team, persist_disk=False)
                             st.session_state['custom_league_meta'] = {
@@ -1008,16 +1411,31 @@ def render_league_upload_section(key_prefix, df_master, label_title="📥 Carica
                                 'source': f"Lega Ospite in Sessione ({fname})",
                                 'filename': fname
                             }
-                            st.toast(f"✅ Lega ospite '{fname}' attivata per questa sessione!", icon="🏆")
+                            sync_user_roster_from_league(parsed_data, target_team)
+                            st.session_state[saved_sig_key] = file_sig
+                            st.toast(f"✅ Lega ospite attivata per questa sessione!", icon="🏆")
+                            st.rerun()
+                        elif scope_choice.startswith("➕"):
+                            nl_name = new_lg_custom_name.strip() or "Nuova Lega"
+                            ok, new_lid, msg = create_new_league(nl_name, parsed_data, target_team)
+                            if ok:
+                                set_active_league_id(new_lid, persist_disk=True)
+                                set_active_my_team(target_team, persist_disk=True, league_id=new_lid)
+                                sync_user_roster_from_league(parsed_data, target_team, league_id=new_lid)
+                                st.session_state[saved_sig_key] = file_sig
+                                st.toast(f"🏆 {msg}", icon="🎉")
+                                st.success(f"🏆 Nuova lega '{nl_name}' creata con successo! Squadra attiva: **{target_team}**.")
+                                st.rerun()
+                            else:
+                                st.error(msg)
                         else:
                             save_league_rosters(parsed_data)
                             save_league_metadata(source=f"File caricato ({fname})", filename=fname)
                             set_active_my_team(target_team, persist_disk=True)
-                            st.toast(f"✅ File '{fname}' salvato come lega principale!", icon="🏆")
-
-                        sync_user_roster_from_league(parsed_data, target_team)
-                        st.session_state[saved_sig_key] = file_sig
-                        st.rerun()
+                            sync_user_roster_from_league(parsed_data, target_team)
+                            st.session_state[saved_sig_key] = file_sig
+                            st.toast(f"✅ Lega '{curr_league_name}' aggiornata con successo!", icon="🏆")
+                            st.rerun()
                         
                     # Preview of the chosen team
                     if target_team in parsed_data:
@@ -1038,17 +1456,6 @@ def render_league_upload_section(key_prefix, df_master, label_title="📥 Carica
                         st.dataframe(preview_df, width='stretch', hide_index=True)
                         if len(team_pls) > 10:
                             st.caption(f"...e altri {len(team_pls) - 10} calciatori.")
-                            
-                    if apply_btn:
-                        save_league_rosters(parsed_data)
-                        fname = getattr(uploaded_file, 'name', 'File_Rose_Lega')
-                        save_league_metadata(source=f"File caricato ({fname})", filename=fname)
-                        set_active_my_team(target_team)
-                        sync_user_roster_from_league(parsed_data, target_team)
-                        st.session_state[saved_sig_key] = file_sig
-                        st.toast(f"✅ Rosa '{target_team}' salvata e attivata!", icon="🏆")
-                        st.success(f"🏆 Rose di lega salvate con successo! La tua squadra attiva è ora **{target_team}** ({len(parsed_data[target_team])} calciatori).")
-                        st.rerun()
             except Exception as e:
                 st.error(f"❌ Errore durante l'elaborazione del file: {e}")
                 st.info("💡 **Consiglio:** Assicurati di esportare il file direttamente da Fantacalcio.it in formato Excel (.xlsx) o CSV con l'elenco delle rose della tua lega.")

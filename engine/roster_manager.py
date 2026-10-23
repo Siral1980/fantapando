@@ -117,45 +117,80 @@ def match_player_name(query, all_names):
     return None
 
 
-def load_user_roster():
-    """Loads user squad from user_roster.json."""
-    if os.path.exists(ROSTER_FILE):
+def _get_active_roster_file(league_id=None):
+    """Returns the path to the active league's user_roster.json, with fallback to root ROSTER_FILE."""
+    try:
+        from engine.league_manager import get_league_paths
+        paths = get_league_paths(league_id)
+        return paths.get('user_roster', ROSTER_FILE)
+    except Exception:
+        return ROSTER_FILE
+
+
+def load_user_roster(league_id=None):
+    """Loads user squad from the active league's user_roster.json, with fallback to root."""
+    target_f = _get_active_roster_file(league_id)
+    if os.path.exists(target_f):
+        try:
+            with open(target_f, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                if isinstance(data, list) and len(data) > 0:
+                    return data
+        except Exception as e:
+            print(f"Error loading roster from {target_f}: {e}")
+
+    # Fallback to root ROSTER_FILE
+    if os.path.exists(ROSTER_FILE) and target_f != ROSTER_FILE:
         try:
             with open(ROSTER_FILE, 'r', encoding='utf-8') as f:
                 data = json.load(f)
                 if isinstance(data, list) and len(data) > 0:
                     return data
-        except Exception as e:
-            print(f"Error loading roster: {e}")
+        except Exception:
+            pass
     return []
 
 
-def save_user_roster(player_names):
-    """Saves player list to user_roster.json."""
-    os.makedirs(DATA_DIR, exist_ok=True)
+def save_user_roster(player_names, league_id=None):
+    """Saves player list to the active league's user_roster.json AND mirrors to root."""
     cleaned = sorted(list(set([str(p).strip() for p in player_names if str(p).strip()])))
-    with open(ROSTER_FILE, 'w', encoding='utf-8') as f:
-        json.dump(cleaned, f, indent=2, ensure_ascii=False)
+    target_f = _get_active_roster_file(league_id)
+    try:
+        os.makedirs(os.path.dirname(target_f), exist_ok=True)
+        with open(target_f, 'w', encoding='utf-8') as f:
+            json.dump(cleaned, f, indent=2, ensure_ascii=False)
+    except Exception as e:
+        print(f"Error saving roster to {target_f}: {e}")
+
+    # Mirror to root ROSTER_FILE for backward compatibility
+    if target_f != ROSTER_FILE:
+        try:
+            os.makedirs(DATA_DIR, exist_ok=True)
+            with open(ROSTER_FILE, 'w', encoding='utf-8') as f:
+                json.dump(cleaned, f, indent=2, ensure_ascii=False)
+        except Exception:
+            pass
+
     return cleaned
 
 
-def add_player_to_roster(player_name):
+def add_player_to_roster(player_name, league_id=None):
     """Adds a single player to user squad."""
-    current = load_user_roster()
+    current = load_user_roster(league_id=league_id)
     p = str(player_name).strip()
     if p and p not in current:
         current.append(p)
-        save_user_roster(current)
+        save_user_roster(current, league_id=league_id)
     return current
 
 
-def remove_player_from_roster(player_name):
+def remove_player_from_roster(player_name, league_id=None):
     """Removes a player from user squad."""
-    current = load_user_roster()
+    current = load_user_roster(league_id=league_id)
     p = str(player_name).strip()
     if p in current:
         current.remove(p)
-        save_user_roster(current)
+        save_user_roster(current, league_id=league_id)
     return current
 
 
