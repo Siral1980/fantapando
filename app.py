@@ -114,6 +114,39 @@ def get_master_data(mtime=None, code_ver=None):
 def get_cached_calendar(cal_mtime=0, code_ver=None):
     return get_or_create_calendar()
 
+
+def _league_signature(league):
+    """Stable hash of the league rosters, used as cache key (cheap vs. hashing nested dicts)."""
+    import hashlib, json
+    try:
+        payload = json.dumps(league, sort_keys=True, default=str)
+    except Exception:
+        payload = str(league)
+    return hashlib.md5(payload.encode('utf-8')).hexdigest()
+
+
+@st.cache_data(show_spinner=False, max_entries=64)
+def cached_analyze_squad_weaknesses(team_name, league_sig, matchday, code_ver, _league_data, _df_master):
+    return analyze_squad_weaknesses(team_name, _league_data, _df_master, matchday=matchday)
+
+
+@st.cache_data(show_spinner=False, max_entries=32, ttl=1800)
+def cached_find_win_win_trades(my_team_name, league_sig, matchday, target_role_filter, give_player_filter,
+                               opp_team_filter, min_starter_filter, trade_format_filter, max_proposals,
+                               code_ver, _league_data, _df_master):
+    return find_win_win_trades(
+        my_team_name=my_team_name,
+        league_data=_league_data,
+        df_master=_df_master,
+        matchday=matchday,
+        target_role_filter=target_role_filter,
+        give_player_filter=give_player_filter,
+        opp_team_filter=opp_team_filter,
+        min_starter_filter=min_starter_filter,
+        trade_format_filter=trade_format_filter,
+        max_proposals=max_proposals
+    )
+
 master_csv_path = os.path.join(APP_DIR, "data", "players_master.csv")
 mtime_val = os.path.getmtime(master_csv_path) if os.path.exists(master_csv_path) else 0
 cal_json_path = os.path.join(APP_DIR, "data", "calendar_serie_a.json")
@@ -1427,7 +1460,7 @@ with tab_scambi:
             st.write("")
             st.caption(f"Squadra attiva dell'utente: **{my_team}**")
             
-        diag_res = analyze_squad_weaknesses(target_diag_team, league_dict, df_master, matchday=selected_giornata)
+        diag_res = cached_analyze_squad_weaknesses(target_diag_team, _league_signature(league_dict), selected_giornata, current_code_version, league_dict, df_master)
         
         if 'error' in diag_res:
             st.error(diag_res['error'])
@@ -1558,7 +1591,7 @@ with tab_scambi:
         my_team = get_active_my_team()
         
         # Pre-compute diagnosi for filters
-        my_diag = analyze_squad_weaknesses(my_team, league_dict, df_master, matchday=selected_giornata)
+        my_diag = cached_analyze_squad_weaknesses(my_team, _league_signature(league_dict), selected_giornata, current_code_version, league_dict, df_master)
         my_weak_roles = [w['Ruolo'] for w in my_diag.get('Punti_Deboli', [])]
         surplus_pnames = [p['Giocatore'] for p in my_diag.get('Surplus_Cedibili', [])]
         
@@ -1618,17 +1651,11 @@ with tab_scambi:
         # Run search
         with st.spinner("Scansione rose avversarie e calcolo scambi Win-Win in corso..."):
             try:
-                proposals = find_win_win_trades(
-                    my_team_name=my_team,
-                    league_data=league_dict,
-                    df_master=df_master,
-                    matchday=selected_giornata,
-                    target_role_filter=selected_target_role,
-                    give_player_filter=selected_give_player,
-                    opp_team_filter=selected_opp_team,
-                    min_starter_filter=selected_starter_filter,
-                    trade_format_filter=selected_format_filter,
-                    max_proposals=30
+                proposals = cached_find_win_win_trades(
+                    my_team, _league_signature(league_dict), selected_giornata,
+                    selected_target_role, selected_give_player, selected_opp_team,
+                    selected_starter_filter, selected_format_filter, 30,
+                    current_code_version, league_dict, df_master
                 )
             except TypeError:
                 # Fallback for cached or legacy function signatures
@@ -1872,7 +1899,7 @@ with tab_scambi:
 
             # Show Instant Rival Check-up Card
             with st.expander(f"🔍 Check-up Immediato Carenze di {target_opp_team} (Perché dovrebbero accettare)", expanded=False):
-                opp_diag = analyze_squad_weaknesses(target_opp_team, league_dict, df_master, matchday=selected_giornata)
+                opp_diag = cached_analyze_squad_weaknesses(target_opp_team, _league_signature(league_dict), selected_giornata, current_code_version, league_dict, df_master)
                 opp_w = opp_diag.get('Punti_Deboli', [])
                 if opp_w:
                     st.markdown(f"**Criticità emerse nella rosa di {target_opp_team}:**")
@@ -2031,19 +2058,21 @@ with tab_scambi:
     # -------------------------------------------------------------
     # SUBTAB 4: SIMULATORE SCAMBI LIBERO
     # -------------------------------------------------------------
-    with subtab_sim:
+    @st.fragment
+    def render_free_trade_simulator():
+        """Rendered as a fragment: changing team/players reruns only this block, not the whole app."""
         st.subheader("⚖️ Simulatore Scambi Libero (1v1, 2v2, Pacchetti)")
         st.markdown(
             "Simula qualsiasi scambio. L'algoritmo proietta il valore atteso "
             "delle prossime giornate incrociando **calendario, fattore casa/trasferta, difficoltà avversari (FDR) e segnali Buy-Low / Sell-High**."
         )
-        
+    
         # Check prefill from radar
         prefill_mode = st.session_state.get('sim_prefill_mode', "🤝 Trattativa di Lega (Inter-Squadra)")
         prefill_give = st.session_state.get('sim_prefill_give', [])
         prefill_receive = st.session_state.get('sim_prefill_receive', [])
         prefill_opp = st.session_state.get('sim_prefill_opp', None)
-        
+    
         trade_mode = st.radio(
             "Modalità di Selezione Scambio:",
             options=["🤝 Trattativa di Lega (Inter-Squadra)", "🔍 Ricerca Libera (Tutta la Serie A)"],
@@ -2051,10 +2080,10 @@ with tab_scambi:
             horizontal=True,
             key="sim_trade_mode_radio"
         )
-        
+    
         give_selection = []
         receive_selection = []
-        
+    
         if trade_mode == "🤝 Trattativa di Lega (Inter-Squadra)" and league_teams:
             col_sc1, col_sc2 = st.columns(2)
             my_team = get_active_my_team()
@@ -2124,7 +2153,7 @@ with tab_scambi:
                     default=valid_p_give,
                     key="sim_multiselect_give_all"
                 )
-                
+            
             with col_sc2:
                 st.subheader("🟢 Calciatori che RICEVI")
                 available_targets = [p for p in df_master['Giocatore'].unique() if p not in give_selection]
@@ -2137,7 +2166,7 @@ with tab_scambi:
                     default=valid_p_rec,
                     key="sim_multiselect_receive_all"
                 )
-            
+        
         col_hor1, col_hor2 = st.columns([1, 1])
         with col_hor1:
             horizon = st.slider("Orizzonte di valutazione (Giornate future):", min_value=3, max_value=15, value=6, step=1, key="sim_horizon_slider")
@@ -2159,7 +2188,7 @@ with tab_scambi:
                 "➕ Somma Grezza (Cumulativa semplice)": "raw_sum"
             }
             chosen_weight_mode = weight_mode_map[weight_mode_label]
-        
+    
         if st.button("⚡ Valuta Scambio", type="primary", key="sim_eval_button"):
             if not give_selection or not receive_selection:
                 st.error("Seleziona almeno un giocatore da cedere e uno da ricevere.")
@@ -2173,12 +2202,12 @@ with tab_scambi:
                     calendar=calendar,
                     weight_mode=chosen_weight_mode
                 )
-                
+            
                 if 'error' in trade_res:
                     st.error(trade_res['error'])
                 else:
                     st.markdown("---")
-                    
+                
                     # Verdict Banner
                     verdict_color = {
                         'green': '#15803d',
@@ -2187,7 +2216,7 @@ with tab_scambi:
                         'orange': '#ea580c',
                         'red': '#dc2626'
                     }.get(trade_res['StatusColor'], '#334155')
-                    
+                
                     is_multi_pkg = trade_res.get('Is_Multi', False)
                     pkg_badge = f"Pacchetto {trade_res.get('Num_Ceduti', 1)} vs {trade_res.get('Num_Ricevuti', 1)}" if is_multi_pkg else "Scambio Singolo 1 vs 1"
                     sub_title_mode = "Valutazione a Media Ponderata Bilanciata" if chosen_weight_mode != "raw_sum" else "Valutazione a Somma Grezza Cumulativa"
@@ -2203,7 +2232,7 @@ with tab_scambi:
                         </p>
                     </div>
                     """, unsafe_allow_html=True)
-                    
+                
                     # Package Weights Breakdown (if multi-player)
                     if is_multi_pkg and chosen_weight_mode != 'raw_sum':
                         with st.expander("🔍 Dettaglio Pesi e Bilanciamento del Pacchetto", expanded=False):
@@ -2276,24 +2305,28 @@ with tab_scambi:
                         st.metric("Media Voto D-Factor Ricevuti", f"{trade_res.get('MV_Ricevuti_DFactor', 0.0)}")
                     with td4:
                         st.metric("Media Voto D-Factor Ceduti", f"{trade_res.get('MV_Ceduti_DFactor', 0.0)}")
-                        
+                    
                     st.subheader("💡 Analisi e Motivazioni Statistiche")
                     for mot in trade_res['Motivazioni']:
                         st.markdown(f"- {mot}")
-                        
+                    
                     st.subheader("📈 Proiezione Giornata per Giornata")
                     timeline_df = trade_res['Timeline']
-                    
+                
                     # Chart
                     chart_data = timeline_df[['Giornata', 'xFV_Ceduti', 'xFV_Ricevuti']].set_index('Giornata')
                     st.bar_chart(chart_data)
-                    
+                
                     # Detailed breakdown table
                     st.dataframe(
                         timeline_df[['Giornata', 'xFV_Ceduti', 'xFV_Ricevuti', 'Delta_Giornata', 'Match_Ceduti', 'Match_Ricevuti']],
                         width='stretch',
                         hide_index=True
                     )
+
+
+    with subtab_sim:
+        render_free_trade_simulator()
 
 # =============================================================
 # TAB 4: TUTTE LE ROSE & LEGA
