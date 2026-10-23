@@ -201,10 +201,10 @@ if is_setup_mode:
             if not df_team_preview.empty:
                 st.markdown(f"**Anteprima Rosa di {selected_team}** (`{len(df_team_preview)} calciatori`, `{int(df_team_preview['Costo'].sum())} crediti spesi`):")
                 preview_cols = ['Giocatore', 'RuoloMantra', 'Squadra', 'Costo', 'FM_Stagione']
-                st.dataframe(df_team_preview[preview_cols].head(8), use_container_width=True, hide_index=True)
+                st.dataframe(df_team_preview[preview_cols].head(8), width='stretch', hide_index=True)
                 
             st.markdown("<br>", unsafe_allow_html=True)
-            if st.button("🚀 Conferma e Accedi al FantaMantra Manager", type="primary", use_container_width=True):
+            if st.button("🚀 Conferma e Accedi al FantaMantra Manager", type="primary", width='stretch'):
                 set_active_my_team(selected_team)
                 sync_user_roster_from_league(parsed_league, selected_team)
                 st.session_state['setup_mode'] = False
@@ -259,7 +259,7 @@ st.sidebar.subheader("Gestione Rapida Dati")
 
 col_sync1, col_sync2 = st.sidebar.columns(2)
 with col_sync1:
-    if st.button("🔄 Sync Excel", use_container_width=True):
+    if st.button("🔄 Sync Excel", width='stretch'):
         st.cache_data.clear()
         st.cache_resource.clear()
         with st.spinner("Sincronizzazione in corso dai file Excel..."):
@@ -268,7 +268,7 @@ with col_sync1:
         st.rerun()
 
 with col_sync2:
-    if st.button("🧹 Svuota Cache", use_container_width=True):
+    if st.button("🧹 Svuota Cache", width='stretch'):
         st.cache_data.clear()
         st.cache_resource.clear()
         st.sidebar.success("Cache svuotata!")
@@ -401,7 +401,7 @@ if league_teams:
 
     if 'custom_league_data' in st.session_state:
         st.sidebar.info("👤 **Lega Ospite in Sessione** (privata)")
-        if st.sidebar.button("🔄 Torna alla Lega Principale", use_container_width=True):
+        if st.sidebar.button("🔄 Torna alla Lega Principale", width='stretch'):
             del st.session_state['custom_league_data']
             st.session_state.pop('custom_league_meta', None)
             st.session_state.pop('active_my_team', None)
@@ -575,7 +575,7 @@ with tab_rosa:
             </p>
         """, unsafe_allow_html=True)
         for _, r in out_serie_a.iterrows():
-            st.markdown(f"- 🚫 **{r['Giocatore']} \*** ({r['RuoloMantra']}) — Costo d'Asta: **{r['Costo']} cr** — *Fuori lista Serie A, non schierabile*")
+            st.markdown(f"- 🚫 **{r['Giocatore']} \\*** ({r['RuoloMantra']}) — Costo d'Asta: **{r['Costo']} cr** — *Fuori lista Serie A, non schierabile*")
         st.markdown("</div>", unsafe_allow_html=True)
 
     # 2. Loan Overview Callout
@@ -613,7 +613,7 @@ with tab_rosa:
                     st.markdown("##### 📥 Termina Prestito in Entrata")
                     for _, r in loans_in.iterrows():
                         p_name_t = r['Giocatore']
-                        if st.button(f"🔴 Risolvi prestito di {p_name_t}", key=f"t1_term_in_{p_name_t}", use_container_width=True):
+                        if st.button(f"🔴 Risolvi prestito di {p_name_t}", key=f"t1_term_in_{p_name_t}", width='stretch'):
                             ok, msg = terminate_loan(p_name_t, cur_team_name)
                             if ok:
                                 st.success(msg)
@@ -626,7 +626,7 @@ with tab_rosa:
                     for _, r in loans_out.iterrows():
                         p_name_t = r['Giocatore']
                         borrower_t = r.get('Controparte', '')
-                        if st.button(f"🟢 Richiama alla base {p_name_t}", key=f"t1_term_out_{p_name_t}", use_container_width=True):
+                        if st.button(f"🟢 Richiama alla base {p_name_t}", key=f"t1_term_out_{p_name_t}", width='stretch'):
                             ok, msg = terminate_loan(p_name_t, borrower_t)
                             if ok:
                                 st.success(msg)
@@ -716,7 +716,7 @@ with tab_rosa:
     # Interactive Table with on_select
     table_event = st.dataframe(
         sorted_display[cols_to_show],
-        use_container_width=True,
+        width='stretch',
         hide_index=True,
         on_select="rerun",
         selection_mode="single-row"
@@ -1146,7 +1146,7 @@ with tab_formazione:
                         'Razionale Tattico': motivo
                     })
                 df_anal = pd.DataFrame(analysis_rows)
-                st.dataframe(df_anal, use_container_width=True, hide_index=True)
+                st.dataframe(df_anal, width='stretch', hide_index=True)
 
                 # Ballottaggi Chiave Decisi dall'Algoritmo
                 if 'Panchina' in opt_res and opt_res['Panchina']:
@@ -1299,7 +1299,7 @@ with tab_formazione:
                         'Copertura Tattica': b.get('Copertura_Tattica', '')
                     })
                 df_bench_view = pd.DataFrame(bench_display)
-                st.dataframe(df_bench_view, use_container_width=True, hide_index=True)
+                st.dataframe(df_bench_view, width='stretch', hide_index=True)
                 st.caption(
                     "🎯 **Criterio di Ordinamento Panchina**: I calciatori sono schierati in ordine decrescente di *Score Panchina*, "
                     "che misura la capacità del calciatore di portare un **voto superiore al 6.0** (sufficienza e rendimento difensivo) "
@@ -1316,7 +1316,7 @@ with tab_formazione:
                 # Part 1: Automated Departmental Stress-Test Matrix
                 if 'Audit_Copertura' in opt_res and opt_res['Audit_Copertura'] is not None and not opt_res['Audit_Copertura'].empty:
                     st.markdown("##### 🧪 Matrice di Tenuta Reparti (Test di Simulazione Automatico)")
-                    st.dataframe(opt_res['Audit_Copertura'], use_container_width=True, hide_index=True)
+                    st.dataframe(opt_res['Audit_Copertura'], width='stretch', hide_index=True)
 
                 st.markdown("---")
                 st.markdown("##### 🎮 Simulatore Interattivo Forfait / S.V. in Tempo Reale")
@@ -1372,7 +1372,7 @@ with tab_formazione:
                 cols_to_show = [c for c in display_cols if c in df_all_moduli.columns]
                 st.dataframe(
                     df_all_moduli[cols_to_show],
-                    use_container_width=True,
+                    width='stretch',
                     hide_index=True,
                     column_config={
                         'Modulo': st.column_config.TextColumn('Modulo', width='medium'),
@@ -1507,7 +1507,7 @@ with tab_scambi:
                 df_surplus = pd.DataFrame(surplus)
                 st.dataframe(
                     df_surplus[['Giocatore', 'RuoloMantra', 'Squadra', 'xFV', 'FM_Stagione', 'Signal', 'Motivo_Cessione']],
-                    use_container_width=True,
+                    width='stretch',
                     hide_index=True
                 )
             else:
@@ -1542,7 +1542,7 @@ with tab_scambi:
                         'Target Ideale': tgt,
                         'Stato Copertura': status
                     })
-                st.dataframe(pd.DataFrame(matrix_rows), use_container_width=True, hide_index=True)
+                st.dataframe(pd.DataFrame(matrix_rows), width='stretch', hide_index=True)
 
     # -------------------------------------------------------------
     # SUBTAB 2: RADAR SCAMBI INTELLIGENTI (WIN-WIN)
@@ -2291,7 +2291,7 @@ with tab_scambi:
                     # Detailed breakdown table
                     st.dataframe(
                         timeline_df[['Giornata', 'xFV_Ceduti', 'xFV_Ricevuti', 'Delta_Giornata', 'Match_Ceduti', 'Match_Ricevuti']],
-                        use_container_width=True,
+                        width='stretch',
                         hide_index=True
                     )
 
@@ -2306,7 +2306,7 @@ with tab_lega:
     df_league_summary = get_league_summary(df_master)
     if not df_league_summary.empty:
         st.subheader("📊 Panoramica & Confronto Squadre della Lega")
-        st.dataframe(df_league_summary, use_container_width=True, hide_index=True)
+        st.dataframe(df_league_summary, width='stretch', hide_index=True)
         
     st.markdown("---")
 
@@ -2326,7 +2326,7 @@ with tab_lega:
         
         st.dataframe(
             df_all_loans[['Calciatore', 'Ruolo', 'Squadra', 'Proprietario', 'In_Prestito_A', 'Costo_Asta', 'Tipo']],
-            use_container_width=True,
+            width='stretch',
             hide_index=True
         )
 
@@ -2337,7 +2337,7 @@ with tab_lega:
                 st.markdown("##### ❌ Termina un Prestito Esistente")
                 loan_options = [f"{r['Calciatore']} ({r['Proprietario']} ➔ {r['In_Prestito_A']})" for _, r in df_all_loans.iterrows()]
                 selected_loan_to_term = st.selectbox("Seleziona il prestito da risolvere:", options=loan_options, key="select_loan_term_tab4")
-                if st.button("Termina Prestito Selezionato", type="secondary", key="btn_term_loan_tab4", use_container_width=True):
+                if st.button("Termina Prestito Selezionato", type="secondary", key="btn_term_loan_tab4", width='stretch'):
                     sel_idx = loan_options.index(selected_loan_to_term)
                     row_sel = df_all_loans.iloc[sel_idx]
                     p_to_term = row_sel['Calciatore']
@@ -2355,7 +2355,7 @@ with tab_lega:
                 avail_owner_players = sorted([p['Giocatore'] for p in all_rosters_dict.get(owner_team_new, []) if p.get('Costo', 0) > 0])
                 player_to_loan_new = st.selectbox("Calciatore da prestare:", options=avail_owner_players if avail_owner_players else ["Nessun giocatore"], key="new_loan_p_tab4")
                 borrower_team_new = st.selectbox("Squadra Ricevente (In Prestito A):", options=[t for t in league_teams if t != owner_team_new], key="new_loan_borrower_tab4")
-                if st.button("Registra Prestito", type="primary", key="btn_add_loan_tab4", use_container_width=True):
+                if st.button("Registra Prestito", type="primary", key="btn_add_loan_tab4", width='stretch'):
                     if player_to_loan_new and player_to_loan_new != "Nessun giocatore":
                         ok, msg = add_or_update_loan(player_to_loan_new, owner_team_new, borrower_team_new)
                         if ok:
@@ -2382,7 +2382,7 @@ with tab_lega:
         
         st.dataframe(
             df_out_league[['Calciatore', 'Squadra_Lega', 'Ruolo', 'Costo_Asta', 'Stato', 'Consiglio']],
-            use_container_width=True,
+            width='stretch',
             hide_index=True
         )
         st.markdown("---")
@@ -2412,7 +2412,7 @@ with tab_lega:
         st.caption("💡 Clicca su qualsiasi riga per aprire la Scheda Profilo dettagliata con radar e statistiche avanzate.")
         event_insp = st.dataframe(
             df_inspect[cols_inspect],
-            use_container_width=True,
+            width='stretch',
             hide_index=True,
             on_select="rerun",
             selection_mode="single-row",
@@ -2530,7 +2530,7 @@ with tab_stats:
         
         st.dataframe(
             df_lb[display_cols],
-            use_container_width=True,
+            width='stretch',
             hide_index=True
         )
 
@@ -2603,7 +2603,7 @@ with tab_stats:
                 ]
             )
             chart1 = (ref_line1 + points1).properties(height=420).interactive()
-            st.altair_chart(chart1, use_container_width=True, theme="streamlit")
+            st.altair_chart(chart1, width='stretch', theme="streamlit")
             
         with sc_c2:
             st.markdown("##### 🎯 xA Totali vs Assist Fatti (ASS)")
@@ -2642,7 +2642,7 @@ with tab_stats:
                 ]
             )
             chart2 = (ref_line2 + points2).properties(height=420).interactive()
-            st.altair_chart(chart2, use_container_width=True, theme="streamlit")
+            st.altair_chart(chart2, width='stretch', theme="streamlit")
 
         st.subheader("Radar Segnali di Mercato")
         signal_filter = st.radio(
@@ -2665,7 +2665,7 @@ with tab_stats:
         
         st.dataframe(
             df_signals[sig_cols].sort_values(by='Delta_xG', ascending=True),
-            use_container_width=True,
+            width='stretch',
             hide_index=True
         )
 
@@ -2745,7 +2745,7 @@ with tab_stats:
                     
                 st.dataframe(
                     df_opp_bl,
-                    use_container_width=True,
+                    width='stretch',
                     hide_index=True
                 )
             else:
@@ -2776,7 +2776,7 @@ with tab_stats:
             with c_tu1:
                 st.dataframe(
                     df_tu,
-                    use_container_width=True,
+                    width='stretch',
                     hide_index=True
                 )
             with c_tu2:
@@ -2860,7 +2860,7 @@ with tab_stats:
             
             st.dataframe(
                 df_gk_all[cols_gk_view],
-                use_container_width=True,
+                width='stretch',
                 hide_index=True
             )
         else:
@@ -2894,7 +2894,7 @@ with tab_calendario:
         st.subheader("Matrice Fixture Difficulty Rating (FDR 1 = Molto Facile, 5 = Difficilissimo)")
         st.dataframe(
             matrix_df,
-            use_container_width=True,
+            width='stretch',
             hide_index=True
         )
         
@@ -2903,14 +2903,14 @@ with tab_calendario:
             st.subheader("🟢 Top 5 Calendari Più Agevoli")
             st.dataframe(
                 matrix_df.head(5)[['Squadra', 'Power_Dinamico', 'Posizione_Attuale', 'FDR_Medio']],
-                use_container_width=True,
+                width='stretch',
                 hide_index=True
             )
         with c_fav2:
             st.subheader("🔴 Top 5 Calendari Più Ostici")
             st.dataframe(
                 matrix_df.tail(5)[['Squadra', 'Power_Dinamico', 'Posizione_Attuale', 'FDR_Medio']],
-                use_container_width=True,
+                width='stretch',
                 hide_index=True
             )
 
@@ -2930,6 +2930,6 @@ with tab_calendario:
         ]
         st.dataframe(
             df_ratings[cols_ratings].sort_values(by='Posizione_Attuale', ascending=True),
-            use_container_width=True,
+            width='stretch',
             hide_index=True
         )

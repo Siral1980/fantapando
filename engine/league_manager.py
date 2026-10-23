@@ -990,7 +990,7 @@ def render_league_upload_section(key_prefix, df_master, label_title="📥 Carica
                             f"🚀 Applica Rose (Mia Rosa: {target_team})",
                             type="primary",
                             key=f"{key_prefix}_apply_btn",
-                            use_container_width=True
+                            width='stretch'
                         )
 
                     is_session_only = scope_choice.startswith("👤")
@@ -1035,7 +1035,7 @@ def render_league_upload_section(key_prefix, df_master, label_title="📥 Carica
                             }
                             for p in team_pls[:10]
                         ])
-                        st.dataframe(preview_df, use_container_width=True, hide_index=True)
+                        st.dataframe(preview_df, width='stretch', hide_index=True)
                         if len(team_pls) > 10:
                             st.caption(f"...e altri {len(team_pls) - 10} calciatori.")
                             

@@ -349,7 +349,7 @@ def render_player_profile_content(player_name_or_row, df_master, calendar=None, 
         c_rad, c_att = st.columns([1.15, 1.0], gap="medium")
         with c_rad:
             radar_fig = create_radar_figure(skill_data)
-            st.pyplot(radar_fig, use_container_width=True)
+            st.pyplot(radar_fig, width='stretch')
             plt.close(radar_fig)
         with c_att:
             for cat, val, tip in zip(skill_data['categories'], skill_data['values'], skill_data['tooltips']):
@@ -493,7 +493,7 @@ def render_player_profile_content(player_name_or_row, df_master, calendar=None, 
                 st.markdown("<div style='font-weight: 700; color: #ffffff; font-size: 1.05rem; margin-bottom: 4px;'>🗓️ Calendario & Difficoltà (FDR 1-5):</div>", unsafe_allow_html=True)
                 st.dataframe(
                     df_fix[['G', 'Match', 'FDR', 'xFV']],
-                    use_container_width=True,
+                    width='stretch',
                     hide_index=True,
                     height=185
                 )
