@@ -58,6 +58,9 @@ from engine.injuries_manager import (
     set_player_manual_override, clear_player_manual_override,
     clear_all_manual_overrides, get_all_unavailable_players
 )
+from engine.probable_lineups import (
+    load_probable_lineups, get_player_probable_info
+)
 from engine.player_profile_view import (
     show_player_profile_dialog, render_player_profile_content
 )
@@ -1005,9 +1008,60 @@ with tab_formazione:
                 st.cache_data.clear()
                 st.rerun()
 
-        # Predict xFV for current squad
-        df_my_proj = batch_predict_xfv(eligible_roster, matchday=selected_giornata, calendar=calendar)
-        
+        # Live Multi-Source Probable Lineups Header & Sync Control
+        prob_cache = load_probable_lineups(force_refresh=False)
+        prob_md = prob_cache.get('matchday_fanta', selected_giornata)
+        prob_last_ts = prob_cache.get('last_scraped', 'N/D')
+        sample_teams = list(prob_cache.get('teams_summary', {}).values())
+        aligned_srcs = sample_teams[0].get('Fonti_Allineate', ['Fantacalcio.it']) if sample_teams else ['Fantacalcio.it']
+        src_badges = " + ".join(aligned_srcs)
+
+        cp1, cp2 = st.columns([3.2, 1.0])
+        with cp1:
+            st.markdown(
+                f"""
+                <div style="background: rgba(15, 23, 42, 0.85); border: 1px solid #1e3a8a; border-left: 4px solid #38bdf8; border-radius: 8px; padding: 10px 14px; margin-bottom: 8px;">
+                    <div style="font-weight: 800; color: #38bdf8; font-size: 0.98rem;">
+                        📡 Radar Probabili Formazioni Live — Consenso Multi-Fonte ({src_badges})
+                    </div>
+                    <div style="color: #cbd5e1; font-size: 0.83rem; margin-top: 2px;">
+                        Giornata rilevata: <b>{prob_md}ª</b> • Ultimo sincro live: <code>{prob_last_ts}</code> • 
+                        Integra % di voto ufficiali, ballottaggi e ultime dai campi direttamente in <b>P(Voto)</b> e <b>xFV</b>.
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+        with cp2:
+            if st.button("🔄 Aggiorna Probabili Live", width='stretch', key="btn_refresh_prob_lineups"):
+                with st.spinner("Scaricamento Probabili Formazioni da Fantacalcio.it, Gazzetta e Sky Sport..."):
+                    load_probable_lineups(force_refresh=True)
+                    st.cache_data.clear()
+                st.toast("Probabili formazioni aggiornate con successo!", icon="✅")
+                st.rerun()
+
+        # Predict xFV for current squad (automatically enriched with prob_cache)
+        df_my_proj = batch_predict_xfv(eligible_roster, matchday=selected_giornata, calendar=calendar, prob_lineups_cache=prob_cache)
+
+        # Expandable Probable Lineups & Field Notes Table for User's Squad
+        with st.expander("📋 Tabellone Probabili Formazioni, Ballottaggi & Ultime dai Campi (La Tua Rosa)", expanded=False):
+            prob_rows = []
+            for _, prow in df_my_proj.iterrows():
+                p_info_det = prow.get('Dettaglio_Indisponibile', '') or prow.get('Ballottaggio_Info', '') or 'Nessun ballottaggio segnalato'
+                prob_rows.append({
+                    'Giocatore': prow['Giocatore'],
+                    'Squadra': prow['Squadra'],
+                    'Ruolo': prow.get('RuoloClassic' if is_classic else 'RuoloMantra', ''),
+                    'Partita': f"{prow['Match']} (FDR {prow['FDR']})",
+                    'Stato & Consenso': prow.get('Status_Titolarita', ''),
+                    'Indice Voto %': f"{int(prow.get('Prob_Indice_Pct', int(prow.get('P_Voto', 0)*100)))}%",
+                    'P(Voto) Modello': f"{int(float(prow.get('P_Voto', 0))*100)}%",
+                    'xFV': prow.get('xFV', 0.0),
+                    'Ballottaggi / Note Mediche': p_info_det,
+                    'Ultime dai Campi (Gazzetta)': prow.get('Nota_Campo', '')
+                })
+            st.dataframe(pd.DataFrame(prob_rows), width='stretch', hide_index=True)
+
         c_mod1, c_mod2 = st.columns([2, 1])
         with c_mod1:
             st.markdown(f"### 🎯 Ottimizzazione Tattica {'Classic' if is_classic else 'Mantra'} per la **{selected_giornata}ª Giornata**")
@@ -1020,13 +1074,64 @@ with tab_formazione:
                 index=0,
                 key="select_modulo_override"
             )
-        
+
+        # Coach Manual Lineup Overrides (Force Starters / Exclude to Bench)
+        all_squad_names = df_my_proj['Giocatore'].tolist()
+        co1, co2 = st.columns(2)
+        with co1:
+            forced_starters = st.multiselect(
+                "📌 Forza nell'11 Titolare (Scelta del Mister):",
+                options=all_squad_names,
+                default=[],
+                key="lineup_force_starters",
+                help="I giocatori selezionati qui verranno schierati obbligatoriamente nell'11 titolare (compatibilmente con il modulo)."
+            )
+        with co2:
+            excluded_starters = st.multiselect(
+                "🚫 Escludi dall'11 Titolare (Manda in Panchina / Tribuna):",
+                options=[p for p in all_squad_names if p not in forced_starters],
+                default=[],
+                key="lineup_exclude_starters",
+                help="I giocatori selezionati qui non verranno schierati nell'11 iniziale e partiranno dalla panchina."
+            )
+
+        # Prepare DataFrame for optimizer with temporary coach override weights, then restore true xFV/P_Voto
+        df_opt_input = df_my_proj.copy()
+        true_metrics_map = {
+            r['Giocatore']: (float(r['xFV']), float(r['P_Voto']), float(r.get('D_Factor_Contribution', 6.0)))
+            for _, r in df_my_proj.iterrows()
+        }
+        if forced_starters or excluded_starters:
+            for idx_r, r in df_opt_input.iterrows():
+                gn = r['Giocatore']
+                if gn in forced_starters:
+                    df_opt_input.at[idx_r, 'xFV'] = float(r['xFV']) + 50.0
+                    df_opt_input.at[idx_r, 'P_Voto'] = max(0.95, float(r['P_Voto']))
+                elif gn in excluded_starters:
+                    df_opt_input.at[idx_r, 'xFV'] = 0.01
+                    df_opt_input.at[idx_r, 'P_Voto'] = min(0.10, float(r['P_Voto']))
+
         # Optimize lineup
         allowed_forms = None if selected_modulo_override == "✨ Consigliato dall'AI (Migliore)" else [selected_modulo_override]
         if is_classic:
-            opt_res = optimize_best_classic_lineup(df_my_proj, allowed_formations=allowed_forms)
+            opt_res = optimize_best_classic_lineup(df_opt_input, allowed_formations=allowed_forms)
         else:
-            opt_res = optimize_best_mantra_lineup(df_my_proj, allowed_formations=allowed_forms)
+            opt_res = optimize_best_mantra_lineup(df_opt_input, allowed_formations=allowed_forms)
+
+        # Restore true xFV & P_Voto if coach overrides were used
+        if opt_res and (forced_starters or excluded_starters):
+            sum_true_xfv = 0.0
+            for t_p in opt_res.get('Titolari', []):
+                gn = t_p['Giocatore']
+                if gn in true_metrics_map:
+                    t_p['xFV'], t_p['P_Voto'], _ = true_metrics_map[gn]
+                sum_true_xfv += float(t_p.get('xFV', 0.0))
+            for b_p in opt_res.get('Panchina', []):
+                gn = b_p['Giocatore']
+                if gn in true_metrics_map:
+                    b_p['xFV'], b_p['P_Voto'], _ = true_metrics_map[gn]
+            opt_res['Somma_xFV_Titolari'] = round(sum_true_xfv, 2)
+            opt_res['Punti_Attesi_Totali'] = round(sum_true_xfv + float(opt_res.get('D_Factor_Atteso', 0.0)), 2)
         
         if not opt_res:
             st.error("Impossibile schierare un modulo legale (verifica di avere almeno 1 Portiere e abbastanza difensori/attaccanti).")
@@ -1187,7 +1292,9 @@ with tab_formazione:
                             p_voto_pct = int(float(p.get('P_Voto', 0.90)) * 100)
                             tit_badge = str(p.get('Status_Titolarita', '🟢 TITOLARE FISSO'))
                             pres_txt = f"{p.get('Presenze_Tot', p.get('Presenze', 0))}/7 pres"
-                            tit_html = f'<div style="font-size: 0.8rem; color: #94a3b8; margin-top: 2px;">{tit_badge} • <b>{p_voto_pct}%</b> a voto ({pres_txt})</div>'
+                            bal_info = str(p.get('Ballottaggio_Info', '')).strip()
+                            bal_line = f'<div style="font-size: 0.76rem; color: #fbbf24; margin-top: 2px;">⚖️ {bal_info}</div>' if bal_info else ''
+                            tit_html = f'<div style="font-size: 0.8rem; color: #94a3b8; margin-top: 2px;">{tit_badge} • <b>{p_voto_pct}%</b> a voto ({pres_txt})</div>{bal_line}'
                             
                             p_role_str = p.get('RuoloClassic' if is_classic else 'RuoloMantra', p.get('RuoloMantra', ''))
                             card_html = (
@@ -1268,7 +1375,10 @@ with tab_formazione:
                     pres_tot = t.get('Presenze_Tot', t.get('Presenze', 0))
                     stat_tit = t.get('Status_Titolarita', '🟢 TITOLARE')
                     mins_avg = int(t.get('Min_Per_App', 0))
-                    tit_display = f"{p_voto_val}% ({pres_tot}/7) | ⏱️ {mins_avg}'/g"
+                    bal_t = t.get('Ballottaggio_Info', '')
+                    tit_display = f"{stat_tit} | P(Voto): {p_voto_val}% ({pres_tot}/7 • {mins_avg}'/g)"
+                    if bal_t:
+                        tit_display += f" • ⚖️ {bal_t}"
 
                     analysis_rows.append({
                         'Slot': slot_n,

@@ -50,7 +50,7 @@ def calculate_expected_dfactor(ratings_list):
     ev_dfactor = (p_ge_600 * 1.0) + (p_ge_625 * 1.0) + (p_ge_650 * 1.0) + (p_ge_675 * 1.0) + (p_ge_700 * 1.0)
     return round(ev_dfactor, 2), round(mu_unit, 2)
 
-def predict_player_xfv(player_row, matchday=6, calendar=None, ratings_cache=None):
+def predict_player_xfv(player_row, matchday=6, calendar=None, ratings_cache=None, prob_lineups_cache=None):
     """
     Calculates detailed expected performance and xFV for a player at a specific matchday.
     """
@@ -129,7 +129,30 @@ def predict_player_xfv(player_row, matchday=6, calendar=None, ratings_cache=None
         else:
             status_titolarita = "🔴 RISERVA"
 
-    # Medical Availability & Suspension Override
+    # Live Multi-Source Probable Lineups (Fantacalcio.it + Gazzetta + Sky)
+    prob_info = None
+    try:
+        from engine.probable_lineups import get_player_probable_info, load_probable_lineups
+        if prob_lineups_cache is None:
+            prob_lineups_cache = load_probable_lineups(force_refresh=False)
+        prob_md = prob_lineups_cache.get('matchday_fanta') if isinstance(prob_lineups_cache, dict) else None
+        if prob_md is None or abs(int(matchday) - int(prob_md)) <= 1:
+            prob_info = get_player_probable_info(giocatore, prob_lineups_cache)
+    except Exception:
+        prob_info = None
+
+    if prob_info:
+        live_p = float(prob_info.get('Live_P_Voto', p_voto))
+        tier_code = prob_info.get('Tier_Code', '')
+        if tier_code == 'OUT':
+            p_voto = live_p
+        elif tier_code == 'TITOLARE_CERTO':
+            p_voto = max(live_p, 0.80 * live_p + 0.20 * p_voto)
+        else:
+            p_voto = float(np.clip(0.75 * live_p + 0.25 * p_voto, 0.02, 0.98))
+        status_titolarita = prob_info.get('Status_Badge', status_titolarita)
+
+    # Medical Availability & Suspension Override (Manual or Official Bulletin)
     try:
         from engine.injuries_manager import classify_injury_status
         inj_info = classify_injury_status(giocatore)
@@ -140,7 +163,7 @@ def predict_player_xfv(player_row, matchday=6, calendar=None, ratings_cache=None
             elif inj_info.get('Stato') == 'Squalificato':
                 p_voto = 0.01
                 status_titolarita = "🔴 SQUALIFICATO"
-            else:
+            elif not prob_info or prob_info.get('Tier_Code') not in ('TITOLARE_CERTO', 'BALLOTTAGGIO'):
                 p_voto = min(0.35, p_voto * 0.40)
                 status_titolarita = "🟠 IN DUBBIO (INFORTUNIO)"
     except Exception:
@@ -216,6 +239,19 @@ def predict_player_xfv(player_row, matchday=6, calendar=None, ratings_cache=None
     else:
         # Garbage-time / late sub (< 20 mins)
         f_vol = 0.38 + 0.24 * (min_per_app / 20.0)
+
+    if prob_info:
+        tier_code = prob_info.get('Tier_Code', '')
+        if tier_code == 'TITOLARE_CERTO':
+            f_vol = max(f_vol, 0.95)
+        elif tier_code == 'BALLOTTAGGIO':
+            f_vol = max(f_vol, 0.84)
+        elif tier_code == 'SUBENTRANTE':
+            f_vol = min(f_vol, 0.76)
+        elif tier_code in ('RISERVA', 'IN_DUBBIO'):
+            f_vol = min(f_vol, 0.52)
+        elif tier_code == 'OUT':
+            f_vol = 0.10
 
     # Minute Quality: rewards super-subs with high per-90 creation/finishing or elite sufficiency
     q_att = float(np.clip((xg_90 + xa_90 - 0.20) * 0.22, -0.06, 0.12))
@@ -494,20 +530,39 @@ def predict_player_xfv(player_row, matchday=6, calendar=None, ratings_cache=None
             'Pct_Sufficienza': pct_suff,
             'Rationale': rationale
         }
-        
+
+    details['Prob_Consenso'] = prob_info.get('Consenso_Str', '') if prob_info else ''
+    details['Prob_Indice_Pct'] = prob_info.get('Fanta_Pct', int(round(p_voto * 100))) if prob_info else int(round(p_voto * 100))
+    details['Ballottaggio_Info'] = prob_info.get('Ballottaggio', '') if prob_info else ''
+    details['Nota_Campo'] = prob_info.get('Nota_Campo', '') if prob_info else ''
+    details['Dettaglio_Indisponibile'] = prob_info.get('Dettaglio_Indisponibile', '') if prob_info else ''
+    details['Prob_Tier'] = prob_info.get('Tier_Code', '') if prob_info else ''
+
     return details
 
-def batch_predict_xfv(df_players, matchday=6, calendar=None, ratings_cache=None):
+def batch_predict_xfv(df_players, matchday=6, calendar=None, ratings_cache=None, prob_lineups_cache=None):
     """Computes projections for a collection of players for a specific matchday."""
     if calendar is None:
         calendar = get_or_create_calendar()
     if ratings_cache is None:
         ratings_cache, _ = compute_dynamic_team_ratings(matchday)
+    if prob_lineups_cache is None:
+        try:
+            from engine.probable_lineups import load_probable_lineups
+            prob_lineups_cache = load_probable_lineups(force_refresh=False)
+        except Exception:
+            prob_lineups_cache = None
         
     results = []
     for _, row in df_players.iterrows():
         try:
-            res = predict_player_xfv(row, matchday=matchday, calendar=calendar, ratings_cache=ratings_cache)
+            res = predict_player_xfv(
+                row,
+                matchday=matchday,
+                calendar=calendar,
+                ratings_cache=ratings_cache,
+                prob_lineups_cache=prob_lineups_cache
+            )
             results.append(res)
         except Exception as e:
             pass
