@@ -10,7 +10,11 @@ import pandas as pd
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from engine.optimizer import parse_mantra_roles, optimize_best_mantra_lineup, solve_lineup_for_formation
+from engine.optimizer import (
+    parse_mantra_roles, optimize_best_mantra_lineup,
+    CLASSIC_FORMATIONS, optimize_best_classic_lineup, optimize_best_lineup,
+    solve_lineup_for_formation
+)
 from engine.models import batch_predict_xfv, predict_player_xfv
 
 
@@ -100,6 +104,14 @@ RECOMMENDED_QUOTAS = {
     'T':   {'min_active': 2, 'target': 3, 'name': 'Trequartisti'},
     'A':   {'min_active': 2, 'target': 4, 'name': 'Seconde Punte'},
     'Pc':  {'min_active': 3, 'target': 5, 'name': 'Punte Centrali'}
+}
+
+# Ideal role quotas for a balanced 25-player Classic squad
+RECOMMENDED_QUOTAS_CLASSIC = {
+    'P': {'min_active': 2, 'target': 3, 'name': 'Portieri'},
+    'D': {'min_active': 6, 'target': 8, 'name': 'Difensori'},
+    'C': {'min_active': 6, 'target': 8, 'name': 'Centrocampisti'},
+    'A': {'min_active': 4, 'target': 6, 'name': 'Attaccanti'}
 }
 
 
@@ -557,7 +569,7 @@ def is_player_to_release(p, release_names=None):
     return False
 
 
-def analyze_squad_weaknesses(team_name, league_data, df_master, matchday=8, df_all_proj=None):
+def analyze_squad_weaknesses(team_name, league_data, df_master, matchday=8, df_all_proj=None, league_type=None):
     """
     Performs a deep diagnostic analysis of a fantasy team's roster:
     1. Evaluates departmental depth vs recommended Mantra quotas (filtering by active players).
@@ -591,17 +603,33 @@ def analyze_squad_weaknesses(team_name, league_data, df_master, matchday=8, df_a
     else:
         df_proj = batch_predict_xfv(df_squad, matchday=matchday)
     
+    if league_type is None:
+        try:
+            from engine.league_manager import get_league_type
+            league_type = get_league_type()
+        except Exception:
+            league_type = 'mantra'
+    is_classic = (str(league_type).lower() == 'classic')
+
     # Identify optimal lineup and starters
-    opt_res = optimize_best_mantra_lineup(df_proj)
+    if is_classic:
+        opt_res = optimize_best_classic_lineup(df_proj)
+    else:
+        opt_res = optimize_best_mantra_lineup(df_proj)
+
     starters = opt_res['Titolari'] if opt_res else []
     starter_names = set(p['Giocatore'] for p in starters)
 
-    # 1. Count Mantra roles across the roster (distinguishing total vs active players)
-    role_roster_all = {r: [] for r in RECOMMENDED_QUOTAS.keys()}
-    role_roster_active = {r: [] for r in RECOMMENDED_QUOTAS.keys()}
+    # 1. Count roles across the roster (distinguishing total vs active players)
+    quotas_ref = RECOMMENDED_QUOTAS_CLASSIC if is_classic else RECOMMENDED_QUOTAS
+    role_roster_all = {r: [] for r in quotas_ref.keys()}
+    role_roster_active = {r: [] for r in quotas_ref.keys()}
     
     for _, row in df_proj.iterrows():
-        p_roles = parse_mantra_roles(row.get('RuoloMantra', ''))
+        if is_classic:
+            p_roles = [str(row.get('RuoloClassic', '')).strip()]
+        else:
+            p_roles = parse_mantra_roles(row.get('RuoloMantra', ''))
         is_active = (row.get('Presenze', 0) >= 2 or row.get('P_Voto', 0) >= 0.50)
         for r in p_roles:
             if r in role_roster_all:
@@ -613,217 +641,338 @@ def analyze_squad_weaknesses(team_name, league_data, df_master, matchday=8, df_a
     weaknesses = []
     strengths = []
     
-    # Check Goalkeeper Department
-    pors = role_roster_all['Por']
-    por_starters = [p for p in pors if p.get('Presenze', 0) >= 3]
-    teams_with_gk = set(p.get('Squadra') for p in pors)
-    has_paired_gk = any(sum(1 for p in pors if p.get('Squadra') == sq) >= 2 for sq in teams_with_gk)
-    top_gk = max(pors, key=lambda p: safe_float(p.get('Presenze', 0))) if pors else None
-    
-    if len(pors) < 3:
-        weaknesses.append({
-            'Reparto': 'Porta',
-            'Ruolo': 'Por',
-            'Severita': 'ELEVATA',
-            'Titolo': 'Reparto Portieri numericamente incompleto',
-            'Diagnosi': f"Hai solo {len(pors)} portieri in rosa (consigliati 3). Rischio concreto di rimanere scoperti in caso di infortunio o squalifica.",
-            'Obiettivo_Mercato': 'Ingaggiare un secondo o terzo portiere di ruolo'
-        })
-    elif not has_paired_gk:
-        weaknesses.append({
-            'Reparto': 'Porta',
-            'Ruolo': 'Por',
-            'Severita': 'MEDIA',
-            'Titolo': 'Manca la coppia di club per il portiere titolare',
-            'Diagnosi': f"I tuoi portieri ({', '.join(set(p.get('Squadra') for p in pors))}) provengono da club diversi senza la riserva ufficiale garantita. Conviene acquisire il 2° portiere della tua squadra titolare per blindare la porta.",
-            'Obiettivo_Mercato': 'Scambiare per la riserva ufficiale del tuo club titolare'
-        })
-    else:
-        strengths.append(f"Porta blindata: hai la coppia di portieri dello stesso club.")
+    if is_classic:
+        p_list = role_roster_all.get('P', [])
+        d_list = role_roster_active.get('D', [])
+        c_list = role_roster_active.get('C', [])
+        a_list = role_roster_active.get('A', [])
 
-    # Advanced Goalkeeper Performance & Blunder Diagnostic
-    if top_gk is not None and safe_float(top_gk.get('Presenze', 0)) >= 2:
-        gk_name = top_gk['Giocatore']
-        gk_gp = safe_float(top_gk.get('Goals_Prevented', 0.0))
-        gk_gp90 = safe_float(top_gk.get('Goals_Prevented_90', 0.0))
-        gk_blunders = safe_int(top_gk.get('Errors_Leading_To_Goal', 0))
-        gk_save_pct = safe_float(top_gk.get('Pct_Parate', 70.0))
+        # Check Goalkeepers (Classic)
+        teams_with_gk = set(p.get('Squadra') for p in p_list)
+        has_paired_gk = any(sum(1 for p in p_list if p.get('Squadra') == sq) >= 2 for sq in teams_with_gk)
+        top_gk = max(p_list, key=lambda p: safe_float(p.get('Presenze', 0))) if p_list else None
+
+        if len(p_list) < 3:
+            weaknesses.append({
+                'Reparto': 'Porta',
+                'Ruolo': 'P',
+                'Severita': 'ELEVATA',
+                'Titolo': 'Reparto Portieri numericamente incompleto',
+                'Diagnosi': f"Hai solo {len(p_list)} portieri in rosa (consigliati 3).",
+                'Obiettivo_Mercato': 'Ingaggiare un secondo o terzo portiere'
+            })
+        elif not has_paired_gk:
+            weaknesses.append({
+                'Reparto': 'Porta',
+                'Ruolo': 'P',
+                'Severita': 'MEDIA',
+                'Titolo': 'Manca la coppia di club per il portiere titolare',
+                'Diagnosi': f"I tuoi portieri provengono da club diversi senza riserva ufficiale garantita.",
+                'Obiettivo_Mercato': 'Scambiare per la riserva ufficiale del tuo club titolare'
+            })
+        else:
+            strengths.append("Porta blindata: hai la coppia di portieri dello stesso club.")
+
+        if top_gk is not None and safe_float(top_gk.get('Presenze', 0)) >= 2:
+            gk_name = top_gk['Giocatore']
+            gk_gp = safe_float(top_gk.get('Goals_Prevented', 0.0))
+            gk_blunders = safe_int(top_gk.get('Errors_Leading_To_Goal', 0))
+            if gk_gp <= -1.0:
+                weaknesses.append({
+                    'Reparto': 'Porta',
+                    'Ruolo': 'P',
+                    'Severita': 'CRITICA' if gk_gp < -2.5 else 'ELEVATA',
+                    'Titolo': f'Sotto-performance Shot-Stopping ({gk_name})',
+                    'Diagnosi': f"Il tuo portiere titolare ({gk_name}) concede costantemente malus evitabili ({gk_gp:+.2f} Goals Prevented).",
+                    'Obiettivo_Mercato': 'Scambiare per un portiere salva-risultato'
+                })
+            elif gk_blunders >= 1:
+                weaknesses.append({
+                    'Reparto': 'Porta',
+                    'Ruolo': 'P',
+                    'Severita': 'ELEVATA' if gk_blunders >= 2 else 'MEDIA',
+                    'Titolo': f'Rischio papere e voti bassi ({gk_name}: {gk_blunders} errori decisivi)',
+                    'Diagnosi': f"Il tuo portiere ha commesso errori decisivi gravi che hanno portato a gol subiti.",
+                    'Obiettivo_Mercato': 'Puntare a un portiere affidabile'
+                })
+
+        # Check Defenders (Classic)
+        if len(d_list) < 6:
+            weaknesses.append({
+                'Reparto': 'Difesa',
+                'Ruolo': 'D',
+                'Severita': 'CRITICA',
+                'Titolo': 'Grave carenza di Difensori attivi (D)',
+                'Diagnosi': f"Solo {len(d_list)} difensori a voto continuo. Rischio di giocare in 10 o perdere il Modificatore Difesa.",
+                'Obiettivo_Mercato': 'Acquisire almeno 1-2 Difensori titolari'
+            })
+        elif len(d_list) < 8:
+            weaknesses.append({
+                'Reparto': 'Difesa',
+                'Ruolo': 'D',
+                'Severita': 'MEDIA',
+                'Titolo': 'Difesa corta nelle rotazioni',
+                'Diagnosi': f"Hai {len(d_list)} difensori attivi. Una riserva in più consolida il rendimento del modificatore.",
+                'Obiettivo_Mercato': 'Rinforzare il reparto arretrato con un difensore regolare'
+            })
+        else:
+            strengths.append(f"Reparto Difensori profondo e solido ({len(d_list)} D attivi).")
+
+        # Check Midfielders (Classic)
+        if len(c_list) < 6:
+            weaknesses.append({
+                'Reparto': 'Centrocampo',
+                'Ruolo': 'C',
+                'Severita': 'CRITICA',
+                'Titolo': 'Carenza a Centrocampo (C)',
+                'Diagnosi': f"Solo {len(c_list)} centrocampisti a voto regolare. Manca profondità per i moduli a 4 o 5 mediani.",
+                'Obiettivo_Mercato': 'Acquisire centrocampisti titolari o da bonus'
+            })
+        elif len(c_list) < 8:
+            weaknesses.append({
+                'Reparto': 'Centrocampo',
+                'Ruolo': 'C',
+                'Severita': 'MEDIA',
+                'Titolo': 'Centrocampo da puntellare',
+                'Diagnosi': f"Hai {len(c_list)} centrocampisti attivi. Consigliato un rinforzo con propensione al bonus.",
+                'Obiettivo_Mercato': 'Aggiungere una mezzala o incursore di centrocampo'
+            })
+        else:
+            strengths.append(f"Centrocampo ricco di opzioni ({len(c_list)} C attivi).")
+
+        # Check Forwards (Classic)
+        if len(a_list) < 4:
+            weaknesses.append({
+                'Reparto': 'Attacco',
+                'Ruolo': 'A',
+                'Severita': 'CRITICA',
+                'Titolo': 'Emergenza Attacco (A)',
+                'Diagnosi': f"Solo {len(a_list)} attaccanti attivi. Impossibile schierare stabilmente tridenti offensivi (3-4-3, 4-3-3).",
+                'Obiettivo_Mercato': 'Priorità assoluta: attaccante titolare da bonus'
+            })
+        elif len(a_list) < 6:
+            weaknesses.append({
+                'Reparto': 'Attacco',
+                'Ruolo': 'A',
+                'Severita': 'ELEVATA',
+                'Titolo': 'Attacco corto nelle rotazioni',
+                'Diagnosi': f"Hai {len(a_list)} attaccanti attivi. Serve un ulteriore terminale offensivo per coprire turnover e infortuni.",
+                'Obiettivo_Mercato': 'Acquisire una punta da rotazione fissa'
+            })
+        else:
+            strengths.append(f"Attacco completo con {len(a_list)} attaccanti pronti all'uso.")
+    else:
+        # Check Goalkeeper Department
+        pors = role_roster_all['Por']
+        por_starters = [p for p in pors if p.get('Presenze', 0) >= 3]
+        teams_with_gk = set(p.get('Squadra') for p in pors)
+        has_paired_gk = any(sum(1 for p in pors if p.get('Squadra') == sq) >= 2 for sq in teams_with_gk)
+        top_gk = max(pors, key=lambda p: safe_float(p.get('Presenze', 0))) if pors else None
         
-        if gk_gp <= -1.0 or gk_gp90 <= -0.20:
+        if len(pors) < 3:
             weaknesses.append({
                 'Reparto': 'Porta',
                 'Ruolo': 'Por',
-                'Severita': 'CRITICA' if gk_gp < -2.5 else 'ELEVATA',
-                'Titolo': f'Sotto-performance Shot-Stopping ({gk_name}: {gk_gp:+.2f} Goals Prevented)',
-                'Diagnosi': f"Il tuo portiere titolare ({gk_name}) concede più gol di quanti attesi dai tiri nello specchio subiti ({gk_gp:+.2f} gol evitati, {gk_gp90:+.2f}/90, parate {gk_save_pct:.1f}%). Concede costantemente malus evitabili.",
-                'Obiettivo_Mercato': "Scambiare per un portiere salva-risultato (es. Carnesecchi, Mandas, Caprile, Falcone)"
+                'Severita': 'ELEVATA',
+                'Titolo': 'Reparto Portieri numericamente incompleto',
+                'Diagnosi': f"Hai solo {len(pors)} portieri in rosa (consigliati 3). Rischio concreto di rimanere scoperti in caso di infortunio o squalifica.",
+                'Obiettivo_Mercato': 'Ingaggiare un secondo o terzo portiere di ruolo'
             })
-        elif gk_blunders >= 1:
+        elif not has_paired_gk:
             weaknesses.append({
                 'Reparto': 'Porta',
                 'Ruolo': 'Por',
-                'Severita': 'ELEVATA' if gk_blunders >= 2 else 'MEDIA',
-                'Titolo': f'Rischio papere e voti gravi ({gk_name}: {gk_blunders} errori decisivi)',
-                'Diagnosi': f"Il tuo portiere titolare ({gk_name}) ha commesso {gk_blunders} errori gravi non forzati che hanno provocato direttamente gol con voti <= 5.0.",
-                'Obiettivo_Mercato': 'Puntare a un portiere affidabile con 0 blunders stagionali'
+                'Severita': 'MEDIA',
+                'Titolo': 'Manca la coppia di club per il portiere titolare',
+                'Diagnosi': f"I tuoi portieri ({', '.join(set(p.get('Squadra') for p in pors))}) provengono da club diversi senza la riserva ufficiale garantita. Conviene acquisire il 2° portiere della tua squadra titolare per blindare la porta.",
+                'Obiettivo_Mercato': 'Scambiare per la riserva ufficiale del tuo club titolare'
             })
-        elif gk_gp >= +2.5 and gk_blunders == 0:
-            strengths.append(f"Porta di ferro: {gk_name} registra {gk_gp:+.2f} Goals Prevented ({gk_gp90:+.2f}/90) e zero errori gravi, neutralizzando i gol avversari.")
+        else:
+            strengths.append(f"Porta blindata: hai la coppia di portieri dello stesso club.")
 
-    # Check Central Defense (Dc & D-Factor)
-    dcs = role_roster_active['Dc']
-    dc_suff_avg = np.mean([p.get('Pct_Sufficienza', 50) for p in dcs]) if dcs else 0
-    top_dc_mv = max([p.get('MV_Stagione', 0) for p in dcs]) if dcs else 0
-    if len(dcs) < 4:
-        weaknesses.append({
-            'Reparto': 'Difesa Centrale',
-            'Ruolo': 'Dc',
-            'Severita': 'CRITICA',
-            'Titolo': 'Numero insufficiente di Difensori Centrali attivi (Dc)',
-            'Diagnosi': f"Solo {len(dcs)} Dc attivi con voto in rosa. Impossibile sostenere continuativamente moduli con difesa a 3 (3-5-2, 3-4-2-1) o a 4 senza rischiare penalità di cambio.",
-            'Obiettivo_Mercato': 'Acquisire almeno 1-2 Dc titolari'
-        })
-    elif dc_suff_avg < 60.0 or top_dc_mv < 6.15:
-        weaknesses.append({
-            'Reparto': 'Difesa Centrale',
-            'Ruolo': 'Dc',
-            'Severita': 'MEDIA',
-            'Titolo': 'Manca un top Dc per dominare il D-Factor (Modificatore Difesa)',
-            'Diagnosi': f"La tua difesa centrale è regolare (sufficienza media {dc_suff_avg:.1f}%), ma manca un vero leader difensivo da MV >= 6.30 che garantisca i bonus massimi (+2/+3 pt) del D-Factor.",
-            'Obiettivo_Mercato': 'Puntare a un Dc top di vertice (es. Buongiorno, Bastoni, Ndicka)'
-        })
-    else:
-        strengths.append(f"Difesa Centrale solida: {len(dcs)} Dc attivi con sufficienza media al {dc_suff_avg:.1f}%.")
+        # Advanced Goalkeeper Performance & Blunder Diagnostic
+        if top_gk is not None and safe_float(top_gk.get('Presenze', 0)) >= 2:
+            gk_name = top_gk['Giocatore']
+            gk_gp = safe_float(top_gk.get('Goals_Prevented', 0.0))
+            gk_gp90 = safe_float(top_gk.get('Goals_Prevented_90', 0.0))
+            gk_blunders = safe_int(top_gk.get('Errors_Leading_To_Goal', 0))
+            gk_save_pct = safe_float(top_gk.get('Pct_Parate', 70.0))
+            
+            if gk_gp <= -1.0 or gk_gp90 <= -0.20:
+                weaknesses.append({
+                    'Reparto': 'Porta',
+                    'Ruolo': 'Por',
+                    'Severita': 'CRITICA' if gk_gp < -2.5 else 'ELEVATA',
+                    'Titolo': f'Sotto-performance Shot-Stopping ({gk_name}: {gk_gp:+.2f} Goals Prevented)',
+                    'Diagnosi': f"Il tuo portiere titolare ({gk_name}) concede più gol di quanti attesi dai tiri nello specchio subiti ({gk_gp:+.2f} gol evitati, {gk_gp90:+.2f}/90, parate {gk_save_pct:.1f}%). Concede costantemente malus evitabili.",
+                    'Obiettivo_Mercato': "Scambiare per un portiere salva-risultato (es. Carnesecchi, Mandas, Caprile, Falcone)"
+                })
+            elif gk_blunders >= 1:
+                weaknesses.append({
+                    'Reparto': 'Porta',
+                    'Ruolo': 'Por',
+                    'Severita': 'ELEVATA' if gk_blunders >= 2 else 'MEDIA',
+                    'Titolo': f'Rischio papere e voti gravi ({gk_name}: {gk_blunders} errori decisivi)',
+                    'Diagnosi': f"Il tuo portiere titolare ({gk_name}) ha commesso {gk_blunders} errori gravi non forzati che hanno provocato direttamente gol con voti <= 5.0.",
+                    'Obiettivo_Mercato': 'Puntare a un portiere affidabile con 0 blunders stagionali'
+                })
+            elif gk_gp >= +2.5 and gk_blunders == 0:
+                strengths.append(f"Porta di ferro: {gk_name} registra {gk_gp:+.2f} Goals Prevented ({gk_gp90:+.2f}/90) e zero errori gravi, neutralizzando i gol avversari.")
 
-    # Check Fullbacks (Dd & Ds)
-    dds = role_roster_active['Dd']
-    dss = role_roster_active['Ds']
-    if len(dds) < 2:
-        weaknesses.append({
-            'Reparto': 'Terzini Destri',
-            'Ruolo': 'Dd',
-            'Severita': 'ELEVATA',
-            'Titolo': 'Carenza sul binario destro difensivo (Dd)',
-            'Diagnosi': f"Hai solo {len(dds)} Dd attivi in rosa. Questo limita fortemente la flessibilità tattica verso moduli con difesa a 4 (4-3-3, 4-4-2, 4-2-3-1).",
-            'Obiettivo_Mercato': 'Cercare un terzino destro (Dd) titolare fisso'
-        })
-    if len(dss) < 2:
-        weaknesses.append({
-            'Reparto': 'Terzini Sinistri',
-            'Ruolo': 'Ds',
-            'Severita': 'ELEVATA',
-            'Titolo': 'Carenza sul binario sinistro difensivo (Ds)',
-            'Diagnosi': f"Hai solo {len(dss)} Ds attivi in rosa. Copertura fragile per le formazioni a 4 difensori.",
-            'Obiettivo_Mercato': 'Cercare un terzino sinistro (Ds) titolare'
-        })
-    if len(dds) >= 2 and len(dss) >= 2:
-        strengths.append(f"Corsie difensive coperte: {len(dds)} Dd e {len(dss)} Ds consentono di schierare sia difesa a 3 che a 4.")
+        # Check Central Defense (Dc & D-Factor)
+        dcs = role_roster_active['Dc']
+        dc_suff_avg = np.mean([p.get('Pct_Sufficienza', 50) for p in dcs]) if dcs else 0
+        top_dc_mv = max([p.get('MV_Stagione', 0) for p in dcs]) if dcs else 0
+        if len(dcs) < 4:
+            weaknesses.append({
+                'Reparto': 'Difesa Centrale',
+                'Ruolo': 'Dc',
+                'Severita': 'CRITICA',
+                'Titolo': 'Numero insufficiente di Difensori Centrali attivi (Dc)',
+                'Diagnosi': f"Solo {len(dcs)} Dc attivi con voto in rosa. Impossibile sostenere continuativamente moduli con difesa a 3 (3-5-2, 3-4-2-1) o a 4 senza rischiare penalità di cambio.",
+                'Obiettivo_Mercato': 'Acquisire almeno 1-2 Dc titolari'
+            })
+        elif dc_suff_avg < 60.0 or top_dc_mv < 6.15:
+            weaknesses.append({
+                'Reparto': 'Difesa Centrale',
+                'Ruolo': 'Dc',
+                'Severita': 'MEDIA',
+                'Titolo': 'Manca un top Dc per dominare il D-Factor (Modificatore Difesa)',
+                'Diagnosi': f"La tua difesa centrale è regolare (sufficienza media {dc_suff_avg:.1f}%), ma manca un vero leader difensivo da MV >= 6.30 che garantisca i bonus massimi (+2/+3 pt) del D-Factor.",
+                'Obiettivo_Mercato': 'Puntare a un Dc top di vertice (es. Buongiorno, Bastoni, Ndicka)'
+            })
+        else:
+            strengths.append(f"Difesa Centrale solida: {len(dcs)} Dc attivi con sufficienza media al {dc_suff_avg:.1f}%.")
 
-    # Check Wing-backs (E)
-    es = role_roster_active['E']
-    if len(es) < 3:
-        weaknesses.append({
-            'Reparto': 'Esterni a tutta fascia',
-            'Ruolo': 'E',
-            'Severita': 'MEDIA',
-            'Titolo': 'Pochi esterni puri (E) per moduli a 3',
-            'Diagnosi': f"Solo {len(es)} esterni a tutta fascia attivi. Se giochi col 3-5-2 o 3-4-2-1 hai pochi ricambi di ruolo.",
-            'Obiettivo_Mercato': 'Cercare un esterno E con propensione al bonus'
-        })
-    elif len(es) >= 4:
-        strengths.append(f"Fasce a tutta altezza presidiate: {len(es)} E disponibili per i moduli a 3.")
+        # Check Fullbacks (Dd & Ds)
+        dds = role_roster_active['Dd']
+        dss = role_roster_active['Ds']
+        if len(dds) < 2:
+            weaknesses.append({
+                'Reparto': 'Terzini Destri',
+                'Ruolo': 'Dd',
+                'Severita': 'ELEVATA',
+                'Titolo': 'Carenza sul binario destro difensivo (Dd)',
+                'Diagnosi': f"Hai solo {len(dds)} Dd attivi in rosa. Questo limita fortemente la flessibilità tattica verso moduli con difesa a 4 (4-3-3, 4-4-2, 4-2-3-1).",
+                'Obiettivo_Mercato': 'Cercare un terzino destro (Dd) titolare fisso'
+            })
+        if len(dss) < 2:
+            weaknesses.append({
+                'Reparto': 'Terzini Sinistri',
+                'Ruolo': 'Ds',
+                'Severita': 'ELEVATA',
+                'Titolo': 'Carenza sul binario sinistro difensivo (Ds)',
+                'Diagnosi': f"Hai solo {len(dss)} Ds attivi in rosa. Copertura fragile per le formazioni a 4 difensori.",
+                'Obiettivo_Mercato': 'Cercare un terzino sinistro (Ds) titolare'
+            })
+        if len(dds) >= 2 and len(dss) >= 2:
+            strengths.append(f"Corsie difensive coperte: {len(dds)} Dd e {len(dss)} Ds consentono di schierare sia difesa a 3 che a 4.")
 
-    # Check Medians (M - Mandatory slot in almost all Mantra formations)
-    ms = role_roster_active['M']
-    m_starters = [p for p in ms if p.get('P_Voto', 0) >= 0.70]
-    top_m_fm = max([p.get('FM_Stagione', 0) for p in ms]) if ms else 0
-    if len(ms) < 3:
-        weaknesses.append({
-            'Reparto': 'Centrocampo Mediani',
-            'Ruolo': 'M',
-            'Severita': 'CRITICA',
-            'Titolo': 'Allarme Mediani (M) - Slot Obbligatorio a rischio',
-            'Diagnosi': f"Hai solo {len(ms)} Mediani (M) in rosa. Lo slot M è tassativo nel 3-5-2, 4-3-3, 4-4-2, 4-3-1-2. Senza un M a voto si rischia di giocare in inferiorità numerica.",
-            'Obiettivo_Mercato': 'Acquisire con priorità assoluta un Mediano M titolare'
-        })
-    elif top_m_fm < 6.4:
-        weaknesses.append({
-            'Reparto': 'Centrocampo Mediani',
-            'Ruolo': 'M',
-            'Severita': 'MEDIA',
-            'Titolo': 'Mediani regolari ma privi di bonus pesanti',
-            'Diagnosi': f"I tuoi mediani ({len(ms)} M) assicurano copertura tattica ma hanno un fanta-valore atteso moderato (FM max {top_m_fm:.2f}). Un M incursore o rigorista farebbe fare il salto di qualità.",
-            'Obiettivo_Mercato': 'Puntare a un Mediano M di prima fascia con bonus (es. Calhanoglu, Ederson, McTominay)'
-        })
-    if len(ms) >= 6:
-        strengths.append(f"Abbondanza di Mediani (M): {len(ms)} M attivi in rosa, ottima moneta di scambio per squadre scoperte.")
+        # Check Wing-backs (E)
+        es = role_roster_active['E']
+        if len(es) < 3:
+            weaknesses.append({
+                'Reparto': 'Esterni a tutta fascia',
+                'Ruolo': 'E',
+                'Severita': 'MEDIA',
+                'Titolo': 'Pochi esterni puri (E) per moduli a 3',
+                'Diagnosi': f"Solo {len(es)} esterni a tutta fascia attivi. Se giochi col 3-5-2 o 3-4-2-1 hai pochi ricambi di ruolo.",
+                'Obiettivo_Mercato': 'Cercare un esterno E con propensione al bonus'
+            })
+        elif len(es) >= 4:
+            strengths.append(f"Fasce a tutta altezza presidiate: {len(es)} E disponibili per i moduli a 3.")
 
-    # Check Central Midfielders (C - Mezzali / Costruttori)
-    cs = role_roster_active['C']
-    top_c_fm = max([p.get('FM_Stagione', 0) for p in cs]) if cs else 0
-    if len(cs) < 3:
-        weaknesses.append({
-            'Reparto': 'Centrocampo (Mezzali)',
-            'Ruolo': 'C',
-            'Severita': 'ELEVATA',
-            'Titolo': 'Carenza di Centrocampisti puri / Mezzali (C)',
-            'Diagnosi': f"Hai solo {len(cs)} C attivi in rosa. Molti moduli Mantra (3-5-2, 4-3-3, 4-3-1-2) richiedono da 1 a 2 slot C.",
-            'Obiettivo_Mercato': 'Acquisire un Centrocampista C titolare di inserimento'
-        })
-    elif top_c_fm < 6.4:
-        weaknesses.append({
-            'Reparto': 'Centrocampo (Mezzali)',
-            'Ruolo': 'C',
-            'Severita': 'MEDIA',
-            'Titolo': 'Centrocampisti C con fanta-media modesta',
-            'Diagnosi': f"I tuoi centrocampisti C hanno una fanta-media moderata (FM max {top_c_fm:.2f}). Una mezzala da bonus farebbe fare il salto di qualità.",
-            'Obiettivo_Mercato': 'Puntare a un Centrocampista C di prima fascia con bonus'
-        })
-    elif len(cs) >= 5:
-        strengths.append(f"Centrocampo profondo: {len(cs)} C attivi a disposizione.")
+        # Check Medians (M - Mandatory slot in almost all Mantra formations)
+        ms = role_roster_active['M']
+        m_starters = [p for p in ms if p.get('P_Voto', 0) >= 0.70]
+        top_m_fm = max([p.get('FM_Stagione', 0) for p in ms]) if ms else 0
+        if len(ms) < 3:
+            weaknesses.append({
+                'Reparto': 'Centrocampo Mediani',
+                'Ruolo': 'M',
+                'Severita': 'CRITICA',
+                'Titolo': 'Allarme Mediani (M) - Slot Obbligatorio a rischio',
+                'Diagnosi': f"Hai solo {len(ms)} Mediani (M) in rosa. Lo slot M è tassativo nel 3-5-2, 4-3-3, 4-4-2, 4-3-1-2. Senza un M a voto si rischia di giocare in inferiorità numerica.",
+                'Obiettivo_Mercato': 'Acquisire con priorità assoluta un Mediano M titolare'
+            })
+        elif top_m_fm < 6.4:
+            weaknesses.append({
+                'Reparto': 'Centrocampo Mediani',
+                'Ruolo': 'M',
+                'Severita': 'MEDIA',
+                'Titolo': 'Mediani regolari ma privi di bonus pesanti',
+                'Diagnosi': f"I tuoi mediani ({len(ms)} M) assicurano copertura tattica ma hanno un fanta-valore atteso moderato (FM max {top_m_fm:.2f}). Un M incursore o rigorista farebbe fare il salto di qualità.",
+                'Obiettivo_Mercato': 'Puntare a un Mediano M di prima fascia con bonus (es. Calhanoglu, Ederson, McTominay)'
+            })
+        if len(ms) >= 6:
+            strengths.append(f"Abbondanza di Mediani (M): {len(ms)} M attivi in rosa, ottima moneta di scambio per squadre scoperte.")
 
-    # Check Braccetti (B - Difesa a 3)
-    bs = role_roster_active['B']
-    if len(bs) >= 2:
-        strengths.append(f"Flessibilità difensiva a 3: {len(bs)} Braccetti (B) attivi per occupare lo slot Dc/B.")
+        # Check Central Midfielders (C - Mezzali / Costruttori)
+        cs = role_roster_active['C']
+        top_c_fm = max([p.get('FM_Stagione', 0) for p in cs]) if cs else 0
+        if len(cs) < 3:
+            weaknesses.append({
+                'Reparto': 'Centrocampo (Mezzali)',
+                'Ruolo': 'C',
+                'Severita': 'ELEVATA',
+                'Titolo': 'Carenza di Centrocampisti puri / Mezzali (C)',
+                'Diagnosi': f"Hai solo {len(cs)} C attivi in rosa. Molti moduli Mantra (3-5-2, 4-3-3, 4-3-1-2) richiedono da 1 a 2 slot C.",
+                'Obiettivo_Mercato': 'Acquisire un Centrocampista C titolare di inserimento'
+            })
+        elif top_c_fm < 6.4:
+            weaknesses.append({
+                'Reparto': 'Centrocampo (Mezzali)',
+                'Ruolo': 'C',
+                'Severita': 'MEDIA',
+                'Titolo': 'Centrocampisti C con fanta-media modesta',
+                'Diagnosi': f"I tuoi centrocampisti C hanno una fanta-media moderata (FM max {top_c_fm:.2f}). Una mezzala da bonus farebbe fare il salto di qualità.",
+                'Obiettivo_Mercato': 'Puntare a un Centrocampista C di prima fascia con bonus'
+            })
+        elif len(cs) >= 5:
+            strengths.append(f"Centrocampo profondo: {len(cs)} C attivi a disposizione.")
 
-    # Check Strikers (Pc - Pure Centre Forwards)
-    pcs = role_roster_all['Pc']
-    pc_active = role_roster_active['Pc']
-    top_pc_gf = max([p.get('GF', 0) for p in pcs]) if pcs else 0
-    
-    if len(pc_active) < 3:
-        weaknesses.append({
-            'Reparto': 'Attacco (Punte Centrali)',
-            'Ruolo': 'Pc',
-            'Severita': 'CRITICA',
-            'Titolo': 'Carenza critica di Punte Centrali (Pc) attive',
-            'Diagnosi': f"Hai solo {len(pc_active)} Pc attive con voto costante ({', '.join(p['Giocatore'] for p in pc_active)}). Nei moduli a 2 punte (3-5-2, 4-3-1-2, 4-4-2) basta un solo infortunio o squalifica per rimanere senza riserve.",
-            'Obiettivo_Mercato': 'Ingaggiare urgentemente una 3ª o 4ª Pc affidabile'
-        })
-    elif top_pc_gf < 3:
-        weaknesses.append({
-            'Reparto': 'Attacco (Punte Centrali)',
-            'Ruolo': 'Pc',
-            'Severita': 'ELEVATA',
-            'Titolo': 'Mancanza di un bomber di vertice (Pc Top Tier)',
-            'Diagnosi': f"Hai buone punte di rotazione ({', '.join(p['Giocatore'] for p in pc_active)}), ma nessun bomber da oltre 15 gol stagionali. Un attaccante d'élite massimizzerebbe il potenziale della rosa.",
-            'Obiettivo_Mercato': 'Scambiare un pacchetto di esuberi per una Pc di prima fascia'
-        })
-    else:
-        strengths.append(f"Reparto Punte ben strutturato con {len(pcs)} Pc disponibili.")
+        # Check Braccetti (B - Difesa a 3)
+        bs = role_roster_active['B']
+        if len(bs) >= 2:
+            strengths.append(f"Flessibilità difensiva a 3: {len(bs)} Braccetti (B) attivi per occupare lo slot Dc/B.")
 
-    # Check Wings & Second Strikers (W / A / T)
-    ws = role_roster_active['W']
-    a_s = role_roster_active['A']
-    t_s = role_roster_active['T']
-    
-    if len(ws) >= 4:
-        top_w_names = ', '.join(p['Giocatore'] for p in sorted(ws, key=lambda x: safe_float(x.get('xFV', 0)), reverse=True)[:4])
-        strengths.append(f"Arsenale ali offensive: {len(ws)} W attive ad alto potenziale ({top_w_names}).")
-    if len(a_s) >= 3:
-        top_a_names = ', '.join(p['Giocatore'] for p in sorted(a_s, key=lambda x: safe_float(x.get('xFV', 0)), reverse=True)[:3])
-        strengths.append(f"Profondità di seconde punte: {len(a_s)} A a disposizione ({top_a_names}), eccellente moneta di scambio sul mercato.")
+        # Check Strikers (Pc - Pure Centre Forwards)
+        pcs = role_roster_all['Pc']
+        pc_active = role_roster_active['Pc']
+        top_pc_gf = max([p.get('GF', 0) for p in pcs]) if pcs else 0
+        
+        if len(pc_active) < 3:
+            weaknesses.append({
+                'Reparto': 'Attacco (Punte Centrali)',
+                'Ruolo': 'Pc',
+                'Severita': 'CRITICA',
+                'Titolo': 'Carenza critica di Punte Centrali (Pc) attive',
+                'Diagnosi': f"Hai solo {len(pc_active)} Pc attive con voto costante ({', '.join(p['Giocatore'] for p in pc_active)}). Nei moduli a 2 punte (3-5-2, 4-3-1-2, 4-4-2) basta un solo infortunio o squalifica per rimanere senza riserve.",
+                'Obiettivo_Mercato': 'Ingaggiare urgentemente una 3ª o 4ª Pc affidabile'
+            })
+        elif top_pc_gf < 3:
+            weaknesses.append({
+                'Reparto': 'Attacco (Punte Centrali)',
+                'Ruolo': 'Pc',
+                'Severita': 'ELEVATA',
+                'Titolo': 'Mancanza di un bomber di vertice (Pc Top Tier)',
+                'Diagnosi': f"Hai buone punte di rotazione ({', '.join(p['Giocatore'] for p in pc_active)}), ma nessun bomber da oltre 15 gol stagionali. Un attaccante d'élite massimizzerebbe il potenziale della rosa.",
+                'Obiettivo_Mercato': 'Scambiare un pacchetto di esuberi per una Pc di prima fascia'
+            })
+        else:
+            strengths.append(f"Reparto Punte ben strutturato con {len(pcs)} Pc disponibili.")
+
+        # Check Wings & Second Strikers (W / A / T)
+        ws = role_roster_active['W']
+        a_s = role_roster_active['A']
+        t_s = role_roster_active['T']
+        
+        if len(ws) >= 4:
+            top_w_names = ', '.join(p['Giocatore'] for p in sorted(ws, key=lambda x: safe_float(x.get('xFV', 0)), reverse=True)[:4])
+            strengths.append(f"Arsenale ali offensive: {len(ws)} W attive ad alto potenziale ({top_w_names}).")
+        if len(a_s) >= 3:
+            top_a_names = ', '.join(p['Giocatore'] for p in sorted(a_s, key=lambda x: safe_float(x.get('xFV', 0)), reverse=True)[:3])
+            strengths.append(f"Profondità di seconde punte: {len(a_s)} A a disposizione ({top_a_names}), eccellente moneta di scambio sul mercato.")
 
     # 3. Identify Surplus Trade Assets (Calciatori spendibili sul mercato)
     # Note: Players whose ONLY roles are in critically deficient departments are NOT surplus!
@@ -848,7 +997,10 @@ def analyze_squad_weaknesses(team_name, league_data, df_master, matchday=8, df_a
         roles_str = b_row.get('RuoloMantra', '')
         xfv = safe_float(b_row.get('xFV', 0))
         sig = str(b_row.get('Signal', 'NEUTRO'))
-        roles = parse_mantra_roles(roles_str)
+        if is_classic:
+            roles = [str(b_row.get('RuoloClassic', '')).strip()]
+        else:
+            roles = parse_mantra_roles(roles_str)
         presenze = safe_int(b_row.get('Presenze', 0))
         
         # Consider players with real presence and trade value
@@ -867,7 +1019,7 @@ def analyze_squad_weaknesses(team_name, league_data, df_master, matchday=8, df_a
         
         # Check if role has deep coverage in squad
         for r in roles:
-            if len(role_roster_active.get(r, [])) >= RECOMMENDED_QUOTAS.get(r, {}).get('target', 4):
+            if len(role_roster_active.get(r, [])) >= quotas_ref.get(r, {}).get('target', 4):
                 reasons.append(f"Reparto '{r}' iper-coperto ({len(role_roster_active[r])} giocatori attivi)")
                 break
 
@@ -876,6 +1028,7 @@ def analyze_squad_weaknesses(team_name, league_data, df_master, matchday=8, df_a
                 'Giocatore': pname,
                 'Squadra': b_row.get('Squadra', ''),
                 'RuoloMantra': roles_str,
+                'RuoloClassic': b_row.get('RuoloClassic', ''),
                 'xFV': safe_float(xfv),
                 'FM_Stagione': safe_float(b_row.get('FM_Stagione', 0)),
                 'FVM': safe_int(b_row.get('FVM', b_row.get('Costo', 0))),
@@ -905,8 +1058,8 @@ def analyze_squad_weaknesses(team_name, league_data, df_master, matchday=8, df_a
         'Punti_Deboli': weaknesses,
         'Punti_di_Forza': strengths,
         'Surplus_Cedibili': surplus_assets,
-        'Conteggio_Totale': {r: len(role_roster_all[r]) for r in RECOMMENDED_QUOTAS.keys()},
-        'Conteggio_Attivi': {r: len(role_roster_active[r]) for r in RECOMMENDED_QUOTAS.keys()},
+        'Conteggio_Totale': {r: len(role_roster_all[r]) for r in quotas_ref.keys()},
+        'Conteggio_Attivi': {r: len(role_roster_active[r]) for r in quotas_ref.keys()},
         'Opt_Lineup': opt_res
     }
 
@@ -943,6 +1096,7 @@ def _format_trade_player(p, is_opponent=False):
         'Giocatore': p_name,
         'Squadra': p.get('Squadra', ''),
         'RuoloMantra': p.get('RuoloMantra', ''),
+        'RuoloClassic': p.get('RuoloClassic', ''),
         'FVM': fvm_val,
         'Costo': fvm_val,
         'Costo_Asta': auction_cost,
@@ -1136,7 +1290,7 @@ def find_win_win_trades(
     my_team_name, league_data, df_master, matchday=8, 
     target_role_filter=None, give_player_filter=None, opp_team_filter=None, 
     min_starter_filter='TITOLARI_E_CO', trade_format_filter='TUTTI',
-    df_all_proj=None, max_proposals=30, **kwargs
+    df_all_proj=None, max_proposals=30, league_type=None, **kwargs
 ):
     if 'trade_format_filter' in kwargs:
         trade_format_filter = kwargs['trade_format_filter']
@@ -1159,13 +1313,36 @@ def find_win_win_trades(
         df_all_proj = batch_predict_xfv(df_master, matchday=matchday)
     proj_map = {row['Giocatore']: row.to_dict() for _, row in df_all_proj.iterrows()}
 
-    my_diag = analyze_squad_weaknesses(my_team_name, league_data, df_master, matchday=matchday, df_all_proj=df_all_proj)
+    if league_type is None:
+        try:
+            from engine.league_manager import get_league_type
+            league_type = get_league_type()
+        except Exception:
+            league_type = 'mantra'
+    is_classic = (str(league_type).lower() == 'classic')
+    my_diag = analyze_squad_weaknesses(my_team_name, league_data, df_master, matchday=matchday, df_all_proj=df_all_proj, league_type=league_type)
     if 'error' in my_diag:
         return []
 
+    def _p_roles(p_dict):
+        if is_classic:
+            rc = str(p_dict.get('RuoloClassic', '')).strip().upper()
+            if rc in ('P', 'D', 'C', 'A'):
+                return {rc}
+            m_roles = parse_mantra_roles(p_dict.get('RuoloMantra', ''))
+            if 'Por' in m_roles:
+                return {'P'}
+            if m_roles & {'Dc', 'Dd', 'Ds', 'B'}:
+                return {'D'}
+            if m_roles & {'E', 'M', 'C', 'W', 'T'}:
+                return {'C'}
+            if m_roles & {'A', 'Pc'}:
+                return {'A'}
+        return parse_mantra_roles(p_dict.get('RuoloMantra', ''))
+
     my_weak_roles = set(w['Ruolo'] for w in my_diag.get('Punti_Deboli', []))
-    if not my_weak_roles:
-        my_weak_roles = {'Pc', 'M', 'Dc', 'Dd', 'Ds'}
+    if not my_weak_roles or (is_classic and my_weak_roles <= {'P'}):
+        my_weak_roles = {'P', 'D', 'C', 'A'} if is_classic else {'Pc', 'M', 'Dc', 'Dd', 'Ds'}
 
     release_names = get_league_release_names(league_data)
 
@@ -1200,7 +1377,7 @@ def find_win_win_trades(
     if not my_proj_list:
         return []
     df_my_proj = pd.DataFrame(my_proj_list)
-    opt_my_curr = optimize_best_mantra_lineup(df_my_proj)
+    opt_my_curr = optimize_best_lineup(df_my_proj, mode=league_type)
     my_starters_set = set(p['Giocatore'] for p in opt_my_curr.get('Titolari', []))
     my_surplus_set = set(s['Giocatore'] for s in my_diag.get('Surplus_Cedibili', []))
 
@@ -1208,7 +1385,7 @@ def find_win_win_trades(
     my_roles_active = {}
     for p in my_proj_list:
         if safe_int(p.get('Presenze', 0)) >= 2 or safe_float(p.get('P_Voto', 0)) >= 0.50:
-            for r in parse_mantra_roles(p.get('RuoloMantra', '')):
+            for r in _p_roles(p):
                 my_roles_active[r] = my_roles_active.get(r, 0) + 1
 
     my_offerable = []
@@ -1222,8 +1399,8 @@ def find_win_win_trades(
 
         pres = safe_int(p_row.get('Presenze', 0))
         xfv = safe_float(p_row.get('xFV', 0.0))
-        roles = parse_mantra_roles(p_row.get('RuoloMantra', ''))
-        is_gk = ('Por' in roles)
+        roles = _p_roles(p_row)
+        is_gk = ('Por' in roles or 'P' in roles)
 
         if pname in my_surplus_set:
             tier = 'SURPLUS'
@@ -1283,7 +1460,7 @@ def find_win_win_trades(
         opp_proj_by_team[opp_team] = opp_proj_list
         opp_starters = set(df_opp_proj.sort_values('xFV', ascending=False).head(11)['Giocatore'])
 
-        opp_diag = analyze_squad_weaknesses(opp_team, league_data, df_master, matchday=matchday, df_all_proj=df_all_proj)
+        opp_diag = analyze_squad_weaknesses(opp_team, league_data, df_master, matchday=matchday, df_all_proj=df_all_proj, league_type=league_type)
         if opp_diag.get('Opt_Lineup'):
             opt_opp_cache[opp_team] = opp_diag['Opt_Lineup']
         opp_weak_roles = {w['Ruolo']: w.get('Severita', 'MEDIA') for w in opp_diag.get('Punti_Deboli', [])}
@@ -1293,7 +1470,7 @@ def find_win_win_trades(
         opp_roles_active = {}
         for p in opp_proj_list:
             is_active = (safe_int(p.get('Presenze', 0)) >= 2 or safe_float(p.get('P_Voto', 0)) >= 0.50)
-            for r in parse_mantra_roles(p.get('RuoloMantra', '')):
+            for r in _p_roles(p):
                 if is_active:
                     opp_roles_active[r] = opp_roles_active.get(r, 0) + 1
 
@@ -1303,7 +1480,7 @@ def find_win_win_trades(
             opp_p_name = opp_p['Giocatore']
             if is_player_to_release(opp_p, release_names) or is_player_to_release(opp_p_name, release_names):
                 continue
-            opp_p_roles = parse_mantra_roles(opp_p.get('RuoloMantra', ''))
+            opp_p_roles = _p_roles(opp_p)
 
             # Filter by target role if specified
             if target_role_filter and target_role_filter != 'TUTTI':
@@ -1319,12 +1496,14 @@ def find_win_win_trades(
                 continue
 
             # Criticality protection for opponent: don't take their last keeper or striker
-            if 'Por' in opp_p_roles:
+            if 'Por' in opp_p_roles or 'P' in opp_p_roles:
                 opp_all_pors = [p for p in opp_proj_list if 'Por' in parse_mantra_roles(p.get('RuoloMantra', ''))]
                 opp_rem_starters = [p for p in opp_all_pors if p['Giocatore'] != opp_p_name and (safe_int(p.get('Presenze', 0)) >= 3 or safe_float(p.get('P_Voto', 0)) >= 0.70)]
                 if len(opp_rem_starters) == 0:
                     continue
             if 'Pc' in opp_p_roles and opp_roles_active.get('Pc', 0) <= 1:
+                continue
+            if 'A' in opp_p_roles and is_classic and opp_roles_active.get('A', 0) <= 2:
                 continue
 
             opp_p_status = compute_real_starter_status(opp_p)
@@ -1372,12 +1551,12 @@ def find_win_win_trades(
             for my_give in my_1x1_offers:
                 if give_player_filter and give_player_filter != 'TUTTI' and my_give['Giocatore'] != give_player_filter:
                     continue
-                my_give_roles = parse_mantra_roles(my_give['RuoloMantra'])
+                my_give_roles = _p_roles(my_give)
                 opp_needs_my_give = any(r in opp_weak_roles for r in my_give_roles)
 
                 for opp_p in opp_target_candidates:
                     opp_p_name = opp_p['Giocatore']
-                    opp_p_roles = parse_mantra_roles(opp_p.get('RuoloMantra', ''))
+                    opp_p_roles = _p_roles(opp_p)
 
                     # Role Parity & Hierarchy Credibility Check
                     if not is_trade_role_parity_credible(my_give, opp_p):
@@ -1474,7 +1653,7 @@ def find_win_win_trades(
             seen_2x2_anchors = set()
             primary_give_candidates = [
                 p for p in my_offerable 
-                if any(r in opp_weak_roles for r in parse_mantra_roles(p.get('RuoloMantra', ''))) or p['Tier'] == 'SURPLUS'
+                if any(r in opp_weak_roles for r in _p_roles(p)) or p['Tier'] == 'SURPLUS'
             ]
             primary_give_candidates = sorted(primary_give_candidates, key=lambda x: safe_float(x.get('xFV', 0)), reverse=True)[:6]
             secondary_give_candidates = [p for p in my_offerable if p['Tier'] in ['SURPLUS', 'PANCHINARO']][:8]
@@ -1537,8 +1716,8 @@ def find_win_win_trades(
 
                             seen_trade_signatures.add(sig_key)
 
-                            g1_roles = parse_mantra_roles(g1.get('RuoloMantra', ''))
-                            t1_roles = parse_mantra_roles(t1.get('RuoloMantra', ''))
+                            g1_roles = _p_roles(g1)
+                            t1_roles = _p_roles(t1)
                             t1_status = compute_real_starter_status(t1)
 
                             score = 65.0
@@ -1620,7 +1799,7 @@ def find_win_win_trades(
                 target_key = (opp_team, t1_name)
                 if target_key in seen_2x1_targets:
                     continue
-                t1_roles = parse_mantra_roles(t1.get('RuoloMantra', ''))
+                t1_roles = _p_roles(t1)
                 t1_status = compute_real_starter_status(t1)
 
                 for pair in itertools.combinations(my_top_offers, 2):
@@ -1640,7 +1819,7 @@ def find_win_win_trades(
                     if not pw['is_valid']:
                         continue
 
-                    g_roles_all = set().union(*[parse_mantra_roles(p.get('RuoloMantra', '')) for p in give_pkg])
+                    g_roles_all = set().union(*[_p_roles(p) for p in give_pkg])
                     solved_w = [r for r in g_roles_all if r in opp_weak_roles]
                     if not solved_w:
                         continue
@@ -1768,7 +1947,7 @@ def find_win_win_trades(
                         'Tot_xFV_Cedi': tot_x_give,
                         'Tot_xFV_Ricevi': tot_x_rec,
                         'Delta_xFV': round(tot_x_rec - tot_x_give, 2),
-                        'Ruolo_Target': (list(parse_mantra_roles(t1.get('RuoloMantra', ''))) or ['N/D'])[0],
+                        'Ruolo_Target': (list(_p_roles(t1)) or ['N/D'])[0],
                         'Motivazioni': reasons,
                         'Messaggio_Trattativa': pitch,
                         'Simulazione_Payload': {
@@ -1894,7 +2073,7 @@ def simulate_opponent_post_trade(
             critical_flaws.append(f"⚠️ Carenza creata in {label} ({r}): scende a {c_after} giocatori attivi.")
 
     # 3. Simulate opponent lineup
-    opt_opp_new = optimize_best_mantra_lineup(pd.DataFrame(opp_new_list), allowed_formations=allowed_formations)
+    opt_opp_new = optimize_best_lineup(pd.DataFrame(opp_new_list), allowed_formations=allowed_formations, mode=league_type)
     opp_curr_pts = opt_opp_curr['Punti_Attesi_Totali'] if opt_opp_curr else 0.0
     opp_new_pts = opt_opp_new['Punti_Attesi_Totali'] if opt_opp_new else 0.0
     delta_opp_pts = round(opp_new_pts - opp_curr_pts, 2)
@@ -1976,7 +2155,8 @@ def find_trades_for_target_players(
     allow_starters=True,
     package_types=('1x1', '2x1', '2x2'),
     df_all_proj=None,
-    max_proposals=25
+    max_proposals=25,
+    league_type=None
 ):
     """
     Reverse Targeted Trade Finder (Scambio Mirato su Obiettivo):
@@ -1998,14 +2178,22 @@ def find_trades_for_target_players(
     release_names = get_league_release_names(league_data)
 
     # 1. Diagnose opponent squad
-    opp_diag = analyze_squad_weaknesses(opp_team_name, league_data, df_master, matchday=matchday)
+    if league_type is None:
+        try:
+            from engine.league_manager import get_league_type
+            league_type = get_league_type()
+        except Exception:
+            league_type = 'mantra'
+    is_classic = (str(league_type).lower() == 'classic')
+
+    opp_diag = analyze_squad_weaknesses(opp_team_name, league_data, df_master, matchday=matchday, league_type=league_type)
     if 'error' in opp_diag:
         return []
     opp_weaknesses = opp_diag.get('Punti_Deboli', [])
     opp_weak_roles = {w['Ruolo']: w.get('Severita', 'MEDIA') for w in opp_weaknesses}
 
     # 2. Diagnose my squad
-    my_diag = analyze_squad_weaknesses(my_team_name, league_data, df_master, matchday=matchday)
+    my_diag = analyze_squad_weaknesses(my_team_name, league_data, df_master, matchday=matchday, league_type=league_type)
     if 'error' in my_diag:
         return []
 
@@ -2025,7 +2213,7 @@ def find_trades_for_target_players(
     df_my_proj = pd.DataFrame(my_proj_list)
 
     # Current optimal lineup (My team)
-    opt_my_curr = optimize_best_mantra_lineup(df_my_proj)
+    opt_my_curr = optimize_best_lineup(df_my_proj, mode=league_type)
     my_curr_pts = opt_my_curr['Punti_Attesi_Totali'] if opt_my_curr else 0.0
     my_curr_modulo = opt_my_curr['Modulo'] if opt_my_curr else 'N/D'
     my_starters_set = set(p['Giocatore'] for p in opt_my_curr.get('Titolari', []))
@@ -2041,7 +2229,7 @@ def find_trades_for_target_players(
     if not opp_proj_list:
         return []
     df_opp_proj = pd.DataFrame(opp_proj_list)
-    opt_opp_curr = optimize_best_mantra_lineup(df_opp_proj)
+    opt_opp_curr = optimize_best_lineup(df_opp_proj, mode=league_type)
     opp_curr_pts = opt_opp_curr['Punti_Attesi_Totali'] if opt_opp_curr else 0.0
     opp_curr_modulo = opt_opp_curr['Modulo'] if opt_opp_curr else 'N/D'
     opp_sim_formations = list(dict.fromkeys([opp_curr_modulo, '3-5-2', '4-3-3', '4-2-3-1', '4-3-1-2']))[:4]
@@ -2338,7 +2526,7 @@ def find_trades_for_target_players(
         my_new_roster_items = [p for p in my_proj_list if p['Giocatore'] not in give_pnames_set] + target_players
         df_my_new = pd.DataFrame(my_new_roster_items)
         
-        opt_my_new = optimize_best_mantra_lineup(df_my_new, allowed_formations=sim_formations)
+        opt_my_new = optimize_best_lineup(df_my_new, allowed_formations=sim_formations, mode=league_type)
         if not opt_my_new:
             continue
         

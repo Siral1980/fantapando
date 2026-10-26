@@ -832,3 +832,505 @@ if __name__ == '__main__':
         print("\nCONFRONTO TUTTI I MODULI TESTATI:")
         for m in best_res['Tutti_Moduli_Valutati']:
             print(f"Modulo: {m['Modulo']} -> Totale: {m['Punti_Totali']} (xFV: {m['xFV_Titolari']} + D-Factor: +{m['D_Factor']})")
+
+
+# =============================================================
+# CLASSIC FORMATIONS & LINEUP OPTIMIZER
+# =============================================================
+
+CLASSIC_FORMATIONS = {
+    '3-4-3': {
+        'def_type': '3-def',
+        'n_def': 3,
+        'n_mid': 4,
+        'n_att': 3,
+        'slots': ['P', 'D', 'D', 'D', 'C', 'C', 'C', 'C', 'A', 'A', 'A']
+    },
+    '3-5-2': {
+        'def_type': '3-def',
+        'n_def': 3,
+        'n_mid': 5,
+        'n_att': 2,
+        'slots': ['P', 'D', 'D', 'D', 'C', 'C', 'C', 'C', 'C', 'A', 'A']
+    },
+    '4-3-3': {
+        'def_type': '4-def',
+        'n_def': 4,
+        'n_mid': 3,
+        'n_att': 3,
+        'slots': ['P', 'D', 'D', 'D', 'D', 'C', 'C', 'C', 'A', 'A', 'A']
+    },
+    '4-4-2': {
+        'def_type': '4-def',
+        'n_def': 4,
+        'n_mid': 4,
+        'n_att': 2,
+        'slots': ['P', 'D', 'D', 'D', 'D', 'C', 'C', 'C', 'C', 'A', 'A']
+    },
+    '4-5-1': {
+        'def_type': '4-def',
+        'n_def': 4,
+        'n_mid': 5,
+        'n_att': 1,
+        'slots': ['P', 'D', 'D', 'D', 'D', 'C', 'C', 'C', 'C', 'C', 'A']
+    },
+    '5-3-2': {
+        'def_type': '5-def',
+        'n_def': 5,
+        'n_mid': 3,
+        'n_att': 2,
+        'slots': ['P', 'D', 'D', 'D', 'D', 'D', 'C', 'C', 'C', 'A', 'A']
+    },
+    '5-4-1': {
+        'def_type': '5-def',
+        'n_def': 5,
+        'n_mid': 4,
+        'n_att': 1,
+        'slots': ['P', 'D', 'D', 'D', 'D', 'D', 'C', 'C', 'C', 'C', 'A']
+    }
+}
+
+
+def solve_lineup_for_classic_formation(formation_name, df_projected_roster):
+    """Finds the optimal legal 11-player lineup for a specified Classic formation."""
+    if formation_name not in CLASSIC_FORMATIONS:
+        return None
+
+    cfg = CLASSIC_FORMATIONS[formation_name]
+    n_def = cfg['n_def']
+    n_mid = cfg['n_mid']
+    n_att = cfg['n_att']
+
+    gk_list = []
+    def_list = []
+    mid_list = []
+    att_list = []
+
+    for _, row in df_projected_roster.iterrows():
+        p_dict = row.to_dict()
+        rc = str(p_dict.get('RuoloClassic', '')).strip().upper()
+        if not rc:
+            rm = str(p_dict.get('RuoloMantra', ''))
+            if 'Por' in rm:
+                rc = 'P'
+            elif any(r in rm for r in ['Dc', 'Dd', 'Ds', 'B']):
+                rc = 'D'
+            elif any(r in rm for r in ['A', 'Pc']):
+                rc = 'A'
+            else:
+                rc = 'C'
+
+        p_voto_val = float(p_dict.get('P_Voto', 0.5))
+        pres_val = min(1.0, float(p_dict.get('Presenze', 0)) / 7.0)
+        suff_val = float(p_dict.get('Pct_Sufficienza', 50.0)) / 100.0
+        fdr_val = float(p_dict.get('FDR', 3))
+        tie_breaker = (p_voto_val * 0.002) + (pres_val * 0.001) + (suff_val * 0.001) - (fdr_val * 0.0003)
+
+        if rc == 'P':
+            gp_90_val = float(p_dict.get('Goals_Prevented_90', 0.0))
+            blunders_val = float(p_dict.get('Errors_Leading_To_Goal', 0))
+            save_pct_val = (float(p_dict.get('Pct_Parate', 70.0)) - 70.0) / 100.0
+            tie_breaker += (gp_90_val * 0.002) + (save_pct_val * 0.001) - (blunders_val * 0.002)
+        else:
+            xg_val = float(p_dict.get('xG_90_Regressed', p_dict.get('xG_90', 0.0)))
+            xa_val = float(p_dict.get('xA_90_Regressed', p_dict.get('xA_90', 0.0)))
+            mins_val = float(p_dict.get('Min_Per_App', 60.0))
+            mins_bias = 0.06 if mins_val >= 65.0 else (-0.22 if mins_val < 45.0 else 0.0)
+            tie_breaker += (xg_val * 0.002) + (xa_val * 0.002) + mins_bias
+
+        p_entry = {
+            'player': p_dict,
+            'xFV': float(p_dict.get('xFV', 0.0)),
+            'sort_score': float(p_dict.get('xFV', 0.0)) + tie_breaker,
+            'Pred_Voto': float(p_dict.get('Pred_Voto', 6.0))
+        }
+
+        if rc == 'P':
+            gk_list.append(p_entry)
+        elif rc == 'D':
+            def_list.append(p_entry)
+        elif rc == 'C':
+            mid_list.append(p_entry)
+        elif rc == 'A':
+            att_list.append(p_entry)
+
+    if len(gk_list) < 1 or len(def_list) < n_def or len(mid_list) < n_mid or len(att_list) < n_att:
+        return None
+
+    gk_list = sorted(gk_list, key=lambda x: x['sort_score'], reverse=True)
+    def_list = sorted(def_list, key=lambda x: x['sort_score'], reverse=True)
+    mid_list = sorted(mid_list, key=lambda x: x['sort_score'], reverse=True)
+    att_list = sorted(att_list, key=lambda x: x['sort_score'], reverse=True)
+
+    chosen_gk = gk_list[:1]
+    chosen_def = def_list[:n_def]
+    chosen_mid = mid_list[:n_mid]
+    chosen_att = att_list[:n_att]
+
+    dfactor = 0.0
+    if n_def >= 4:
+        def_ratings = [chosen_gk[0]['Pred_Voto']] + [d['Pred_Voto'] for d in chosen_def]
+        dfactor, _ = calculate_expected_dfactor(def_ratings)
+
+    sum_xfv = sum(p['xFV'] for p in chosen_gk + chosen_def + chosen_mid + chosen_att)
+    total_score = sum_xfv + dfactor
+
+    titolari = []
+    for p in chosen_gk:
+        rec = dict(p['player'])
+        rec['Slot_Assegnato'] = 'P'
+        titolari.append(rec)
+    for p in chosen_def:
+        rec = dict(p['player'])
+        rec['Slot_Assegnato'] = 'D'
+        titolari.append(rec)
+    for p in chosen_mid:
+        rec = dict(p['player'])
+        rec['Slot_Assegnato'] = 'C'
+        titolari.append(rec)
+    for p in chosen_att:
+        rec = dict(p['player'])
+        rec['Slot_Assegnato'] = 'A'
+        titolari.append(rec)
+
+    return {
+        'Modulo': formation_name,
+        'TipoDifesa': f"{n_def} Difensori",
+        'Punti_Attesi_Totali': round(total_score, 2),
+        'Somma_xFV_Titolari': round(sum_xfv, 2),
+        'D_Factor_Atteso': round(dfactor, 2),
+        'Titolari': titolari
+    }
+
+
+def optimize_best_classic_lineup(df_projected_roster, allowed_formations=None):
+    """Evaluates all permitted Classic formations and identifies the best lineup and bench."""
+    if allowed_formations is None:
+        allowed_formations = list(CLASSIC_FORMATIONS.keys())
+
+    candidates = []
+    for f_name in allowed_formations:
+        if f_name not in CLASSIC_FORMATIONS:
+            continue
+        res = solve_lineup_for_classic_formation(f_name, df_projected_roster)
+        if res:
+            candidates.append(res)
+
+    if not candidates:
+        return None
+
+    for c in candidates:
+        tits = c['Titolari']
+        tit_names = set(p['Giocatore'] for p in tits)
+        bench = [r for _, r in df_projected_roster.iterrows() if r['Giocatore'] not in tit_names]
+
+        uncovered = []
+        p_bench = [b for b in bench if b.get('RuoloClassic') == 'P']
+        if not p_bench:
+            uncovered.append('P')
+        d_bench = [b for b in bench if b.get('RuoloClassic') == 'D' and (b.get('Presenze', 0) >= 2 or b.get('P_Voto', 0) >= 0.45)]
+        if not d_bench:
+            uncovered.append('D')
+        c_bench = [b for b in bench if b.get('RuoloClassic') == 'C' and (b.get('Presenze', 0) >= 2 or b.get('P_Voto', 0) >= 0.45)]
+        if not c_bench:
+            uncovered.append('C')
+        a_bench = [b for b in bench if b.get('RuoloClassic') == 'A' and (b.get('Presenze', 0) >= 2 or b.get('P_Voto', 0) >= 0.45)]
+        if not a_bench:
+            uncovered.append('A')
+
+        c['Slot_Scoperti'] = uncovered
+        c['Penalita_Fragilita'] = round(len(uncovered) * 1.5, 2)
+        c['Punti_Benchmark_Robusto'] = round(c['Punti_Attesi_Totali'] - c['Penalita_Fragilita'], 2)
+
+    candidates = sorted(candidates, key=lambda x: x['Punti_Attesi_Totali'], reverse=True)
+    best = candidates[0]
+    best['Ha_Problemi_Copertura'] = len(best.get('Slot_Scoperti', [])) > 0
+
+    safe_alts = []
+    fully_cov = [c for c in candidates[1:] if len(c.get('Slot_Scoperti', [])) == 0]
+    for alt in fully_cov[:2]:
+        delta = round(alt['Punti_Attesi_Totali'] - best['Punti_Attesi_Totali'], 2)
+        safe_alts.append({
+            'Modulo': alt['Modulo'],
+            'Punti_Totali': alt['Punti_Attesi_Totali'],
+            'Delta_Punti': delta,
+            'Slot_Scoperti': [],
+            'Somma_xFV_Titolari': alt['Somma_xFV_Titolari'],
+            'D_Factor': alt['D_Factor_Atteso'],
+            'Dettaglio': "Copertura garantita al 100% su tutti i reparti Classic (P, D, C, A)."
+        })
+    best['Moduli_Sicuri_Alternativi'] = safe_alts
+
+    best_tit_names = set(p['Giocatore'] for p in best['Titolari'])
+    df_bench_cand = df_projected_roster[~df_projected_roster['Giocatore'].isin(best_tit_names)].copy()
+    panchina = order_bench_classic_mode(best['Titolari'], df_bench_cand)
+    best['Panchina_Prioritizzata'] = panchina
+    best['Panchina'] = panchina
+
+    # Generate Classic Departmental Audit Matrix
+    audit_tests = []
+    for role_code, role_label in [('P', 'Assenza Portiere (P)'), ('D', 'Assenza Difensore (D)'), ('C', 'Assenza Centrocampista (C)'), ('A', 'Assenza Attaccante (A)')]:
+        role_tits = [t for t in best['Titolari'] if t.get('Slot_Assegnato') == role_code]
+        if role_tits:
+            sim = simulate_classic_substitutions(best['Titolari'], panchina, best['Modulo'], simulated_missing_names=[role_tits[0]['Giocatore']])
+            sub = sim['Sostituzioni'][0] if sim['Sostituzioni'] else {}
+            audit_tests.append({
+                'Scenario': role_label,
+                'Titolare_Testato': f"{role_tits[0]['Giocatore']} ({role_code})",
+                'Giocatore_Subentrante': f"#{sub.get('In_Pos')} {sub.get('In')} ({sub.get('In_Roles')})",
+                'Modulo_Risultante': sub.get('Modulo_Nuovo', best['Modulo']),
+                'Esito': '✅ Coperto' if ('✅' in sub.get('Status', '') or '🔄' in sub.get('Status', '')) else '❌ Scoperto'
+            })
+    best['Audit_Copertura'] = pd.DataFrame(audit_tests)
+
+    top_score = best['Punti_Attesi_Totali']
+    best['Tutti_Moduli_Valutati'] = [
+        {
+            'Modulo': c['Modulo'],
+            'Punti_Totali': c['Punti_Attesi_Totali'],
+            'Delta_vs_Top': round(c['Punti_Attesi_Totali'] - top_score, 2),
+            'Stato_Copertura': '✅ Copertura Blindata' if len(c.get('Slot_Scoperti', [])) == 0 else f"⚠️ Scoperti: {', '.join(c.get('Slot_Scoperti', []))}",
+            'xFV_Titolari': c['Somma_xFV_Titolari'],
+            'D_Factor': c['D_Factor_Atteso'],
+            'Punti_Robusti': c['Punti_Benchmark_Robusto'],
+        }
+        for c in candidates
+    ]
+
+    return best
+
+
+def order_bench_classic_mode(titolari, df_bench_candidates, max_subs=5):
+    """Constructs the 12-man bench strictly ordered for Classic mode."""
+    df_b = df_bench_candidates.copy()
+    bench_scores = []
+    prob_voto_bonus = []
+    bonus_attesi = []
+
+    for _, row in df_b.iterrows():
+        s, p, b = compute_bench_priority_score(row)
+        bench_scores.append(s)
+        prob_voto_bonus.append(p)
+        bonus_attesi.append(b)
+
+    df_b['Score_Panchina'] = bench_scores
+    df_b['Prob_Voto6_o_Bonus'] = prob_voto_bonus
+    df_b['Bonus_Atteso'] = bonus_attesi
+    if 'EV' not in df_b.columns:
+        df_b['EV'] = df_b['Score_Panchina']
+
+    por_df = df_b[df_b['RuoloClassic'] == 'P'].sort_values('Score_Panchina', ascending=False)
+    outfield_df = df_b[df_b['RuoloClassic'] != 'P'].sort_values('Score_Panchina', ascending=False)
+
+    bench_final = []
+
+    if not por_df.empty:
+        p1 = por_df.iloc[0].to_dict()
+        p1['Fascia_Master'] = '🧤 2° PORTIERE'
+        p1['Note_Tattiche'] = 'Subentra automaticamente solo se il Portiere titolare è S.V.'
+        bench_final.append(p1)
+
+    outfield_top5 = outfield_df.head(5)
+    for _, row in outfield_top5.iterrows():
+        p_copy = row.to_dict()
+        p_copy['Fascia_Master'] = '⭐ TOP 5 CAMBIO'
+        p_copy['Note_Tattiche'] = f"Priorità cambio (Ruolo Classic: {p_copy.get('RuoloClassic')})."
+        bench_final.append(p_copy)
+
+    has_third_por = len(por_df) > 1
+    depth_slots = 5 if has_third_por else 6
+    outfield_depth = outfield_df.iloc[5:5 + depth_slots]
+    for _, row in outfield_depth.iterrows():
+        p_copy = row.to_dict()
+        p_copy['Fascia_Master'] = '🪑 RINCALZO'
+        p_copy['Note_Tattiche'] = f"Subentro di profondità (Ruolo Classic: {p_copy.get('RuoloClassic')})."
+        bench_final.append(p_copy)
+
+    if has_third_por and len(bench_final) < 12:
+        p3 = por_df.iloc[1].to_dict()
+        p3['Fascia_Master'] = '🧤 3° PORTIERE'
+        p3['Note_Tattiche'] = 'Copertura di emergenza estrema per la porta.'
+        bench_final.append(p3)
+
+    for idx, b in enumerate(bench_final):
+        b['Posizione_Panchina'] = idx + 1
+        rc = b.get('RuoloClassic', '')
+        b['Copertura_Tattica'] = f"Ruolo Classic: {rc}"
+
+    return bench_final
+
+
+def can_lineup_form_any_valid_classic(players_list):
+    """Checks if 11 players can form any of the 7 Classic formations."""
+    if len(players_list) != 11:
+        return False, None
+
+    counts = {'P': 0, 'D': 0, 'C': 0, 'A': 0}
+    for p in players_list:
+        rc = p.get('RuoloClassic', '')
+        if rc in counts:
+            counts[rc] += 1
+        elif 'Por' in str(p.get('RuoloMantra', '')):
+            counts['P'] += 1
+        elif any(r in str(p.get('RuoloMantra', '')) for r in ['Dc', 'Dd', 'Ds', 'B']):
+            counts['D'] += 1
+        elif any(r in str(p.get('RuoloMantra', '')) for r in ['A', 'Pc']):
+            counts['A'] += 1
+        else:
+            counts['C'] += 1
+
+    if counts['P'] != 1:
+        return False, None
+
+    tuple_dca = (counts['D'], counts['C'], counts['A'])
+    lookup = {
+        (3, 4, 3): '3-4-3',
+        (3, 5, 2): '3-5-2',
+        (4, 3, 3): '4-3-3',
+        (4, 4, 2): '4-4-2',
+        (4, 5, 1): '4-5-1',
+        (5, 3, 2): '5-3-2',
+        (5, 4, 1): '5-4-1'
+    }
+    if tuple_dca in lookup:
+        return True, lookup[tuple_dca]
+    return False, None
+
+
+def simulate_classic_substitutions(titolari, panchina, initial_formation, max_subs=5, simulated_missing_names=None):
+    """Simulates substitutions for Classic mode."""
+    if simulated_missing_names is None:
+        simulated_missing_names = []
+
+    missing_set = set(simulated_missing_names)
+    current_field = [dict(t) for t in titolari]
+    subs_made = []
+    bench_used = set()
+    current_mod = initial_formation
+
+    # 1. Missing Goalkeeper
+    por_missing = [p for p in titolari if p['Giocatore'] in missing_set and p.get('RuoloClassic') == 'P']
+    for p_out in por_missing:
+        sub_ok = False
+        for b_idx, b in enumerate(panchina):
+            if b_idx in bench_used:
+                continue
+            if b.get('RuoloClassic') == 'P':
+                bench_used.add(b_idx)
+                current_field = [p if p['Giocatore'] != p_out['Giocatore'] else b for p in current_field]
+                subs_made.append({
+                    'Out': p_out['Giocatore'],
+                    'Out_Slot': 'P',
+                    'In': b['Giocatore'],
+                    'In_Pos': b_idx + 1,
+                    'In_Roles': 'P',
+                    'In_Fascia': b.get('Fascia_Master', ''),
+                    'Modulo_Nuovo': current_mod,
+                    'Status': '✅ CAMBIO EFFETTUATO',
+                    'Dettaglio': f"Subentra il 2° portiere (Panchina #{b_idx+1}) mantenendo invariato il modulo {current_mod}."
+                })
+                sub_ok = True
+                break
+        if not sub_ok:
+            subs_made.append({
+                'Out': p_out['Giocatore'],
+                'Out_Slot': 'P',
+                'In': 'NESSUN PORTIERE A VOTO',
+                'In_Pos': '-',
+                'In_Roles': '-',
+                'In_Fascia': '-',
+                'Modulo_Nuovo': current_mod,
+                'Status': '❌ PORTA SCOPERTA',
+                'Dettaglio': 'Nessun portiere di riserva disponibile a voto.'
+            })
+
+    # 2. Missing Outfield
+    outfield_missing = [p for p in titolari if p['Giocatore'] in missing_set and p.get('RuoloClassic') != 'P']
+    for p_out in outfield_missing:
+        if len(subs_made) >= max_subs:
+            subs_made.append({
+                'Out': p_out['Giocatore'],
+                'Out_Slot': p_out.get('RuoloClassic', 'D'),
+                'In': 'LIMITE 5 CAMBI RAGGIUNTO',
+                'In_Pos': '-',
+                'In_Roles': '-',
+                'In_Fascia': '-',
+                'Modulo_Nuovo': current_mod,
+                'Status': '⚠️ CAMBI ESAURITI',
+                'Dettaglio': f'Raggiunto il tetto massimo di {max_subs} sostituzioni consentite.'
+            })
+            continue
+
+        target_rc = p_out.get('RuoloClassic', '')
+        sub_ok = False
+        for b_idx, b in enumerate(panchina):
+            if b_idx in bench_used:
+                continue
+            if b.get('RuoloClassic') == target_rc:
+                bench_used.add(b_idx)
+                current_field = [p if p['Giocatore'] != p_out['Giocatore'] else b for p in current_field]
+                subs_made.append({
+                    'Out': p_out['Giocatore'],
+                    'Out_Slot': target_rc,
+                    'In': b['Giocatore'],
+                    'In_Pos': b_idx + 1,
+                    'In_Roles': target_rc,
+                    'In_Fascia': b.get('Fascia_Master', ''),
+                    'Modulo_Nuovo': current_mod,
+                    'Status': '✅ CAMBIO DIRETTO RUOLO',
+                    'Dettaglio': f"Sostituzione diretta ruolo su ruolo ({target_rc} ➔ {target_rc}). Modulo {current_mod} preservato."
+                })
+                sub_ok = True
+                break
+
+        if not sub_ok:
+            for b_idx, b in enumerate(panchina):
+                if b_idx in bench_used or b.get('RuoloClassic') == 'P':
+                    continue
+                test_field = [p if p['Giocatore'] != p_out['Giocatore'] else b for p in current_field]
+                can_f, new_mod = can_lineup_form_any_valid_classic(test_field)
+                if can_f:
+                    bench_used.add(b_idx)
+                    current_field = test_field
+                    current_mod = new_mod
+                    subs_made.append({
+                        'Out': p_out['Giocatore'],
+                        'Out_Slot': target_rc,
+                        'In': b['Giocatore'],
+                        'In_Pos': b_idx + 1,
+                        'In_Roles': b.get('RuoloClassic', ''),
+                        'In_Fascia': b.get('Fascia_Master', ''),
+                        'Modulo_Nuovo': new_mod,
+                        'Status': '🔄 CAMBIO CON CAMBIO MODULO',
+                        'Dettaglio': f"Subentra {b.get('RuoloClassic')} ({b['Giocatore']}) adattando la disposizione tattica al modulo {new_mod}."
+                    })
+                    sub_ok = True
+                    break
+
+        if not sub_ok:
+            subs_made.append({
+                'Out': p_out['Giocatore'],
+                'Out_Slot': target_rc,
+                'In': 'NESSUNA RISERVA UTILE',
+                'In_Pos': '-',
+                'In_Roles': '-',
+                'In_Fascia': '-',
+                'Modulo_Nuovo': current_mod,
+                'Status': '❌ INFERIORITÀ NUMERICA',
+                'Dettaglio': f"Nessun calciatore disponibile in panchina in grado di coprire il ruolo {target_rc} o configurare un modulo Classic valido."
+            })
+
+    success_count = sum(1 for s in subs_made if 'CAMBIO' in s.get('Status', ''))
+    return {
+        'Modulo_Partenza': initial_formation,
+        'Modulo_Finale': current_mod,
+        'Cambi_Effettuati': success_count,
+        'Sostituzioni': subs_made
+    }
+
+
+def optimize_best_lineup(df_projected_roster, allowed_formations=None, mode='mantra'):
+    """Universal dispatcher for Mantra or Classic lineup optimization."""
+    if str(mode).lower() == 'classic':
+        return optimize_best_classic_lineup(df_projected_roster, allowed_formations=allowed_formations)
+    return optimize_best_mantra_lineup(df_projected_roster, allowed_formations=allowed_formations)

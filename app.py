@@ -26,14 +26,17 @@ from engine.models import batch_predict_xfv, calculate_expected_dfactor
 from engine.optimizer import (
     optimize_best_mantra_lineup, MANTRA_FORMATIONS,
     simulate_master_substitutions, audit_master_bench_coverage, order_bench_master_mode,
-    parse_mantra_roles
+    parse_mantra_roles,
+    CLASSIC_FORMATIONS, optimize_best_classic_lineup, optimize_best_lineup,
+    order_bench_classic_mode, simulate_classic_substitutions
 )
 from engine.trade_evaluator import evaluate_trade
 import importlib
 import engine.trade_finder
 importlib.reload(engine.trade_finder)
 from engine.trade_finder import (
-    analyze_squad_weaknesses, find_win_win_trades, find_trades_for_target_players, RECOMMENDED_QUOTAS,
+    analyze_squad_weaknesses, find_win_win_trades, find_trades_for_target_players,
+    RECOMMENDED_QUOTAS, RECOMMENDED_QUOTAS_CLASSIC,
     safe_float, safe_int
 )
 from engine.roster_manager import (
@@ -47,7 +50,7 @@ from engine.league_manager import (
     render_league_upload_section, get_league_metadata, save_league_metadata,
     terminate_loan, add_or_update_loan,
     get_available_leagues, get_active_league_id, set_active_league_id,
-    create_new_league, delete_league
+    create_new_league, delete_league, get_league_type, set_league_type
 )
 from engine.understat_loader import sync_understat_metrics, get_understat_teams_metrics
 from engine.injuries_manager import (
@@ -92,7 +95,10 @@ elif st.session_state['_last_code_version'] != current_code_version:
     import importlib
     import engine.optimizer
     importlib.reload(engine.optimizer)
-    from engine.optimizer import MANTRA_FORMATIONS, optimize_best_mantra_lineup
+    from engine.optimizer import (
+        MANTRA_FORMATIONS, optimize_best_mantra_lineup,
+        CLASSIC_FORMATIONS, optimize_best_classic_lineup, optimize_best_lineup
+    )
     st.session_state['_last_code_version'] = current_code_version
     st.toast("🧹 Rilevate modifiche al codice: moduli ricaricati e cache pulita automaticamente!", icon="🔄")
 
@@ -117,25 +123,25 @@ def get_cached_calendar(cal_mtime=0, code_ver=None):
     return get_or_create_calendar()
 
 
-def _league_signature(league):
-    """Stable hash of the league rosters, used as cache key (cheap vs. hashing nested dicts)."""
+def _league_signature(league, league_type=None):
+    """Stable hash of the league rosters + league mode, used as cache key (cheap vs. hashing nested dicts)."""
     import hashlib, json
     try:
-        payload = json.dumps(league, sort_keys=True, default=str)
+        payload = json.dumps({"rosters": league, "type": str(league_type)}, sort_keys=True, default=str)
     except Exception:
-        payload = str(league)
+        payload = str(league) + "_" + str(league_type)
     return hashlib.md5(payload.encode('utf-8')).hexdigest()
 
 
 @st.cache_data(show_spinner=False, max_entries=64)
-def cached_analyze_squad_weaknesses(team_name, league_sig, matchday, code_ver, _league_data, _df_master):
-    return analyze_squad_weaknesses(team_name, _league_data, _df_master, matchday=matchday)
+def cached_analyze_squad_weaknesses(team_name, league_sig, matchday, code_ver, _league_data, _df_master, league_type=None):
+    return analyze_squad_weaknesses(team_name, _league_data, _df_master, matchday=matchday, league_type=league_type)
 
 
 @st.cache_data(show_spinner=False, max_entries=32, ttl=1800)
 def cached_find_win_win_trades(my_team_name, league_sig, matchday, target_role_filter, give_player_filter,
                                opp_team_filter, min_starter_filter, trade_format_filter, max_proposals,
-                               code_ver, _league_data, _df_master):
+                               code_ver, _league_data, _df_master, league_type=None):
     return find_win_win_trades(
         my_team_name=my_team_name,
         league_data=_league_data,
@@ -146,7 +152,8 @@ def cached_find_win_win_trades(my_team_name, league_sig, matchday, target_role_f
         opp_team_filter=opp_team_filter,
         min_starter_filter=min_starter_filter,
         trade_format_filter=trade_format_filter,
-        max_proposals=max_proposals
+        max_proposals=max_proposals,
+        league_type=league_type
     )
 
 master_csv_path = os.path.join(APP_DIR, "data", "players_master.csv")
@@ -265,12 +272,14 @@ if active_league not in league_ids:
     active_league = league_ids[0]
 
 curr_league_idx = league_ids.index(active_league)
+active_league_type = get_league_type(active_league)
+is_classic = (active_league_type == 'classic')
 
 selected_league_id = st.sidebar.selectbox(
     "🏆 Lega Attiva:",
     options=league_ids,
     index=curr_league_idx,
-    format_func=lambda x: f"🏆 {leagues_dict.get(x, {}).get('name', x)}",
+    format_func=lambda x: f"🏆 {leagues_dict.get(x, {}).get('name', x)} ({'🟢 Classic' if leagues_dict.get(x, {}).get('type') == 'classic' else '🔴 Mantra'})",
     key="sb_active_league_select",
     help="Seleziona la lega da visualizzare e gestire. I dati delle rose, le formazioni e gli scambi sono completamente isolati tra leghe diverse."
 )
@@ -279,20 +288,35 @@ if selected_league_id != active_league:
     set_active_league_id(selected_league_id, persist_disk=True)
     st.rerun()
 
+# 1-Click Toggle Mantra / Classic
+col_m1, col_m2 = st.sidebar.columns([1.3, 1.2])
+with col_m1:
+    if is_classic:
+        st.markdown("<div style='background:rgba(34,197,94,0.15); border:1px solid #22c55e; border-radius:6px; padding:5px 8px; font-weight:700; color:#4ade80; text-align:center; font-size:0.83rem;'>🟢 Classic Mode</div>", unsafe_allow_html=True)
+    else:
+        st.markdown("<div style='background:rgba(239,68,68,0.15); border:1px solid #ef4444; border-radius:6px; padding:5px 8px; font-weight:700; color:#f87171; text-align:center; font-size:0.83rem;'>🔴 Mantra Mode</div>", unsafe_allow_html=True)
+with col_m2:
+    target_mode = "mantra" if is_classic else "classic"
+    btn_label = "Passa a Mantra" if is_classic else "Passa a Classic"
+    if st.button(btn_label, key="sb_btn_toggle_mode", width='stretch', help=f"Cambia la modalità di gioco di {leagues_dict[active_league]['name']}"):
+        set_league_type(target_mode)
+        st.rerun()
+
 with st.sidebar.expander("⚙️ Gestione Leghe", expanded=False):
-    st.markdown(f"**Lega corrente**: `{leagues_dict[active_league]['name']}` (`{active_league}`)")
-    st.caption(f"🔗 Link diretto a questa lega: `?league={active_league}`")
+    st.markdown(f"**Lega corrente**: `{leagues_dict[active_league]['name']}` (`{active_league}`) — *{'Modalità Classic' if is_classic else 'Modalità Mantra'}*")
+    st.caption(f"🔗 Link diretto a questa lega: `?league={active_league}&mode={active_league_type}`")
     
     st.markdown("---")
     st.markdown("**➕ Crea Nuova Lega**")
     with st.form("new_league_form"):
         new_lg_name = st.text_input("Nome della nuova lega:", placeholder="es. Fanta Amici 2026")
+        new_lg_mode = st.radio("Tipologia lega:", ["Mantra", "Classic"], horizontal=True, key="new_lg_mode_radio")
         create_btn = st.form_submit_button("Crea Nuova Lega", type="primary")
         if create_btn:
             if not new_lg_name.strip():
                 st.warning("Inserisci un nome valido.")
             else:
-                ok, new_lid, msg = create_new_league(new_lg_name.strip())
+                ok, new_lid, msg = create_new_league(new_lg_name.strip(), league_type=new_lg_mode.lower())
                 if ok:
                     st.success(msg)
                     st.rerun()
@@ -529,7 +553,7 @@ tab_rosa, tab_formazione, tab_scambi, tab_lega, tab_stats, tab_calendario = st.t
 with tab_rosa:
     t_head_col1, t_head_col2 = st.columns([2, 1.2])
     with t_head_col1:
-        st.header("📋 Gestione della Mia Rosa Mantra")
+        st.header(f"📋 Gestione della Mia Rosa {'Classic' if is_classic else 'Mantra'}")
         st.markdown(f"Visualizza, analizza e modifica la tua rosa. Attualmente stai gestendo: <b style='color:#00f0ff; font-size:1.15rem;'>{current_active_team}</b>", unsafe_allow_html=True)
     with t_head_col2:
         if league_teams:
@@ -640,7 +664,10 @@ with tab_rosa:
         </div>
         """, unsafe_allow_html=True)
     with rk4:
-        df_def = df_my_roster[df_my_roster['RuoloMantra'].str.contains('Dc|Dd|Ds|B|E|M|Por', na=False)] if 'RuoloMantra' in df_my_roster.columns else pd.DataFrame()
+        if is_classic:
+            df_def = df_my_roster[df_my_roster['RuoloClassic'].isin(['P', 'D'])] if 'RuoloClassic' in df_my_roster.columns else pd.DataFrame()
+        else:
+            df_def = df_my_roster[df_my_roster['RuoloMantra'].str.contains('Dc|Dd|Ds|B|E|M|Por', na=False)] if 'RuoloMantra' in df_my_roster.columns else pd.DataFrame()
         mean_suff = round(float(df_def['Pct_Sufficienza'].fillna(0).mean()), 1) if not df_def.empty and 'Pct_Sufficienza' in df_def.columns else 0.0
         st.markdown(f"""
         <div class="metric-card">
@@ -757,11 +784,18 @@ with tab_rosa:
     f_col1, f_col2 = st.columns([2, 1])
     with f_col1:
         # Filter by role
-        ruoli_filter = st.multiselect(
-            "Filtra per ruolo Mantra:",
-            options=['Por', 'Dc', 'B', 'Dd', 'Ds', 'E', 'M', 'C', 'W', 'T', 'A', 'Pc'],
-            default=[]
-        )
+        if is_classic:
+            ruoli_filter = st.multiselect(
+                "Filtra per ruolo Classic:",
+                options=['P', 'D', 'C', 'A'],
+                default=[]
+            )
+        else:
+            ruoli_filter = st.multiselect(
+                "Filtra per ruolo Mantra:",
+                options=['Por', 'Dc', 'B', 'Dd', 'Ds', 'E', 'M', 'C', 'W', 'T', 'A', 'Pc'],
+                default=[]
+            )
     with f_col2:
         # Filter by loan / contract / injury status
         stato_filter = st.selectbox(
@@ -772,8 +806,11 @@ with tab_rosa:
     
     display_df = df_my_roster.copy()
     if ruoli_filter:
-        pattern = '|'.join(ruoli_filter)
-        display_df = display_df[display_df['RuoloMantra'].str.contains(pattern, na=False)]
+        if is_classic:
+            display_df = display_df[display_df['RuoloClassic'].isin(ruoli_filter)]
+        else:
+            pattern = '|'.join(ruoli_filter)
+            display_df = display_df[display_df['RuoloMantra'].str.contains(pattern, na=False)]
         
     if stato_filter == "SOLO SCHIERABILI" and 'Schierabile' in display_df.columns:
         display_df = display_df[display_df['Schierabile'] == True]
@@ -788,14 +825,15 @@ with tab_rosa:
     elif stato_filter == "🚫 FUORI SERIE A (DA SVINCOLARE)" and 'Da_Svincolare' in display_df.columns:
         display_df = display_df[display_df['Da_Svincolare'] == True]
         
+    role_col = 'RuoloClassic' if is_classic else 'RuoloMantra'
     cols_to_show = [
-        'Badge_Disponibilita', 'Badge_Prestito', 'Giocatore', 'Dettaglio_Disponibilita', 'Dettaglio_Prestito', 'Squadra', 'RuoloMantra', 'Costo', 'Presenze',
+        'Badge_Disponibilita', 'Badge_Prestito', 'Giocatore', 'Dettaglio_Disponibilita', 'Dettaglio_Prestito', 'Squadra', role_col, 'Costo', 'Presenze',
         'MV_Stagione', 'Pct_Sufficienza', 'FM_Stagione', 'MV_Ultime3', 'Pct_Parate', 'Goals_Prevented', 'Errors_Leading_To_Goal', 'GF', 'ASS',
         'Tiri_90', 'xG_90', 'Delta_xG', 'Key_Passes_90', 'xA_90', 'Delta_xA', 'Signal'
     ]
     cols_to_show = [c for c in cols_to_show if c in display_df.columns]
     
-    sorted_display = display_df.sort_values(by=['RuoloMantra', 'Costo'], ascending=[True, False]).reset_index(drop=True)
+    sorted_display = display_df.sort_values(by=[role_col, 'Costo'], ascending=[True, False]).reset_index(drop=True)
     
     # Quick Player Card Selector / Click hint
     qc1, qc2 = st.columns([2, 1])
@@ -972,9 +1010,10 @@ with tab_formazione:
         
         c_mod1, c_mod2 = st.columns([2, 1])
         with c_mod1:
-            st.markdown(f"### 🎯 Ottimizzazione Tattica per la **{selected_giornata}ª Giornata**")
+            st.markdown(f"### 🎯 Ottimizzazione Tattica {'Classic' if is_classic else 'Mantra'} per la **{selected_giornata}ª Giornata**")
         with c_mod2:
-            modulo_options = ["✨ Consigliato dall'AI (Migliore)"] + list(MANTRA_FORMATIONS.keys())
+            forms_dict = CLASSIC_FORMATIONS if is_classic else MANTRA_FORMATIONS
+            modulo_options = ["✨ Consigliato dall'AI (Migliore)"] + list(forms_dict.keys())
             selected_modulo_override = st.selectbox(
                 "Modulo Tattico:",
                 options=modulo_options,
@@ -983,10 +1022,11 @@ with tab_formazione:
             )
         
         # Optimize lineup
-        if selected_modulo_override != "✨ Consigliato dall'AI (Migliore)":
-            opt_res = optimize_best_mantra_lineup(df_my_proj, allowed_formations=[selected_modulo_override])
+        allowed_forms = None if selected_modulo_override == "✨ Consigliato dall'AI (Migliore)" else [selected_modulo_override]
+        if is_classic:
+            opt_res = optimize_best_classic_lineup(df_my_proj, allowed_formations=allowed_forms)
         else:
-            opt_res = optimize_best_mantra_lineup(df_my_proj)
+            opt_res = optimize_best_mantra_lineup(df_my_proj, allowed_formations=allowed_forms)
         
         if not opt_res:
             st.error("Impossibile schierare un modulo legale (verifica di avere almeno 1 Portiere e abbastanza difensori/attaccanti).")
@@ -1064,8 +1104,8 @@ with tab_formazione:
             titolari_list = opt_res['Titolari']
             
             # Group into tactical lines: Portiere, Difesa, Centrocampo/Trequarti, Attacco
-            por_line = [t for t in titolari_list if t['Slot_Assegnato'] == 'Por']
-            def_line = [t for t in titolari_list if t['Slot_Assegnato'] in ['Dc', 'Dd', 'Ds', 'Dc/B', 'B']]
+            por_line = [t for t in titolari_list if t['Slot_Assegnato'] in ['Por', 'P']]
+            def_line = [t for t in titolari_list if t['Slot_Assegnato'] in ['Dc', 'Dd', 'Ds', 'Dc/B', 'B', 'D']]
             mid_line = [t for t in titolari_list if t['Slot_Assegnato'] in ['E', 'E/W', 'M', 'M/C', 'C', 'C/T', 'W', 'W/T', 'T', 'T/A']]
             att_line = [t for t in titolari_list if t['Slot_Assegnato'] in ['A/Pc', 'W/A', 'Pc', 'A', 'T/A/Pc']]
 
@@ -1090,7 +1130,7 @@ with tab_formazione:
                             df_badge = str(p.get('D_Factor_Badge', ''))
                             mv_stag = float(p.get('MV_Stagione', 6.0))
                             
-                            if slot == 'Por':
+                            if slot in ['Por', 'P']:
                                 cs_p = int(float(p.get('Clean_Sheet_Prob', 0.0)) * 100)
                                 exp_gs = float(p.get('Exp_GS', 0.0))
                                 save_pct = float(p.get('Pct_Parate', 70.0))
@@ -1101,7 +1141,7 @@ with tab_formazione:
                                 blunders = int(p.get('Errors_Leading_To_Goal', 0))
                                 blunder_badge = f' | <span style="color: #f87171;">⚠️ Blunders: {blunders}</span>' if blunders > 0 else ' | <span style="color: #4ade80;">🛡️ 0 blunder</span>'
                                 metric_html = f'<div style="font-size: 0.8rem; color: #38bdf8; margin-top: 3px;">🧤 Prevented: <b>{gp:+.2f} ({gp90:+.2f}/90)</b> | Parate: <b>{save_pct:.1f}%</b>{blunder_badge} | Difesa: <b>{team_xga:.2f} xGA</b></div>'
-                            elif any(r in slot for r in ['Dc', 'Dd', 'Ds', 'B']):
+                            elif any(r in slot for r in ['Dc', 'Dd', 'Ds', 'B', 'D']):
                                 metric_html = f'<div style="font-size: 0.8rem; color: #93c5fd; margin-top: 3px;">🛡️ Sufficienza: <b>{pct_suff}%</b> | MV: <b>{mv_stag:.2f}</b></div>'
                             elif any(r in slot for r in ['E', 'M']):
                                 kp = float(p.get('Key_Passes_90', 0.0))
@@ -1118,7 +1158,7 @@ with tab_formazione:
                             bonus_html = ""
                             exp_gf = float(p.get('Exp_GF', 0.0))
                             exp_ass = float(p.get('Exp_ASS', 0.0))
-                            if slot == 'Por':
+                            if slot in ['Por', 'P']:
                                 bonus_imb = float(p.get('Bonus_Imbattibilita', 0.0))
                                 exp_gs = float(p.get('Exp_GS', 0.0))
                                 if bonus_imb > 0.05:
@@ -1149,6 +1189,7 @@ with tab_formazione:
                             pres_txt = f"{p.get('Presenze_Tot', p.get('Presenze', 0))}/7 pres"
                             tit_html = f'<div style="font-size: 0.8rem; color: #94a3b8; margin-top: 2px;">{tit_badge} • <b>{p_voto_pct}%</b> a voto ({pres_txt})</div>'
                             
+                            p_role_str = p.get('RuoloClassic' if is_classic else 'RuoloMantra', p.get('RuoloMantra', ''))
                             card_html = (
                                 f'<div class="player-card">'
                                 f'<div style="display: flex; justify-content: space-between; align-items: center;">'
@@ -1160,7 +1201,7 @@ with tab_formazione:
                                 f'</div>'
                                 f'{tit_html}'
                                 f'<div style="font-size: 0.82rem; color: #94a3b8; margin-top: 2px;">'
-                                f'Ruoli: <code style="background: rgba(0, 240, 255, 0.15); color: #00f0ff; border: 1px solid #00f0ff; border-radius: 4px; padding: 1px 6px; font-weight: bold;">{p["RuoloMantra"]}</code>'
+                                f'Ruoli: <code style="background: rgba(0, 240, 255, 0.15); color: #00f0ff; border: 1px solid #00f0ff; border-radius: 4px; padding: 1px 6px; font-weight: bold;">{p_role_str}</code>'
                                 f'</div>'
                                 f'{metric_html}'
                                 f'{bonus_block}'
@@ -1193,7 +1234,7 @@ with tab_formazione:
                     mv_v = float(t.get('MV_Stagione', 6.0))
                     df_b = str(t.get('D_Factor_Badge', ''))
                     
-                    if slot_n == 'Por':
+                    if slot_n in ['Por', 'P']:
                         cs_p = int(t.get('Clean_Sheet_Prob', 0)*100)
                         imb_b = float(t.get('Bonus_Imbattibilita', 0.0))
                         parate_p = float(t.get('Pct_Parate', 70.0))
@@ -1206,7 +1247,7 @@ with tab_formazione:
                         metrica_chiave = f"🧤 Goals Prevented: {gp:+.2f} ({gp90:+.2f}/90) | Parate: {parate_p:.1f}% | {blunder_txt}"
                         impatto_bonus = f"Imbattibilità: +{imb_b:.2f} pt (xGS: -{exp_gs:.2f}) | CS: {cs_p}%"
                         motivo = f"Shot-stopping d'élite ({gp:+.2f} gol evitati vs PSxG, {parate_p:.1f}% parate) e tenuta difensiva ({def_xga:.2f} xGA contro {t['Match']})."
-                    elif any(r in slot_n for r in ['Dc', 'Dd', 'Ds', 'B']):
+                    elif any(r in slot_n for r in ['Dc', 'Dd', 'Ds', 'B', 'D']):
                         metrica_chiave = f"🛡️ Sufficienza: {suff_v:.1f}% (>=6) | MV: {mv_v:.2f}"
                         impatto_bonus = f"D-Factor Reparto (Voto atteso: {t['Pred_Voto']})"
                         motivo = f"Pilastro difensivo: garantisce costanza di voto ({suff_v:.1f}% >= 6) per massimizzare il bonus D-Factor."
@@ -1233,7 +1274,7 @@ with tab_formazione:
                         'Slot': slot_n,
                         'Calciatore': t['Giocatore'],
                         'Squadra': t['Squadra'],
-                        'Ruoli': t['RuoloMantra'],
+                        'Ruoli': t.get('RuoloClassic' if is_classic else 'RuoloMantra', ''),
                         'Avversario (FDR)': f"{t['Match']} (FDR {t['FDR']})",
                         'Titolarità P(Voto)': tit_display,
                         'Metrica Chiave di Ruolo': metrica_chiave,
@@ -1253,8 +1294,8 @@ with tab_formazione:
                     ballottaggi = []
                     
                     # 1. Ballottaggio Portiere
-                    por_tit = [t for t in titolari_list if t['Slot_Assegnato'] == 'Por']
-                    por_bench = [b for b in opt_res['Panchina'] if 'Por' in b.get('RuoloMantra', '')]
+                    por_tit = [t for t in titolari_list if t['Slot_Assegnato'] in ['Por', 'P']]
+                    por_bench = [b for b in opt_res['Panchina'] if ('Por' in b.get('RuoloMantra', '')) or (b.get('RuoloClassic') == 'P')]
                     if por_tit and por_bench:
                         pt = por_tit[0]
                         pb = por_bench[0]
@@ -1311,63 +1352,86 @@ with tab_formazione:
                         )
                         
                     # 2. Scelte d'Attacco e Ballottaggi di Reparto
-                    att_tits = [t for t in titolari_list if any(r in t.get('Slot_Assegnato', '') for r in ['Pc', 'A', 'W', 'W/A', 'A/Pc'])]
-                    att_bench = [b for b in opt_res['Panchina'] if any(r in parse_mantra_roles(b.get('RuoloMantra', '')) for r in ['Pc', 'A', 'W', 'W/T'])]
-                    
-                    if att_tits and att_bench:
-                        first_bench_att = att_bench[0]
-                        pc_in_tit = [t for t in att_tits if 'Pc' in parse_mantra_roles(t.get('RuoloMantra', ''))]
-                        
-                        if len(pc_in_tit) >= 2:
-                            # Doppia Punta Centrale schierata
-                            names_pc = " & ".join([f"**{p['Giocatore']}** ({p['xFV']} xFV)" for p in pc_in_tit])
-                            ballottaggi.append(
-                                f"⚽ **Tandem d'Attacco (Doppia Pc autorizzata nel modulo {opt_res['Modulo']})**: Schierati titolari insieme {names_pc}. "
-                                f"**{first_bench_att['Giocatore']}** ({first_bench_att.get('RuoloMantra', '')}, {first_bench_att['xFV']} xFV) si posiziona in panchina come 1° cambio offensivo con massimo punteggio di subentro (EV {first_bench_att.get('Score_Panchina', 0):.2f})."
-                            )
-                        elif pc_in_tit and any('Pc' in parse_mantra_roles(b.get('RuoloMantra', '')) for b in att_bench):
-                            pc_b = [b for b in att_bench if 'Pc' in parse_mantra_roles(b.get('RuoloMantra', ''))][0]
-                            diff_pc = round(float(pc_in_tit[0].get('xFV', 0)) - float(pc_b.get('xFV', 0)), 2)
-                            xg_tit = float(pc_in_tit[0].get('xG_90', 0.0))
-                            xg_b = float(pc_b.get('xG_90', 0.0))
-                            tiri_tit = float(pc_in_tit[0].get('Tiri_90', 0.0))
-                            tiri_b = float(pc_b.get('Tiri_90', 0.0))
-                            ballottaggi.append(
-                                f"⚽ **Punta Centrale (Slot Pc)**: **{pc_in_tit[0]['Giocatore']}** ({pc_in_tit[0]['xFV']} xFV, {xg_tit:.2f} xG/90, {tiri_tit:.1f} tiri/90) "
-                                f"ha vinto il ballottaggio su **{pc_b['Giocatore']}** ({pc_b['xFV']} xFV, diff: {diff_pc:+} pt, {xg_b:.2f} xG/90, {tiri_b:.1f} tiri/90) "
-                                f"per maggior volume offensivo e titolarità contro {pc_in_tit[0].get('Match')}."
-                            )
-                        else:
+                    if is_classic:
+                        att_tits = [t for t in titolari_list if t.get('Slot_Assegnato') == 'A']
+                        att_bench = [b for b in opt_res['Panchina'] if b.get('RuoloClassic') == 'A']
+                        if att_tits and att_bench:
                             lowest_tit_att = min(att_tits, key=lambda x: float(x.get('xFV', 0)))
+                            first_bench_att = att_bench[0]
                             diff_att = round(float(lowest_tit_att.get('xFV', 0)) - float(first_bench_att.get('xFV', 0)), 2)
                             ballottaggi.append(
-                                f"⚽ **Reparto Offensivo**: **{lowest_tit_att['Giocatore']}** ({lowest_tit_att['xFV']} xFV) "
-                                f"ha superato **{first_bench_att['Giocatore']}** ({first_bench_att['xFV']} xFV, diff: {diff_att:+} pt) "
-                                f"in base alla configurazione tattica ottimale per il modulo **{opt_res['Modulo']}**."
+                                f"⚽ **Reparto Attacco Classic**: **{lowest_tit_att['Giocatore']}** ({lowest_tit_att['xFV']} xFV) "
+                                f"schierato titolare rispetto a **{first_bench_att['Giocatore']}** ({first_bench_att['xFV']} xFV, diff: {diff_att:+} pt) "
+                                f"per miglior proiezione e titolarità contro {lowest_tit_att.get('Match')}."
                             )
+                    else:
+                        att_tits = [t for t in titolari_list if any(r in t.get('Slot_Assegnato', '') for r in ['Pc', 'A', 'W', 'W/A', 'A/Pc'])]
+                        att_bench = [b for b in opt_res['Panchina'] if any(r in parse_mantra_roles(b.get('RuoloMantra', '')) for r in ['Pc', 'A', 'W', 'W/T'])]
                         
-                    # 3. Equilibratore Tattico Mediano (Slot M obbligatorio)
-                    m_tit = [t for t in titolari_list if t.get('Slot_Assegnato') == 'M']
-                    if m_tit:
-                        mt = m_tit[0]
-                        ballottaggi.append(
-                            f"🛡️ **Mediano Tattico (Slot M Obbligatorio)**: **{mt['Giocatore']}** ({mt['RuoloMantra']}) "
-                            f"schierato come mediano di rottura obbligatorio per garantire la validità del modulo **{opt_res['Modulo']}**, "
-                            f"mentre i centrocampisti offensivi (es. Adzic `C;T`) vengono valorizzati come mezzali d'inserimento o trequartisti."
-                        )
+                        if att_tits and att_bench:
+                            first_bench_att = att_bench[0]
+                            pc_in_tit = [t for t in att_tits if 'Pc' in parse_mantra_roles(t.get('RuoloMantra', ''))]
+                            
+                            if len(pc_in_tit) >= 2:
+                                # Doppia Punta Centrale schierata
+                                names_pc = " & ".join([f"**{p['Giocatore']}** ({p['xFV']} xFV)" for p in pc_in_tit])
+                                ballottaggi.append(
+                                    f"⚽ **Tandem d'Attacco (Doppia Pc autorizzata nel modulo {opt_res['Modulo']})**: Schierati titolari insieme {names_pc}. "
+                                    f"**{first_bench_att['Giocatore']}** ({first_bench_att.get('RuoloMantra', '')}, {first_bench_att['xFV']} xFV) si posiziona in panchina come 1° cambio offensivo con massimo punteggio di subentro (EV {first_bench_att.get('Score_Panchina', 0):.2f})."
+                                )
+                            elif pc_in_tit and any('Pc' in parse_mantra_roles(b.get('RuoloMantra', '')) for b in att_bench):
+                                pc_b = [b for b in att_bench if 'Pc' in parse_mantra_roles(b.get('RuoloMantra', ''))][0]
+                                diff_pc = round(float(pc_in_tit[0].get('xFV', 0)) - float(pc_b.get('xFV', 0)), 2)
+                                xg_tit = float(pc_in_tit[0].get('xG_90', 0.0))
+                                xg_b = float(pc_b.get('xG_90', 0.0))
+                                tiri_tit = float(pc_in_tit[0].get('Tiri_90', 0.0))
+                                tiri_b = float(pc_b.get('Tiri_90', 0.0))
+                                ballottaggi.append(
+                                    f"⚽ **Punta Centrale (Slot Pc)**: **{pc_in_tit[0]['Giocatore']}** ({pc_in_tit[0]['xFV']} xFV, {xg_tit:.2f} xG/90, {tiri_tit:.1f} tiri/90) "
+                                    f"ha vinto il ballottaggio su **{pc_b['Giocatore']}** ({pc_b['xFV']} xFV, diff: {diff_pc:+} pt, {xg_b:.2f} xG/90, {tiri_b:.1f} tiri/90) "
+                                    f"per maggior volume offensivo e titolarità contro {pc_in_tit[0].get('Match')}."
+                                )
+                            else:
+                                lowest_tit_att = min(att_tits, key=lambda x: float(x.get('xFV', 0)))
+                                diff_att = round(float(lowest_tit_att.get('xFV', 0)) - float(first_bench_att.get('xFV', 0)), 2)
+                                ballottaggi.append(
+                                    f"⚽ **Reparto Offensivo**: **{lowest_tit_att['Giocatore']}** ({lowest_tit_att['xFV']} xFV) "
+                                    f"ha superato **{first_bench_att['Giocatore']}** ({first_bench_att['xFV']} xFV, diff: {diff_att:+} pt) "
+                                    f"in base alla configurazione tattica ottimale per il modulo **{opt_res['Modulo']}**."
+                                )
+                        
+                    # 3. Equilibratore Tattico Mediano (Slot M obbligatorio - solo Mantra)
+                    if not is_classic:
+                        m_tit = [t for t in titolari_list if t.get('Slot_Assegnato') == 'M']
+                        if m_tit:
+                            mt = m_tit[0]
+                            ballottaggi.append(
+                                f"🛡️ **Mediano Tattico (Slot M Obbligatorio)**: **{mt['Giocatore']}** ({mt['RuoloMantra']}) "
+                                f"schierato come mediano di rottura obbligatorio per garantire la validità del modulo **{opt_res['Modulo']}**, "
+                                f"mentre i centrocampisti offensivi (es. Adzic `C;T`) vengono valorizzati come mezzali d'inserimento o trequartisti."
+                            )
                         
                     for b_text in ballottaggi:
                         st.markdown(f"- {b_text}")
 
-            # Bench Section - Modalità MASTER
+            # Bench Section
             st.markdown("---")
-            st.subheader("🟡 Panchina Ufficiale Modalità MASTER - Ordine Posizionale Rigoroso (1-12)")
-            st.info(
-                "📋 **Regolamento Modalità MASTER Fantacalcio.it**: "
-                "Comanda totalmente l'ordine di panchina (1-12). Se un titolare non prende voto (S.V./N.G.), "
-                "il sistema scorre la panchina ed entra **sempre il primo calciatore a voto che configura un modulo valido** tra i 10 Mantra ufficiali. "
-                "Numero massimo di sostituzioni consentite per incontro: **5**."
-            )
+            if is_classic:
+                st.subheader("🟡 Panchina Ufficiale Classic - Ordine Posizionale Rigoroso (1-12)")
+                st.info(
+                    "📋 **Regolamento Modalità Classic Fantacalcio.it**: "
+                    "Comanda totalmente l'ordine di panchina (1-12). Se un titolare non prende voto (S.V./N.G.), "
+                    "subentra il primo panchinaro a voto dello stesso ruolo o compatibile con un modulo valido Classic. "
+                    "Numero massimo di sostituzioni consentite per incontro: **5**."
+                )
+            else:
+                st.subheader("🟡 Panchina Ufficiale Modalità MASTER - Ordine Posizionale Rigoroso (1-12)")
+                st.info(
+                    "📋 **Regolamento Modalità MASTER Fantacalcio.it**: "
+                    "Comanda totalmente l'ordine di panchina (1-12). Se un titolare non prende voto (S.V./N.G.), "
+                    "il sistema scorre la panchina ed entra **sempre il primo calciatore a voto che configura un modulo valido** tra i 10 Mantra ufficiali. "
+                    "Numero massimo di sostituzioni consentite per incontro: **5**."
+                )
 
             df_panchina = pd.DataFrame(opt_res['Panchina'])
             if not df_panchina.empty:
@@ -1386,7 +1450,7 @@ with tab_formazione:
                         'Fascia Subentro': b.get('Fascia_Master', 'Rincalzo'),
                         'Calciatore': b.get('Giocatore', ''),
                         'Squadra': b.get('Squadra', ''),
-                        'Ruoli': b.get('RuoloMantra', ''),
+                        'Ruoli': b.get('RuoloClassic' if is_classic else 'RuoloMantra', ''),
                         'Match (FDR)': f"{b.get('Match', '')} (FDR {b.get('FDR', 3)})",
                         'P(Voto ≥ 6 o Bonus)': f"{prob_voto6_bonus:.1f}%",
                         'Voto Atteso (Suff)': f"{pred_v:.2f} ({pct_suff:.0f}% >=6)",
@@ -1404,7 +1468,7 @@ with tab_formazione:
                 )
 
             # Interactive Master Substitution Simulator & Departmental Audit Expander
-            with st.expander("🛡️ Simulatore & Stress-Test Sostituzioni MASTER (Cosa succede se manca un titolare?)", expanded=True):
+            with st.expander(f"🛡️ Simulatore & Stress-Test Sostituzioni {'Classic' if is_classic else 'MASTER'} (Cosa succede se manca un titolare?)", expanded=True):
                 st.markdown(
                     "Verifica la tenuta tattica della panchina. L'algoritmo testa se la sequenza 1-12 garantisce "
                     "la copertura automatica per qualsiasi defezione dell'11 titolare."
@@ -1417,7 +1481,7 @@ with tab_formazione:
 
                 st.markdown("---")
                 st.markdown("##### 🎮 Simulatore Interattivo Forfait / S.V. in Tempo Reale")
-                st.markdown("Seleziona uno o più titolari per simulare un'assenza e osservare in diretta la catena di subentro ufficiale MASTER:")
+                st.markdown(f"Seleziona uno o più titolari per simulare un'assenza e osservare in diretta la catena di subentro ufficiale {'Classic' if is_classic else 'MASTER'}:")
                 
                 starter_options = [t['Giocatore'] for t in titolari_list]
                 sim_absent = st.multiselect(
@@ -1428,13 +1492,22 @@ with tab_formazione:
                 )
                 
                 if sim_absent:
-                    sim_result = simulate_master_substitutions(
-                        titolari_list,
-                        opt_res['Panchina'],
-                        opt_res['Modulo'],
-                        max_subs=5,
-                        simulated_missing_names=sim_absent
-                    )
+                    if is_classic:
+                        sim_result = simulate_classic_substitutions(
+                            titolari_list,
+                            opt_res['Panchina'],
+                            opt_res['Modulo'],
+                            max_subs=5,
+                            simulated_missing_names=sim_absent
+                        )
+                    else:
+                        sim_result = simulate_master_substitutions(
+                            titolari_list,
+                            opt_res['Panchina'],
+                            opt_res['Modulo'],
+                            max_subs=5,
+                            simulated_missing_names=sim_absent
+                        )
                     
                     st.markdown(f"**Esito Simulazione: {sim_result['Cambi_Effettuati']} cambi effettuati su {len(sim_absent)} assenze simulate (Massimo 5 consentiti)**")
                     
@@ -1463,7 +1536,7 @@ with tab_formazione:
                     st.caption("💡 *Seleziona uno o più giocatori dal menu a tendina qui sopra per simulare il loro forfait e vedere l'adattamento del modulo.*")
 
             # Formations Comparison Section
-            with st.expander("📊 Confronto con gli altri moduli Mantra valutati", expanded=False):
+            with st.expander(f"📊 Confronto con gli altri moduli {'Classic' if is_classic else 'Mantra'} valutati", expanded=False):
                 df_all_moduli = pd.DataFrame(opt_res['Tutti_Moduli_Valutati'])
                 display_cols = ['Modulo', 'Punti_Totali', 'Delta_vs_Top', 'Stato_Copertura', 'xFV_Titolari', 'D_Factor', 'Punti_Robusti']
                 cols_to_show = [c for c in display_cols if c in df_all_moduli.columns]
@@ -1487,7 +1560,7 @@ with tab_formazione:
 # TAB 3: HUB SCAMBI & OTTIMIZZAZIONE ROSA
 # =============================================================
 with tab_scambi:
-    st.header("🔄 Hub Scambi & Ottimizzazione Rosa Mantra")
+    st.header(f"🔄 Hub Scambi & Ottimizzazione Rosa {'Classic' if is_classic else 'Mantra'}")
     st.markdown(
         "Diagnostica i punti deboli strutturali della tua squadra, individua gli esuberi di fanta-valore "
         "e scopri le proposte di scambio **Win-Win** con i tuoi avversari di lega generate dall'algoritmo."
@@ -1506,7 +1579,7 @@ with tab_scambi:
     with subtab_diag:
         st.subheader("🏥 Check-up Strutturale & Analisi Carenze di Modulo")
         st.caption(
-            "L'algoritmo analizza la distribuzione dei ruoli Mantra, i giocatori con presenze continuative, "
+            f"L'algoritmo analizza la distribuzione dei ruoli {'Classic' if is_classic else 'Mantra'}, i giocatori con presenze continuative, "
             "la qualità media e la copertura del D-Factor per evidenziare rischi di squilibrio tattico."
         )
         
@@ -1524,7 +1597,11 @@ with tab_scambi:
             st.write("")
             st.caption(f"Squadra attiva dell'utente: **{my_team}**")
             
-        diag_res = cached_analyze_squad_weaknesses(target_diag_team, _league_signature(league_dict), selected_giornata, current_code_version, league_dict, df_master)
+        diag_res = cached_analyze_squad_weaknesses(
+            target_diag_team, _league_signature(league_dict, active_league_type),
+            selected_giornata, current_code_version, league_dict, df_master,
+            league_type=active_league_type
+        )
         
         if 'error' in diag_res:
             st.error(diag_res['error'])
@@ -1602,8 +1679,9 @@ with tab_scambi:
             surplus = diag_res.get('Surplus_Cedibili', [])
             if surplus:
                 df_surplus = pd.DataFrame(surplus)
+                s_role_col = 'RuoloClassic' if is_classic and 'RuoloClassic' in df_surplus.columns else 'RuoloMantra'
                 st.dataframe(
-                    df_surplus[['Giocatore', 'RuoloMantra', 'Squadra', 'xFV', 'FM_Stagione', 'Signal', 'Motivo_Cessione']],
+                    df_surplus[['Giocatore', s_role_col, 'Squadra', 'xFV', 'FM_Stagione', 'Signal', 'Motivo_Cessione']],
                     width='stretch',
                     hide_index=True
                 )
@@ -1611,11 +1689,12 @@ with tab_scambi:
                 st.info("Nessun calciatore di rilievo attualmente in esubero.")
                 
             # Quota Coverage Matrix
-            with st.expander("📐 Matrice di Copertura Ruoli Mantra (Quote Consigliate vs Attivi)", expanded=False):
+            with st.expander(f"📐 Matrice di Copertura Ruoli {'Classic' if is_classic else 'Mantra'} (Quote Consigliate vs Attivi)", expanded=False):
                 matrix_rows = []
                 c_all = diag_res.get('Conteggio_Totale', {})
                 c_act = diag_res.get('Conteggio_Attivi', {})
-                for role, q in RECOMMENDED_QUOTAS.items():
+                quotas_to_show = RECOMMENDED_QUOTAS_CLASSIC if is_classic else RECOMMENDED_QUOTAS
+                for role, q in quotas_to_show.items():
                     act = c_act.get(role, 0)
                     tot = c_all.get(role, 0)
                     min_q = q['min_active']
@@ -1655,14 +1734,18 @@ with tab_scambi:
         my_team = get_active_my_team()
         
         # Pre-compute diagnosi for filters
-        my_diag = cached_analyze_squad_weaknesses(my_team, _league_signature(league_dict), selected_giornata, current_code_version, league_dict, df_master)
+        my_diag = cached_analyze_squad_weaknesses(
+            my_team, _league_signature(league_dict, active_league_type),
+            selected_giornata, current_code_version, league_dict, df_master,
+            league_type=active_league_type
+        )
         my_weak_roles = [w['Ruolo'] for w in my_diag.get('Punti_Deboli', [])]
         surplus_pnames = [p['Giocatore'] for p in my_diag.get('Surplus_Cedibili', [])]
         
         r_col1, r_col2, r_col3, r_col4, r_col5 = st.columns([1.1, 1.1, 1.2, 1.3, 1.3])
         with r_col1:
-            all_mantra_roles = ['Por', 'Dc', 'B', 'Dd', 'Ds', 'E', 'M', 'C', 'W', 'T', 'A', 'Pc']
-            target_role_opts = ["TUTTI"] + list(dict.fromkeys(my_weak_roles + all_mantra_roles))
+            all_roles = ['P', 'D', 'C', 'A'] if is_classic else ['Por', 'Dc', 'B', 'Dd', 'Ds', 'E', 'M', 'C', 'W', 'T', 'A', 'Pc']
+            target_role_opts = ["TUTTI"] + list(dict.fromkeys(my_weak_roles + all_roles))
             selected_target_role = st.selectbox(
                 "Ruolo che vuoi RICEVERE:",
                 options=target_role_opts,
@@ -1716,10 +1799,11 @@ with tab_scambi:
         with st.spinner("Scansione rose avversarie e calcolo scambi Win-Win in corso..."):
             try:
                 proposals = cached_find_win_win_trades(
-                    my_team, _league_signature(league_dict), selected_giornata,
+                    my_team, _league_signature(league_dict, active_league_type), selected_giornata,
                     selected_target_role, selected_give_player, selected_opp_team,
                     selected_starter_filter, selected_format_filter, 30,
-                    current_code_version, league_dict, df_master
+                    current_code_version, league_dict, df_master,
+                    league_type=active_league_type
                 )
             except TypeError:
                 # Fallback for cached or legacy function signatures
@@ -1733,7 +1817,8 @@ with tab_scambi:
                         give_player_filter=selected_give_player,
                         opp_team_filter=selected_opp_team,
                         min_starter_filter=selected_starter_filter,
-                        max_proposals=30
+                        max_proposals=30,
+                        league_type=active_league_type
                     )
                 except Exception as inner_e:
                     import traceback
@@ -1924,7 +2009,7 @@ with tab_scambi:
             label_to_pname = {}
             for _, r_opp in opp_owned_df.iterrows():
                 pname = r_opp['Giocatore']
-                roles = r_opp.get('RuoloMantra', '')
+                roles = r_opp.get('RuoloClassic' if is_classic else 'RuoloMantra', '')
                 costo = int(r_opp.get('Costo', 0))
                 fm = float(r_opp.get('FM_Stagione', 0.0))
                 label = f"{pname} ({roles}) — {r_opp.get('Squadra', '')} [Costo {costo}, FM {fm:.2f}]"
@@ -1963,7 +2048,11 @@ with tab_scambi:
 
             # Show Instant Rival Check-up Card
             with st.expander(f"🔍 Check-up Immediato Carenze di {target_opp_team} (Perché dovrebbero accettare)", expanded=False):
-                opp_diag = cached_analyze_squad_weaknesses(target_opp_team, _league_signature(league_dict), selected_giornata, current_code_version, league_dict, df_master)
+                opp_diag = cached_analyze_squad_weaknesses(
+                    target_opp_team, _league_signature(league_dict, active_league_type),
+                    selected_giornata, current_code_version, league_dict, df_master,
+                    league_type=active_league_type
+                )
                 opp_w = opp_diag.get('Punti_Deboli', [])
                 if opp_w:
                     st.markdown(f"**Criticità emerse nella rosa di {target_opp_team}:**")
@@ -1988,7 +2077,8 @@ with tab_scambi:
                         df_master=df_master,
                         matchday=selected_giornata,
                         allow_starters=allow_starters_flag,
-                        package_types=chosen_pkg_types
+                        package_types=chosen_pkg_types,
+                        league_type=active_league_type
                     )
 
                 if not target_proposals:
@@ -2396,7 +2486,7 @@ with tab_scambi:
 # TAB 4: TUTTE LE ROSE & LEGA
 # =============================================================
 with tab_lega:
-    st.header("👥 Tutte le Rose & Partecipanti della Lega")
+    st.header(f"👥 Tutte le Rose & Partecipanti della Lega ({'Classic' if is_classic else 'Mantra'})")
     st.markdown("Esplora e confronta le rose di tutte le 12 squadre della lega per pianificare strategie, prestiti e scambi mirati.")
     
     # League Summary Table
@@ -2498,10 +2588,14 @@ with tab_lega:
         c_i1.metric("Giocatori in Rosa", len(df_inspect))
         c_i2.metric("Spesa d'Asta Totale", f"{int(df_inspect['Costo'].sum())} cr")
         c_i3.metric("FantaMedia Squadra", round(df_inspect['FM_Stagione'].mean(), 2))
-        c_i4.metric("Punte Pc Disponibili", len(df_inspect[df_inspect['RuoloMantra'].str.contains('Pc', na=False)]))
+        if is_classic:
+            c_i4.metric("Attaccanti (A) Disponibili", len(df_inspect[df_inspect['RuoloClassic'] == 'A']) if 'RuoloClassic' in df_inspect.columns else 0)
+        else:
+            c_i4.metric("Punte Pc Disponibili", len(df_inspect[df_inspect['RuoloMantra'].str.contains('Pc', na=False)]))
         
+        insp_role_col = 'RuoloClassic' if is_classic else 'RuoloMantra'
         cols_inspect = [
-            'Badge_Prestito', 'Giocatore', 'Dettaglio_Prestito', 'Squadra', 'RuoloMantra', 'Costo', 'Presenze',
+            'Badge_Prestito', 'Giocatore', 'Dettaglio_Prestito', 'Squadra', insp_role_col, 'Costo', 'Presenze',
             'MV_Stagione', 'FM_Stagione', 'xG_90', 'xA_90', 'Delta_xG', 'Signal'
         ]
         cols_inspect = [c for c in cols_inspect if c in df_inspect.columns]

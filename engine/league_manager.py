@@ -70,8 +70,11 @@ def ensure_default_league_migrated():
         registry[default_league_id] = {
             "id": default_league_id,
             "name": "Lega Principale",
+            "type": "mantra",
             "created_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }
+    elif 'type' not in registry[default_league_id]:
+        registry[default_league_id]['type'] = 'mantra'
         try:
             with open(REGISTRY_FILE, 'w', encoding='utf-8') as f:
                 json.dump(registry, f, indent=2, ensure_ascii=False)
@@ -159,6 +162,103 @@ def get_active_league_id():
     return list(leagues.keys())[0] if leagues else "Lega_Principale"
 
 
+def get_league_type(league_id=None):
+    """
+    Returns 'mantra' or 'classic' for the active or specified league.
+    Prioritizes session state -> query params -> league config -> registry -> fallback ('mantra').
+    """
+    try:
+        import streamlit as st
+        if 'active_league_type' in st.session_state and st.session_state['active_league_type']:
+            return st.session_state['active_league_type'].lower()
+        if hasattr(st, 'query_params'):
+            param_t = st.query_params.get('mode') or st.query_params.get('type')
+            if isinstance(param_t, list) and len(param_t) > 0:
+                param_t = param_t[0]
+            if param_t and param_t.lower() in ['mantra', 'classic']:
+                st.session_state['active_league_type'] = param_t.lower()
+                return param_t.lower()
+    except Exception:
+        pass
+
+    paths = get_league_paths(league_id)
+    if os.path.exists(paths['config']):
+        try:
+            with open(paths['config'], 'r', encoding='utf-8') as f:
+                cfg = json.load(f)
+                lt = cfg.get('league_type')
+                if lt and lt.lower() in ['mantra', 'classic']:
+                    return lt.lower()
+        except Exception:
+            pass
+
+    leagues = get_available_leagues()
+    lid = league_id or get_active_league_id()
+    if lid in leagues and 'type' in leagues[lid]:
+        lt = leagues[lid]['type']
+        if lt and lt.lower() in ['mantra', 'classic']:
+            return lt.lower()
+
+    return 'mantra'
+
+
+def set_league_type(league_type, persist_disk=True, league_id=None):
+    """
+    Sets the league type to 'mantra' or 'classic'.
+    Updates session_state, URL query params, league_config.json, and leagues_registry.json.
+    """
+    lt = str(league_type).strip().lower()
+    if lt not in ['mantra', 'classic']:
+        lt = 'mantra'
+
+    try:
+        import streamlit as st
+        st.session_state['active_league_type'] = lt
+        if hasattr(st, 'query_params'):
+            st.query_params['mode'] = lt
+    except Exception:
+        pass
+
+    if persist_disk:
+        paths = get_league_paths(league_id)
+        cfg = {}
+        if os.path.exists(paths['config']):
+            try:
+                with open(paths['config'], 'r', encoding='utf-8') as f:
+                    cfg = json.load(f)
+            except Exception:
+                cfg = {}
+        cfg['league_type'] = lt
+        try:
+            with open(paths['config'], 'w', encoding='utf-8') as f:
+                json.dump(cfg, f, indent=2)
+        except Exception:
+            pass
+
+        lid = league_id or get_active_league_id()
+        reg = get_available_leagues()
+        if lid in reg:
+            reg[lid]['type'] = lt
+            try:
+                with open(REGISTRY_FILE, 'w', encoding='utf-8') as f:
+                    json.dump(reg, f, indent=2, ensure_ascii=False)
+            except Exception:
+                pass
+
+        try:
+            root_cfg = {}
+            if os.path.exists(ROOT_CONFIG_FILE):
+                with open(ROOT_CONFIG_FILE, 'r', encoding='utf-8') as f:
+                    root_cfg = json.load(f)
+            root_cfg['league_type'] = lt
+            with open(ROOT_CONFIG_FILE, 'w', encoding='utf-8') as f:
+                json.dump(root_cfg, f, indent=2)
+        except Exception:
+            pass
+
+    return lt
+
+
 def get_league_paths(league_id=None):
     """Returns a dict of filesystem paths for a specific league or the currently active league."""
     ensure_default_league_migrated()
@@ -189,20 +289,29 @@ def set_active_league_id(league_id, persist_disk=True):
 
     paths = get_league_paths(league_id)
 
-    # Read configured team for this league
+    # Read configured team and league_type for this league
     league_team = None
+    league_type = 'mantra'
     if os.path.exists(paths['config']):
         try:
             with open(paths['config'], 'r', encoding='utf-8') as f:
-                league_team = json.load(f).get('my_team')
+                cfg = json.load(f)
+                league_team = cfg.get('my_team')
+                league_type = cfg.get('league_type', 'mantra')
         except Exception:
             pass
+    else:
+        reg = get_available_leagues()
+        if league_id in reg:
+            league_type = reg[league_id].get('type', 'mantra')
 
     try:
         import streamlit as st
         st.session_state['active_league_id'] = league_id
+        st.session_state['active_league_type'] = league_type
         if hasattr(st, 'query_params'):
             st.query_params['league'] = league_id
+            st.query_params['mode'] = league_type
         # Clear custom session override if user switches to a stored league
         st.session_state.pop('custom_league_data', None)
         st.session_state.pop('custom_league_meta', None)
@@ -256,14 +365,19 @@ def set_active_league_id(league_id, persist_disk=True):
     return league_id
 
 
-def create_new_league(display_name, parsed_rosters=None, my_team=None):
+def create_new_league(display_name, parsed_rosters=None, my_team=None, league_type='mantra'):
     """
     Creates a new league in the registry and filesystem, optionally initializing it with parsed rosters.
+    Supports setting league_type to 'mantra' or 'classic'.
     Returns (success, league_id, message).
     """
     name = str(display_name).strip()
     if not name:
         return False, None, "Il nome della lega non può essere vuoto."
+
+    lt = str(league_type).strip().lower()
+    if lt not in ['mantra', 'classic']:
+        lt = 'mantra'
 
     base_id = sanitize_league_id(name)
     registry = get_available_leagues()
@@ -281,6 +395,7 @@ def create_new_league(display_name, parsed_rosters=None, my_team=None):
     registry[league_id] = {
         "id": league_id,
         "name": name,
+        "type": lt,
         "created_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     }
 
@@ -304,9 +419,9 @@ def create_new_league(display_name, parsed_rosters=None, my_team=None):
         if not my_team and parsed_rosters:
             my_team = list(parsed_rosters.keys())[0]
 
-        if my_team and my_team in parsed_rosters:
-            with open(paths['config'], 'w', encoding='utf-8') as f:
-                json.dump({'my_team': my_team}, f, indent=2)
+        cfg_dict = {'my_team': my_team or '', 'league_type': lt}
+        with open(paths['config'], 'w', encoding='utf-8') as f:
+            json.dump(cfg_dict, f, indent=2)
             pnames = [p['Giocatore'] for p in parsed_rosters[my_team]]
             with open(paths['user_roster'], 'w', encoding='utf-8') as f:
                 json.dump(pnames, f, indent=2, ensure_ascii=False)
@@ -1381,6 +1496,16 @@ def render_league_upload_section(key_prefix, df_master, label_title="📥 Carica
                             key=f"{key_prefix}_new_league_name_input"
                         )
 
+                    current_ltype = get_league_type()
+                    regolamento_choice = st.radio(
+                        "Tipo di Regolamento per questa lega:",
+                        options=["Mantra (10 moduli tattici, ruoli specifici)", "Classic (P/D/C/A standard, moduli tradizionali)"],
+                        index=0 if current_ltype == 'mantra' else 1,
+                        horizontal=True,
+                        key=f"{key_prefix}_regolamento_choice"
+                    )
+                    chosen_type = 'classic' if "Classic" in regolamento_choice else 'mantra'
+
                     sel_col1, sel_col2 = st.columns([1.5, 1])
                     with sel_col1:
                         target_team = st.selectbox(
@@ -1417,24 +1542,25 @@ def render_league_upload_section(key_prefix, df_master, label_title="📥 Carica
                             st.rerun()
                         elif scope_choice.startswith("➕"):
                             nl_name = new_lg_custom_name.strip() or "Nuova Lega"
-                            ok, new_lid, msg = create_new_league(nl_name, parsed_data, target_team)
+                            ok, new_lid, msg = create_new_league(nl_name, parsed_data, target_team, league_type=chosen_type)
                             if ok:
                                 set_active_league_id(new_lid, persist_disk=True)
                                 set_active_my_team(target_team, persist_disk=True, league_id=new_lid)
                                 sync_user_roster_from_league(parsed_data, target_team, league_id=new_lid)
                                 st.session_state[saved_sig_key] = file_sig
-                                st.toast(f"🏆 {msg}", icon="🎉")
-                                st.success(f"🏆 Nuova lega '{nl_name}' creata con successo! Squadra attiva: **{target_team}**.")
+                                st.toast(f"🏆 {msg} ({chosen_type.upper()})", icon="🎉")
+                                st.success(f"🏆 Nuova lega '{nl_name}' ({chosen_type.upper()}) creata con successo! Squadra attiva: **{target_team}**.")
                                 st.rerun()
                             else:
                                 st.error(msg)
                         else:
                             save_league_rosters(parsed_data)
+                            set_league_type(chosen_type, persist_disk=True)
                             save_league_metadata(source=f"File caricato ({fname})", filename=fname)
                             set_active_my_team(target_team, persist_disk=True)
                             sync_user_roster_from_league(parsed_data, target_team)
                             st.session_state[saved_sig_key] = file_sig
-                            st.toast(f"✅ Lega '{curr_league_name}' aggiornata con successo!", icon="🏆")
+                            st.toast(f"✅ Lega '{curr_league_name}' aggiornata con successo ({chosen_type.upper()})!", icon="🏆")
                             st.rerun()
                         
                     # Preview of the chosen team
