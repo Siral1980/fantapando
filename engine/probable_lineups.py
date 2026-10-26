@@ -524,16 +524,19 @@ def build_consensus_probable_lineups():
     }
 
     gazzetta_teams = {}
-    try:
-        gazzetta_teams = scrape_gazzetta(all_names, team_map, expected_opponents=expected_opponents)
-    except Exception as e:
-        print(f"Warning scraping Gazzetta probable lineups: {e}")
-
     sky_res = {'matchday_sky': None, 'teams': {}}
-    try:
-        sky_res = scrape_sky_sport(all_names, team_map, expected_opponents=expected_opponents)
-    except Exception as e:
-        print(f"Warning scraping Sky Sport probable lineups: {e}")
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        fut_g = pool.submit(scrape_gazzetta, all_names, team_map, expected_opponents)
+        fut_s = pool.submit(scrape_sky_sport, all_names, team_map, expected_opponents)
+        try:
+            gazzetta_teams = fut_g.result(timeout=12)
+        except Exception as e:
+            print(f"Warning scraping Gazzetta probable lineups: {e}")
+        try:
+            sky_res = fut_s.result(timeout=12)
+        except Exception as e:
+            print(f"Warning scraping Sky Sport probable lineups: {e}")
 
     sky_teams = sky_res.get('teams', {})
 
@@ -777,3 +780,30 @@ def get_player_probable_info(player_name, lineups_data=None):
     if clean_p in players_map:
         return players_map[clean_p]
     return None
+
+
+def refresh_live_lineups_and_injuries():
+    """
+    Concurrently reloads both:
+    1) Live multi-source probable lineups (Fantacalcio.it + Gazzetta + Sky Sport)
+    2) Live injured, suspended, and booked players (Fantacalcio.it indisponibili)
+    """
+    from concurrent.futures import ThreadPoolExecutor
+    from engine.injuries_manager import fetch_live_injuries_from_fantacalcio
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        f_prob = pool.submit(load_probable_lineups, True)
+        f_inj = pool.submit(fetch_live_injuries_from_fantacalcio)
+        try:
+            prob_data = f_prob.result(timeout=18)
+        except Exception as e:
+            print(f"Error reloading probable lineups: {e}")
+            prob_data = load_probable_lineups(force_refresh=False)
+        try:
+            inj_data = f_inj.result(timeout=15)
+        except Exception as e:
+            print(f"Error reloading injuries: {e}")
+            inj_data = {}
+
+    return prob_data, inj_data
+

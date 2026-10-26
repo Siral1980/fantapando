@@ -1049,7 +1049,10 @@ def set_active_my_team(team_name, persist_disk=False, league_id=None):
             'sim_multiselect_give_all',
             'roster_player_card_select',
             'override_sel_p',
-            'bl_rival_sel'
+            'bl_rival_sel',
+            'lineup_force_starters',
+            'lineup_exclude_starters',
+            '_last_live_synced_team'
         ]
         for k in stale_keys:
             st.session_state.pop(k, None)

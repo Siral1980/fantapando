@@ -59,7 +59,7 @@ from engine.injuries_manager import (
     clear_all_manual_overrides, get_all_unavailable_players
 )
 from engine.probable_lineups import (
-    load_probable_lineups, get_player_probable_info
+    load_probable_lineups, get_player_probable_info, refresh_live_lineups_and_injuries
 )
 from engine.player_profile_view import (
     show_player_profile_dialog, render_player_profile_content
@@ -534,6 +534,14 @@ if league_teams:
 st.sidebar.markdown(f"**Rosa Attuale ({current_active_team})**: `{len(user_squad_names)} calciatori`")
 meta_sidebar = get_league_metadata()
 st.sidebar.caption(f"📅 **Rose di Lega:** {meta_sidebar.get('last_updated')}")
+
+# Automatic reload of Probable Lineups and Injuries/Suspensions every time the active team changes
+current_team_sync_key = f"{active_league}::{current_active_team}"
+if st.session_state.get('_last_live_synced_team') != current_team_sync_key:
+    with st.spinner(f"🔄 Aggiornamento Probabili Formazioni e Infortunati/Squalificati per {current_active_team}..."):
+        refresh_live_lineups_and_injuries()
+        st.cache_data.clear()
+    st.session_state['_last_live_synced_team'] = current_team_sync_key
 
 # Top-level calculation of df_my_roster so all tabs immediately inherit the active team
 df_my_roster = get_roster_dataframe(df_master, user_squad_names)
@@ -1034,10 +1042,10 @@ with tab_formazione:
             )
         with cp2:
             if st.button("🔄 Aggiorna Probabili Live", width='stretch', key="btn_refresh_prob_lineups"):
-                with st.spinner("Scaricamento Probabili Formazioni da Fantacalcio.it, Gazzetta e Sky Sport..."):
-                    load_probable_lineups(force_refresh=True)
+                with st.spinner("Scaricamento Probabili Formazioni e Infortuni/Squalifiche in corso..."):
+                    refresh_live_lineups_and_injuries()
                     st.cache_data.clear()
-                st.toast("Probabili formazioni aggiornate con successo!", icon="✅")
+                st.toast("Probabili formazioni e infortunati aggiornati con successo!", icon="✅")
                 st.rerun()
 
         # Predict xFV for current squad (automatically enriched with prob_cache)
