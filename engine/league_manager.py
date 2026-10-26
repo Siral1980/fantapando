@@ -105,18 +105,28 @@ def ensure_default_league_migrated():
     return registry
 
 
-def get_available_leagues():
-    """Returns dictionary of available leagues from registry."""
+def get_available_leagues(include_all_for_admin=False):
+    """Returns dictionary of available leagues from registry, filtered by current user permissions unless include_all_for_admin=True."""
     ensure_default_league_migrated()
+    reg = {"Lega_Principale": {"id": "Lega_Principale", "name": "Lega Principale", "type": "mantra"}}
     if os.path.exists(REGISTRY_FILE):
         try:
             with open(REGISTRY_FILE, 'r', encoding='utf-8') as f:
-                reg = json.load(f)
-                if isinstance(reg, dict) and len(reg) > 0:
-                    return reg
+                loaded = json.load(f)
+                if isinstance(loaded, dict) and len(loaded) > 0:
+                    reg = loaded
         except Exception:
             pass
-    return {"Lega_Principale": {"id": "Lega_Principale", "name": "Lega Principale"}}
+    if include_all_for_admin:
+        return reg
+    try:
+        from engine.auth_manager import filter_leagues_for_current_user
+        filtered = filter_leagues_for_current_user(reg)
+        if isinstance(filtered, dict):
+            return filtered
+    except Exception:
+        pass
+    return reg
 
 
 def get_active_league_id():
@@ -236,7 +246,7 @@ def set_league_type(league_type, persist_disk=True, league_id=None):
             pass
 
         lid = league_id or get_active_league_id()
-        reg = get_available_leagues()
+        reg = get_available_leagues(include_all_for_admin=True)
         if lid in reg:
             reg[lid]['type'] = lt
             try:
@@ -380,7 +390,7 @@ def create_new_league(display_name, parsed_rosters=None, my_team=None, league_ty
         lt = 'mantra'
 
     base_id = sanitize_league_id(name)
-    registry = get_available_leagues()
+    registry = get_available_leagues(include_all_for_admin=True)
 
     # Ensure unique ID
     league_id = base_id
@@ -392,15 +402,31 @@ def create_new_league(display_name, parsed_rosters=None, my_team=None, league_ty
     ldir = os.path.join(LEAGUES_DIR, league_id)
     os.makedirs(ldir, exist_ok=True)
 
+    owner_uname = "admin"
+    try:
+        from engine.auth_manager import get_current_user, grant_league_to_user
+        curr_u = get_current_user()
+        if curr_u and curr_u.get('username'):
+            owner_uname = curr_u['username']
+    except Exception:
+        pass
+
     registry[league_id] = {
         "id": league_id,
         "name": name,
         "type": lt,
+        "owner": owner_uname,
         "created_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     }
 
     with open(REGISTRY_FILE, 'w', encoding='utf-8') as f:
         json.dump(registry, f, indent=2, ensure_ascii=False)
+
+    try:
+        from engine.auth_manager import grant_league_to_user
+        grant_league_to_user(owner_uname, league_id)
+    except Exception:
+        pass
 
     paths = get_league_paths(league_id)
 
@@ -435,7 +461,7 @@ def delete_league(league_id):
     Deletes a league from registry and disk.
     Cannot delete if only 1 league exists.
     """
-    registry = get_available_leagues()
+    registry = get_available_leagues(include_all_for_admin=True)
     if len(registry) <= 1:
         return False, "Impossibile eliminare l'unica lega presente."
     if league_id not in registry:
@@ -992,6 +1018,17 @@ def get_active_my_team(league_id=None):
                 if not valid_teams or url_team in valid_teams:
                     st.session_state['active_my_team'] = url_team
                     return url_team
+
+        # 2b. Logged-in user's default team for this league
+        from engine.auth_manager import get_current_user
+        curr_u = get_current_user()
+        if curr_u:
+            lid_check = league_id or get_active_league_id()
+            def_teams = curr_u.get('default_team_by_league', {}) or {}
+            u_team = def_teams.get(lid_check)
+            if u_team and (not valid_teams or u_team in valid_teams):
+                st.session_state['active_my_team'] = u_team
+                return u_team
     except Exception:
         pass
 

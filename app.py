@@ -65,6 +65,11 @@ from engine.player_profile_view import (
     show_player_profile_dialog, render_player_profile_content
 )
 from engine.theme_helper import get_global_theme_css
+from engine.auth_manager import (
+    get_current_user, is_current_user_admin, render_login_screen,
+    load_users_db, create_or_update_user, delete_user_account,
+    is_running_on_localhost
+)
 
 # Page configuration
 st.set_page_config(
@@ -76,6 +81,12 @@ st.set_page_config(
 
 # Custom CSS with Soccer Pitch Background, High-Contrast Palette & Larger Typography
 st.markdown(get_global_theme_css(), unsafe_allow_html=True)
+
+# Authentication Gate (Auto-login on Localhost, Login Screen on Cloud or after Logout)
+current_user = get_current_user()
+if not current_user:
+    render_login_screen()
+    st.stop()
 
 def get_codebase_version():
     """Computes a fingerprint based on the latest modification timestamp of all source code files."""
@@ -264,15 +275,51 @@ if is_setup_mode:
 st.sidebar.title("⚽ FantaMantra AI")
 st.sidebar.caption("Statistical & Tactical Engine con D-Factor")
 
+# User Badge & Logout / Switch User
+u_role_badge = "👑 Admin" if is_current_user_admin() else "👤 Utente"
+u_env_badge = "💻 Localhost" if is_running_on_localhost() else "☁️ Cloud"
+u_col1, u_col2 = st.sidebar.columns([1.65, 1.0])
+with u_col1:
+    st.markdown(
+        f"<div style='background:rgba(30,41,59,0.85); border:1px solid #334155; border-radius:7px; padding:5px 9px; font-size:0.80rem; color:#e2e8f0;'>"
+        f"<b>{current_user.get('display_name', current_user.get('username'))}</b><br>"
+        f"<span style='color:#38bdf8; font-size:0.72rem;'>{u_role_badge} · {u_env_badge}</span></div>",
+        unsafe_allow_html=True
+    )
+with u_col2:
+    if st.button("🚪 Esci / Test", key="sb_btn_logout_switch", width='stretch', help="Esci o accedi con un altro account per testare la vista di un amico"):
+        st.session_state.pop('auth_username', None)
+        st.session_state.pop('active_league_id', None)
+        st.session_state.pop('active_my_team', None)
+        st.session_state['force_login_screen'] = True
+        st.rerun()
+
 # -------------------------------------------------------------
 # MULTI-LEAGUE SELECTOR & MANAGEMENT
 # -------------------------------------------------------------
 leagues_dict = get_available_leagues()
 league_ids = list(leagues_dict.keys())
+
+if not league_ids:
+    st.warning("⚠️ Il tuo account non ha ancora leghe associate.")
+    if is_current_user_admin() or current_user.get('can_create_leagues', False):
+        st.info("Usa il modulo qui sotto per creare la tua prima lega!")
+        with st.form("empty_user_new_league_form"):
+            new_lg_name_e = st.text_input("Nome della nuova lega:", placeholder="es. Fanta Amici 2026")
+            new_lg_mode_e = st.radio("Tipologia lega:", ["Mantra", "Classic"], horizontal=True)
+            if st.form_submit_button("➕ Crea Lega", type="primary"):
+                if new_lg_name_e.strip():
+                    ok_e, _, msg_e = create_new_league(new_lg_name_e.strip(), league_type=new_lg_mode_e.lower())
+                    if ok_e:
+                        st.success(msg_e)
+                        st.rerun()
+    st.stop()
+
 active_league = get_active_league_id()
 
 if active_league not in league_ids:
     active_league = league_ids[0]
+    set_active_league_id(active_league, persist_disk=False)
 
 curr_league_idx = league_ids.index(active_league)
 active_league_type = get_league_type(active_league)
@@ -284,11 +331,11 @@ selected_league_id = st.sidebar.selectbox(
     index=curr_league_idx,
     format_func=lambda x: f"🏆 {leagues_dict.get(x, {}).get('name', x)} ({'🟢 Classic' if leagues_dict.get(x, {}).get('type') == 'classic' else '🔴 Mantra'})",
     key="sb_active_league_select",
-    help="Seleziona la lega da visualizzare e gestire. I dati delle rose, le formazioni e gli scambi sono completamente isolati tra leghe diverse."
+    help="Seleziona la lega da visualizzare e gestire. Ogni utente vede esclusivamente le leghe abilitate per il suo profilo."
 )
 
 if selected_league_id != active_league:
-    set_active_league_id(selected_league_id, persist_disk=True)
+    set_active_league_id(selected_league_id, persist_disk=is_current_user_admin())
     st.rerun()
 
 # 1-Click Toggle Mantra / Classic
@@ -302,31 +349,34 @@ with col_m2:
     target_mode = "mantra" if is_classic else "classic"
     btn_label = "Passa a Mantra" if is_classic else "Passa a Classic"
     if st.button(btn_label, key="sb_btn_toggle_mode", width='stretch', help=f"Cambia la modalità di gioco di {leagues_dict[active_league]['name']}"):
-        set_league_type(target_mode)
+        set_league_type(target_mode, persist_disk=is_current_user_admin())
         st.rerun()
 
 with st.sidebar.expander("⚙️ Gestione Leghe", expanded=False):
     st.markdown(f"**Lega corrente**: `{leagues_dict[active_league]['name']}` (`{active_league}`) — *{'Modalità Classic' if is_classic else 'Modalità Mantra'}*")
     st.caption(f"🔗 Link diretto a questa lega: `?league={active_league}&mode={active_league_type}`")
     
-    st.markdown("---")
-    st.markdown("**➕ Crea Nuova Lega**")
-    with st.form("new_league_form"):
-        new_lg_name = st.text_input("Nome della nuova lega:", placeholder="es. Fanta Amici 2026")
-        new_lg_mode = st.radio("Tipologia lega:", ["Mantra", "Classic"], horizontal=True, key="new_lg_mode_radio")
-        create_btn = st.form_submit_button("Crea Nuova Lega", type="primary")
-        if create_btn:
-            if not new_lg_name.strip():
-                st.warning("Inserisci un nome valido.")
-            else:
-                ok, new_lid, msg = create_new_league(new_lg_name.strip(), league_type=new_lg_mode.lower())
-                if ok:
-                    st.success(msg)
-                    st.rerun()
+    if is_current_user_admin() or current_user.get('can_create_leagues', False):
+        st.markdown("---")
+        st.markdown("**➕ Crea Nuova Lega**")
+        with st.form("new_league_form"):
+            new_lg_name = st.text_input("Nome della nuova lega:", placeholder="es. Fanta Amici 2026")
+            new_lg_mode = st.radio("Tipologia lega:", ["Mantra", "Classic"], horizontal=True, key="new_lg_mode_radio")
+            create_btn = st.form_submit_button("Crea Nuova Lega", type="primary")
+            if create_btn:
+                if not new_lg_name.strip():
+                    st.warning("Inserisci un nome valido.")
                 else:
-                    st.error(msg)
+                    ok, new_lid, msg = create_new_league(new_lg_name.strip(), league_type=new_lg_mode.lower())
+                    if ok:
+                        st.success(msg)
+                        st.rerun()
+                    else:
+                        st.error(msg)
+    else:
+        st.caption("🔒 Solo l'amministratore o gli utenti abilitati possono creare nuove leghe.")
                     
-    if len(league_ids) > 1:
+    if is_current_user_admin() and len(league_ids) > 1:
         st.markdown("---")
         st.markdown("**🗑️ Elimina Lega**")
         del_target = st.selectbox(
@@ -342,6 +392,144 @@ with st.sidebar.expander("⚙️ Gestione Leghe", expanded=False):
                 st.rerun()
             else:
                 st.error(del_msg)
+
+# -------------------------------------------------------------
+# ADMIN PANEL (SOLO PER ADMIN)
+# -------------------------------------------------------------
+if is_current_user_admin():
+    with st.sidebar.expander("👑 Pannello Admin & Utenti", expanded=False):
+        st.caption("Gestisci gli utenti che possono accedere all'app pubblica su Streamlit Cloud e scegli quali leghe può vedere ciascun utente.")
+        all_sys_leagues = get_available_leagues(include_all_for_admin=True)
+        all_sys_league_ids = list(all_sys_leagues.keys())
+        users_db = load_users_db().get("users", {})
+
+        st.markdown("**👥 Utenti Registrati:**")
+        for uname_k, u_info in users_db.items():
+            u_leagues = u_info.get("allowed_leagues", [])
+            if "*" in u_leagues or u_info.get("role") == "admin":
+                lg_str = "Tutte le leghe (*)"
+            elif u_leagues:
+                lg_str = ", ".join([all_sys_leagues.get(l, {}).get("name", l) for l in u_leagues])
+            else:
+                lg_str = "Nessuna lega"
+            def_t_map = u_info.get("default_team_by_league", {}) or {}
+            def_t_str = f" · Squadra: `{def_t_map.get(active_league)}`" if def_t_map.get(active_league) else ""
+            st.markdown(
+                f"<div style='background:rgba(15,23,42,0.75); border-left:3px solid {'#f59e0b' if u_info.get('role')=='admin' else '#38bdf8'}; padding:6px 9px; border-radius:5px; margin-bottom:5px; font-size:0.78rem;'>"
+                f"<b>{u_info.get('display_name', uname_k)}</b> (<code>{uname_k}</code>) — <i>{u_info.get('role', 'user')}</i><br>"
+                f"<span style='color:#94a3b8;'>🏆 Leghe: {lg_str}{def_t_str}</span></div>",
+                unsafe_allow_html=True
+            )
+
+        st.markdown("---")
+        st.markdown("**➕ Crea / Aggiorna Utente**")
+        edit_mode_sel = st.selectbox(
+            "Azione:",
+            options=["➕ Nuovo Utente"] + [f"✏️ Modifica: {u}" for u in users_db.keys()],
+            key="admin_user_edit_mode"
+        )
+        is_editing_existing = edit_mode_sel.startswith("✏️ Modifica: ")
+        target_uname_prefill = edit_mode_sel.replace("✏️ Modifica: ", "").strip() if is_editing_existing else ""
+        existing_u_obj = users_db.get(target_uname_prefill, {}) if is_editing_existing else {}
+
+        with st.form("admin_create_update_user_form"):
+            f_uname = st.text_input(
+                "Username (per il login):",
+                value=target_uname_prefill,
+                placeholder="es. marco"
+            )
+            f_dname = st.text_input(
+                "Nome Visualizzato:",
+                value=existing_u_obj.get("display_name", ""),
+                placeholder="es. Marco Rossi"
+            )
+            f_pwd = st.text_input(
+                "Password" + (" (lascia vuoto per non cambiarla):" if is_editing_existing else ":"),
+                type="password",
+                placeholder="Inserisci password"
+            )
+            f_role = st.selectbox(
+                "Ruolo:",
+                options=["user", "admin"],
+                index=1 if existing_u_obj.get("role") == "admin" else 0
+            )
+            default_lg_sel = [l for l in existing_u_obj.get("allowed_leagues", []) if l in all_sys_league_ids]
+            if not is_editing_existing and active_league in all_sys_league_ids:
+                default_lg_sel = [active_league]
+            f_leagues = st.multiselect(
+                "Leghe visibili a questo utente:",
+                options=all_sys_league_ids,
+                default=default_lg_sel,
+                format_func=lambda x: all_sys_leagues.get(x, {}).get("name", x)
+            )
+            f_can_create = st.checkbox(
+                "Consenti all'utente di creare nuove leghe in autonomia",
+                value=bool(existing_u_obj.get("can_create_leagues", False))
+            )
+
+            # Optional default team in active league
+            curr_rosters_admin = load_league_rosters(active_league)
+            team_opts_admin = ["(Nessuna predefinita)"] + (list(curr_rosters_admin.keys()) if curr_rosters_admin else [])
+            existing_def_team = (existing_u_obj.get("default_team_by_league", {}) or {}).get(active_league, "(Nessuna predefinita)")
+            def_team_idx = team_opts_admin.index(existing_def_team) if existing_def_team in team_opts_admin else 0
+            f_def_team = st.selectbox(
+                f"Squadra predefinita in '{all_sys_leagues.get(active_league, {}).get('name', active_league)}':",
+                options=team_opts_admin,
+                index=def_team_idx
+            )
+
+            if st.form_submit_button("💾 Salva Utente", type="primary", width='stretch'):
+                def_team_dict = dict(existing_u_obj.get("default_team_by_league", {}) or {})
+                if f_def_team != "(Nessuna predefinita)":
+                    def_team_dict[active_league] = f_def_team
+                else:
+                    def_team_dict.pop(active_league, None)
+
+                ok_u, msg_u = create_or_update_user(
+                    username=f_uname,
+                    display_name=f_dname,
+                    password=f_pwd if f_pwd else None,
+                    role=f_role,
+                    allowed_leagues=["*"] if f_role == "admin" else f_leagues,
+                    can_create_leagues=f_can_create,
+                    default_team_by_league=def_team_dict
+                )
+                if ok_u:
+                    st.success(msg_u)
+                    st.rerun()
+                else:
+                    st.error(msg_u)
+
+        non_admin_users = [u for u in users_db.keys() if u != "admin"]
+        if non_admin_users:
+            st.markdown("---")
+            st.markdown("**🗑️ Rimuovi Utente**")
+            del_u_sel = st.selectbox("Utente da eliminare:", options=non_admin_users, key="admin_del_user_sel")
+            if st.button("🗑️ Elimina Utente", key="admin_btn_del_user", type="secondary", width='stretch'):
+                ok_du, msg_du = delete_user_account(del_u_sel)
+                if ok_du:
+                    st.success(msg_du)
+                    st.rerun()
+                else:
+                    st.error(msg_du)
+
+        if is_running_on_localhost():
+            st.markdown("---")
+            st.markdown("**☁️ Pubblica Utenti & Leghe su Streamlit Cloud**")
+            st.caption("Quando crei un utente o una lega in locale, premi qui per sincronizzarli subito con la versione online su Streamlit Cloud.")
+            if st.button("🚀 Sincronizza Utenti & Leghe sul Cloud", key="admin_btn_sync_cloud", width='stretch'):
+                import subprocess
+                with st.spinner("Sincronizzazione con GitHub (Streamlit Cloud) in corso..."):
+                    try:
+                        subprocess.run(["git", "add", "data/users_db.json", "data/leagues/"], cwd=APP_DIR, check=False)
+                        subprocess.run(["git", "commit", "-m", "Sync users_db and leagues from Admin Panel"], cwd=APP_DIR, check=False)
+                        res_push = subprocess.run(["git", "push", "fantapando", "HEAD:master"], cwd=APP_DIR, capture_output=True, text=True)
+                        if res_push.returncode == 0:
+                            st.success("✅ Utenti e leghe pubblicati su Streamlit Cloud!")
+                        else:
+                            st.warning(f"Nota Git: {res_push.stderr or res_push.stdout}")
+                    except Exception as ex_git:
+                        st.error(f"Errore durante il push: {ex_git}")
 
 # Calcolo automatico della giornata in base a data odierna e calendario ufficiale Serie A
 auto_giornata, matchday_info = get_matchday_from_date()

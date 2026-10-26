@@ -1,0 +1,18 @@
+{
+  "users": {
+    "admin": {
+      "username": "admin",
+      "display_name": "Amministratore",
+      "role": "admin",
+      "salt": "0ff11c0925eb8f32b0af8a676fc4e86e",
+      "password_hash": "70350b21f3f3d53e6c385e0a95d34209f3bcb63cb61ad87ba2cd829a89ec62f1",
+      "allowed_leagues": [
+        "*"
+      ],
+      "can_create_leagues": true,
+      "default_team_by_league": {},
+      "active": true,
+      "created_at": "2026-10-26 15:15:54"
+    }
+  }
+}
