@@ -108,11 +108,14 @@ elif st.session_state['_last_code_version'] != current_code_version:
     st.cache_resource.clear()
     import importlib
     import engine.optimizer
+    import engine.fanta_calendar
     importlib.reload(engine.optimizer)
+    importlib.reload(engine.fanta_calendar)
     from engine.optimizer import (
         MANTRA_FORMATIONS, optimize_best_mantra_lineup,
         CLASSIC_FORMATIONS, optimize_best_classic_lineup, optimize_best_lineup
     )
+    from engine.fanta_calendar import get_matchday_from_date, SERIE_A_SCHEDULE
     st.session_state['_last_code_version'] = current_code_version
     st.toast("🧹 Rilevate modifiche al codice: moduli ricaricati e cache pulita automaticamente!", icon="🔄")
 
@@ -534,8 +537,9 @@ if is_current_user_admin():
 # Calcolo automatico della giornata in base a data odierna e calendario ufficiale Serie A
 auto_giornata, matchday_info = get_matchday_from_date()
 
-if 'selected_giornata' not in st.session_state:
+if 'selected_giornata' not in st.session_state or st.session_state.get('_last_auto_giornata') != auto_giornata:
     st.session_state['selected_giornata'] = auto_giornata
+    st.session_state['_last_auto_giornata'] = auto_giornata
 
 st.sidebar.markdown(f"""
 <div style="background: linear-gradient(135deg, #1e293b, #0f172a); border: 1px solid #334155; border-left: 4px solid #38bdf8; border-radius: 8px; padding: 10px 14px; margin-bottom: 12px;">

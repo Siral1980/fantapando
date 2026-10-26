@@ -212,8 +212,13 @@ def build_calendar_from_understat():
         return None
 
 def get_or_create_calendar(force_refresh=False):
-    """Loads existing calendar or generates a full 38-matchday Serie A calendar."""
-    if not force_refresh and os.path.exists(CALENDAR_FILE):
+    """Loads existing calendar or generates a full 38-matchday Serie A calendar, auto-refreshing if understat file is newer."""
+    understat_newer = (
+        os.path.exists(UNDERSTAT_FILE)
+        and os.path.exists(CALENDAR_FILE)
+        and os.path.getmtime(UNDERSTAT_FILE) > os.path.getmtime(CALENDAR_FILE)
+    )
+    if not force_refresh and not understat_newer and os.path.exists(CALENDAR_FILE):
         try:
             with open(CALENDAR_FILE, 'r', encoding='utf-8') as f:
                 data = json.load(f)
@@ -401,6 +406,67 @@ SERIE_A_SCHEDULE = {
     38: {'start_m': 5,  'start_d': 22, 'end_m': 5,  'end_d': 24, 'desc': '38ª Giornata (22-24 Mag)'}
 }
 
+_ITALIAN_MONTHS_SHORT = {
+    1: 'Gen', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'Mag', 6: 'Giu',
+    7: 'Lug', 8: 'Ago', 9: 'Set', 10: 'Ott', 11: 'Nov', 12: 'Dic'
+}
+
+def build_dynamic_serie_a_schedule():
+    """
+    Builds the 38-round Serie A schedule dynamically from the real match timestamps in calendar_serie_a.json.
+    """
+    schedule = {}
+    try:
+        cal = get_or_create_calendar()
+    except Exception:
+        cal = {}
+
+    for g in range(1, 39):
+        matches = cal.get(g, []) if isinstance(cal, dict) else []
+        parsed_dts = []
+        for m in matches:
+            dt_str = m.get('datetime', '')
+            if dt_str:
+                try:
+                    parsed_dts.append(datetime.datetime.strptime(dt_str[:19], '%Y-%m-%d %H:%M:%S'))
+                except Exception:
+                    pass
+
+        if parsed_dts:
+            min_dt = min(parsed_dts)
+            max_dt = max(parsed_dts)
+            if min_dt.date() == max_dt.date() and min_dt.weekday() == 6:
+                start_date = min_dt.date() - datetime.timedelta(days=1)
+                end_date = max_dt.date()
+            else:
+                start_date = min_dt.date()
+                end_date = max_dt.date()
+
+            s_m, s_d, s_y = start_date.month, start_date.day, start_date.year
+            e_m, e_d, e_y = end_date.month, end_date.day, end_date.year
+
+            if s_m == e_m:
+                if s_d == e_d:
+                    date_label = f"{s_d} {_ITALIAN_MONTHS_SHORT[s_m]}"
+                else:
+                    date_label = f"{s_d}-{e_d} {_ITALIAN_MONTHS_SHORT[e_m]}"
+            else:
+                date_label = f"{s_d} {_ITALIAN_MONTHS_SHORT[s_m]} - {e_d} {_ITALIAN_MONTHS_SHORT[e_m]}"
+
+            schedule[g] = {
+                'start_y': s_y, 'start_m': s_m, 'start_d': s_d,
+                'end_y': e_y, 'end_m': e_m, 'end_d': e_d,
+                'first_kickoff': min_dt,
+                'last_kickoff': max_dt,
+                'desc': f"{g}ª Giornata ({date_label})"
+            }
+        else:
+            schedule[g] = dict(SERIE_A_SCHEDULE[g])
+
+    return schedule
+
+SERIE_A_SCHEDULE = build_dynamic_serie_a_schedule()
+
 def get_matchday_from_date(dt=None):
     """
     Determines the current/upcoming Serie A matchday automatically based on the official calendar and today's date.
@@ -421,17 +487,18 @@ def get_matchday_from_date(dt=None):
         dt = datetime.datetime(dt.year, dt.month, dt.day, 12, 0)
         
     base_year = dt.year if dt.month >= 7 else dt.year - 1
-    
+    schedule = build_dynamic_serie_a_schedule()
+
     for g in range(1, 39):
-        info = SERIE_A_SCHEDULE[g]
+        info = schedule[g]
         s_m, s_d = info['start_m'], info['start_d']
         e_m, e_d = info['end_m'], info['end_d']
-        s_y = base_year if s_m >= 7 else base_year + 1
-        e_y = base_year if e_m >= 7 else base_year + 1
-        
-        start_dt = datetime.datetime(s_y, s_m, s_d, 0, 0)
-        end_dt = datetime.datetime(e_y, e_m, e_d, 23, 59)
-        
+        s_y = info.get('start_y', base_year if s_m >= 7 else base_year + 1)
+        e_y = info.get('end_y', base_year if e_m >= 7 else base_year + 1)
+
+        start_dt = datetime.datetime(s_y, s_m, s_d, 0, 0, 0)
+        end_dt = datetime.datetime(e_y, e_m, e_d, 23, 59, 59)
+
         if dt <= end_dt:
             status = 'live' if dt >= start_dt else 'upcoming'
             return g, {
