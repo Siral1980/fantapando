@@ -1180,18 +1180,18 @@ with tab_formazione:
             # Coverage Warning & Safe Alternatives Callout
             has_issues = opt_res.get('Ha_Problemi_Copertura', False)
             safe_alts = opt_res.get('Moduli_Sicuri_Alternativi', [])
+            cambio_mod_slots = opt_res.get('Slot_Coperti_Cambio_Modulo', [])
 
             if has_issues:
                 uncovered_list = opt_res.get('Slot_Scoperti', [])
                 uncovered_badges = " ".join([f"`{s}`" for s in uncovered_list])
-                st.warning(f"""
-                ⚠️ **Attenzione alla Copertura Panchina per il modulo {opt_res['Modulo']}**:
-                Questo modulo massimizza il punteggio potenziale assoluto (**{opt_res['Punti_Attesi_Totali']} pt**), ma in panchina **mancano riserve affidabili per gli slot: {uncovered_badges}**.  
-                In caso di forfait o S.V. di un titolare in questi ruoli, la squadra rischia di non riuscire a effettuare una sostituzione legale o di dover forzare un cambio modulo.
-                """, icon="⚠️")
+                st.error(f"""
+                🚨 **CRITICITÀ COPERTURA PANCHINA per il modulo {opt_res['Modulo']} (Rischio Inferiorità Numerica)**:
+                Questo modulo massimizza il punteggio potenziale (**{opt_res['Punti_Attesi_Totali']} pt**), ma in caso di forfait/S.V. nello slot **{uncovered_badges}** **non è possibile ottenere una formazione valida a 11 neanche effettuando il cambio modulo con i giocatori sani/a voto della panchina**!
+                """, icon="🚨")
                 
                 if safe_alts:
-                    st.markdown("<div style='font-size: 0.95rem; font-weight: 700; color: #38bdf8; margin-top: 6px; margin-bottom: 4px;'>🛡️ Moduli Alternativi Consigliati Più Sicuri (Copertura 100%):</div>", unsafe_allow_html=True)
+                    st.markdown("<div style='font-size: 0.95rem; font-weight: 700; color: #38bdf8; margin-top: 6px; margin-bottom: 4px;'>🛡️ Moduli Alternativi Consigliati con Formazione Valida Garantita:</div>", unsafe_allow_html=True)
                     cols_alt = st.columns(len(safe_alts))
                     for idx_a, safe_alt in enumerate(safe_alts):
                         with cols_alt[idx_a]:
@@ -1205,9 +1205,19 @@ with tab_formazione:
                                 <div style="color: #cbd5e1; font-size: 0.82rem; margin-top: 5px;">{safe_alt['Dettaglio']}</div>
                             </div>
                             """, unsafe_allow_html=True)
-                    st.caption("💡 *Puoi selezionare il modulo alternativo direttamente dal menu a tendina in alto se preferisci una formazione a zero rischi di inferiorità numerica.*")
+                    st.caption("💡 *Puoi selezionare il modulo alternativo direttamente dal menu a tendina in alto se vuoi evitare il rischio di giocare in 10.*")
+            elif cambio_mod_slots:
+                switch_details = " • ".join([
+                    f"se salta **{cm['Titolare']}** (`{cm['Slot']}`) subentra **{cm['Subentrante']}** (`{cm['Ruolo_Sub']}`) passando al **{cm['Nuovo_Modulo']}**"
+                    for cm in cambio_mod_slots
+                ])
+                st.success(
+                    f"🔄 **Copertura Garantita grazie al Cambio Modulo Automatico**: Il modulo **{opt_res['Modulo']}** massimizza i punti attesi (**{opt_res['Punti_Attesi_Totali']} pt**) "
+                    f"e ti mette al riparo dall'inferiorità numerica anche senza ricambi ruolo-per-ruolo ({switch_details}).",
+                    icon="✅"
+                )
             else:
-                st.success(f"🛡️ **Copertura Panchina Blindata (100%)**: Il modulo **{opt_res['Modulo']}** offre sia il punteggio più alto (**{opt_res['Punti_Attesi_Totali']} pt**) sia una copertura al 100% con riserve affidabili su ogni reparto in panchina!", icon="✅")
+                st.success(f"🛡️ **Copertura Panchina Blindata (100% Ruolo per Ruolo)**: Il modulo **{opt_res['Modulo']}** offre sia il punteggio più alto (**{opt_res['Punti_Attesi_Totali']} pt**) sia riserve dirette sane/a voto per ogni singolo ruolo!", icon="✅")
 
             st.markdown("---")
             

@@ -273,10 +273,30 @@ def solve_lineup_for_formation(formation_name, df_projected_roster):
         'Titolari': lineup_records
     }
 
+def _is_playable_bench_backup(b_row, is_gk=False, starter_gk_team=None):
+    """
+    Checks if a bench player is healthy (not injured, suspended, or out of squad)
+    and has a realistic probability of getting a rating according to probable lineups.
+    """
+    st_txt = str(b_row.get('Status_Titolarita', '')).upper()
+    if any(k in st_txt for k in ['INFORTUNATO', 'SQUALIFICATO', 'OUT']):
+        return False
+    p_voto = float(b_row.get('P_Voto', 0.0))
+    xfv = float(b_row.get('xFV', 0.0))
+    if is_gk:
+        if p_voto >= 0.35:
+            return True
+        if starter_gk_team and str(b_row.get('Squadra', '')).strip() == str(starter_gk_team).strip() and p_voto >= 0.02:
+            return True
+        return False
+    return (p_voto >= 0.35 and xfv >= 2.0)
+
+
 def optimize_best_mantra_lineup(df_projected_roster, allowed_formations=None):
     """
     Evaluates all permitted Mantra tactical formations and identifies the single best lineup.
-    Also organizes the remaining players into a prioritized bench.
+    Also organizes the remaining players into a prioritized bench and verifies whether
+    any missing role-for-role backup is covered via legal formation change (Cambio Modulo Master).
     """
     if allowed_formations is None:
         allowed_formations = list(MANTRA_FORMATIONS.keys())
@@ -292,14 +312,27 @@ def optimize_best_mantra_lineup(df_projected_roster, allowed_formations=None):
     if not candidates:
         return None
         
-    # Evaluate Squad Depth & Bench Robustness for each candidate module:
+    # Evaluate Squad Depth & Bench Robustness (Direct Role Coverage + Cambio Modulo Coverage):
     for c in candidates:
         tits = c['Titolari']
         tit_names = set(p['Giocatore'] for p in tits)
-        bench = [r for _, r in df_projected_roster.iterrows() if r['Giocatore'] not in tit_names]
-        
+        bench = [r.to_dict() if hasattr(r, 'to_dict') else dict(r) for _, r in df_projected_roster.iterrows() if r['Giocatore'] not in tit_names]
+        starter_por = next((t for t in tits if t.get('Slot_Assegnato') == 'Por'), None)
+        starter_por_team = starter_por.get('Squadra') if starter_por else None
+
+        playable_outfield_bench = sorted(
+            [
+                b for b in bench
+                if 'Por' not in parse_mantra_roles(b.get('RuoloMantra', ''))
+                and _is_playable_bench_backup(b, is_gk=False)
+            ],
+            key=lambda x: (float(x.get('P_Voto', 0)), float(x.get('xFV', 0))),
+            reverse=True
+        )
+
         uncovered_slots = 0
         uncovered_slot_names = []
+        cambio_modulo_slots = []
         checked_slots = set()
         
         for s in tits:
@@ -309,19 +342,44 @@ def optimize_best_mantra_lineup(df_projected_roster, allowed_formations=None):
             checked_slots.add(s_name)
             allowed_roles = SLOT_ROLE_MAP.get(s_name, {s_name})
             if s_name == 'Por':
-                backups = [b['Giocatore'] for b in bench if 'Por' in parse_mantra_roles(b.get('RuoloMantra', ''))]
+                backups = [
+                    b['Giocatore'] for b in bench
+                    if 'Por' in parse_mantra_roles(b.get('RuoloMantra', ''))
+                    and _is_playable_bench_backup(b, is_gk=True, starter_gk_team=starter_por_team)
+                ]
+                if len(backups) == 0:
+                    uncovered_slots += 1
+                    uncovered_slot_names.append(s_name)
             else:
-                backups = [b['Giocatore'] for b in bench 
-                           if parse_mantra_roles(b.get('RuoloMantra', '')).intersection(allowed_roles)
-                           and (int(b.get('Presenze', 0)) >= 2 or float(b.get('P_Voto', 0)) >= 0.45)
-                           and float(b.get('xFV', 0)) >= 2.0]
-            if len(backups) == 0:
-                uncovered_slots += 1
-                uncovered_slot_names.append(s_name)
+                direct_backups = [
+                    b['Giocatore'] for b in playable_outfield_bench
+                    if parse_mantra_roles(b.get('RuoloMantra', '')).intersection(allowed_roles)
+                ]
+                if len(direct_backups) == 0:
+                    # Check if a playable bench player can enter via a valid formation switch (Cambio Modulo)
+                    rem_10 = [t for t in tits if t['Giocatore'] != s['Giocatore']]
+                    covered_by_switch = None
+                    for b_cand in playable_outfield_bench:
+                        is_ok, new_mod, _ = can_lineup_form_any_valid_mantra(rem_10 + [b_cand], preferred_formation=c['Modulo'])
+                        if is_ok:
+                            covered_by_switch = {
+                                'Slot': s_name,
+                                'Titolare': s['Giocatore'],
+                                'Subentrante': b_cand['Giocatore'],
+                                'Ruolo_Sub': b_cand.get('RuoloMantra', ''),
+                                'Nuovo_Modulo': new_mod
+                            }
+                            break
+                    if covered_by_switch:
+                        cambio_modulo_slots.append(covered_by_switch)
+                    else:
+                        uncovered_slots += 1
+                        uncovered_slot_names.append(s_name)
                 
-        # Fragility penalty for modules that leave key starting slots without active bench backups
+        # Fragility penalty ONLY for truly uncovered slots (where even formation switch fails)
         fragility_penalty = round(uncovered_slots * 1.5, 2)
         c['Slot_Scoperti'] = uncovered_slot_names
+        c['Slot_Coperti_Cambio_Modulo'] = cambio_modulo_slots
         c['Penalita_Fragilita'] = fragility_penalty
         c['Punti_Benchmark_Robusto'] = round(c['Punti_Attesi_Totali'] - fragility_penalty, 2)
 
@@ -329,45 +387,45 @@ def optimize_best_mantra_lineup(df_projected_roster, allowed_formations=None):
     candidates = sorted(candidates, key=lambda x: x['Punti_Attesi_Totali'], reverse=True)
     best_formation_result = candidates[0]
 
-    # Evaluate coverage safety and identify safer alternative modules
+    # Evaluate coverage safety (True ONLY when even formation switch cannot produce a valid 11)
     uncovered = best_formation_result.get('Slot_Scoperti', [])
     has_coverage_issues = (len(uncovered) > 0)
     best_formation_result['Ha_Problemi_Copertura'] = has_coverage_issues
 
     safe_alternatives = []
-    # 1. Search for modules with 100% full coverage (0 uncovered slots)
-    fully_covered = [c for c in candidates[1:] if len(c.get('Slot_Scoperti', [])) == 0]
-    if fully_covered:
-        fully_covered = sorted(fully_covered, key=lambda x: x['Punti_Attesi_Totali'], reverse=True)
-        for alt in fully_covered[:2]:
-            delta = round(alt['Punti_Attesi_Totali'] - best_formation_result['Punti_Attesi_Totali'], 2)
-            safe_alternatives.append({
-                'Modulo': alt['Modulo'],
-                'Punti_Totali': alt['Punti_Attesi_Totali'],
-                'Delta_Punti': delta,
-                'Slot_Scoperti': [],
-                'Somma_xFV_Titolari': alt['Somma_xFV_Titolari'],
-                'D_Factor': alt['D_Factor_Atteso'],
-                'Tipo': '🛡️ Copertura Blindata 100%',
-                'Dettaglio': f"{alt['Modulo']} garantisce zero rischi di inferiorità numerica (100% coperto su tutti i ruoli in panchina, scarto di soli {abs(delta):.2f} pt rispetto al top)."
-            })
-    elif len(uncovered) > 1:
-        # If no module has 0 uncovered, look for modules with strictly fewer uncovered slots
-        fewer_uncovered = [c for c in candidates[1:] if len(c.get('Slot_Scoperti', [])) < len(uncovered)]
-        if fewer_uncovered:
-            fewer_uncovered = sorted(fewer_uncovered, key=lambda x: x['Punti_Attesi_Totali'], reverse=True)
-            for alt in fewer_uncovered[:1]:
+    if has_coverage_issues:
+        # 1. Search for modules with 0 truly uncovered slots (either direct or via valid cambio modulo)
+        fully_covered = [c for c in candidates[1:] if len(c.get('Slot_Scoperti', [])) == 0]
+        if fully_covered:
+            fully_covered = sorted(fully_covered, key=lambda x: x['Punti_Attesi_Totali'], reverse=True)
+            for alt in fully_covered[:2]:
                 delta = round(alt['Punti_Attesi_Totali'] - best_formation_result['Punti_Attesi_Totali'], 2)
                 safe_alternatives.append({
                     'Modulo': alt['Modulo'],
                     'Punti_Totali': alt['Punti_Attesi_Totali'],
                     'Delta_Punti': delta,
-                    'Slot_Scoperti': alt.get('Slot_Scoperti', []),
+                    'Slot_Scoperti': [],
                     'Somma_xFV_Titolari': alt['Somma_xFV_Titolari'],
                     'D_Factor': alt['D_Factor_Atteso'],
-                    'Tipo': '⚠️ Copertura Più Sicura',
-                    'Dettaglio': f"{alt['Modulo']} riduce il rischio panchina a soli {len(alt['Slot_Scoperti'])} slot scoperti ({', '.join(alt['Slot_Scoperti'])}), scarto {delta:+.2f} pt."
+                    'Tipo': '🛡️ Copertura Garantita (11 Valido)',
+                    'Dettaglio': f"{alt['Modulo']} garantisce una formazione valida anche in caso di assenze grazie alla panchina (scarto {delta:+.2f} pt)."
                 })
+        elif len(uncovered) > 1:
+            fewer_uncovered = [c for c in candidates[1:] if len(c.get('Slot_Scoperti', [])) < len(uncovered)]
+            if fewer_uncovered:
+                fewer_uncovered = sorted(fewer_uncovered, key=lambda x: x['Punti_Attesi_Totali'], reverse=True)
+                for alt in fewer_uncovered[:1]:
+                    delta = round(alt['Punti_Attesi_Totali'] - best_formation_result['Punti_Attesi_Totali'], 2)
+                    safe_alternatives.append({
+                        'Modulo': alt['Modulo'],
+                        'Punti_Totali': alt['Punti_Attesi_Totali'],
+                        'Delta_Punti': delta,
+                        'Slot_Scoperti': alt.get('Slot_Scoperti', []),
+                        'Somma_xFV_Titolari': alt['Somma_xFV_Titolari'],
+                        'D_Factor': alt['D_Factor_Atteso'],
+                        'Tipo': '⚠️ Minor Rischio Inferiorità',
+                        'Dettaglio': f"{alt['Modulo']} riduce gli slot critici non sostituibili a {len(alt['Slot_Scoperti'])} ({', '.join(alt['Slot_Scoperti'])}), scarto {delta:+.2f} pt."
+                    })
 
     best_formation_result['Moduli_Sicuri_Alternativi'] = safe_alternatives
     
@@ -392,7 +450,15 @@ def optimize_best_mantra_lineup(df_projected_roster, allowed_formations=None):
             'Punti_Totali': c['Punti_Attesi_Totali'],
             'xFV_Titolari': c['Somma_xFV_Titolari'],
             'D_Factor': c['D_Factor_Atteso'],
-            'Stato_Copertura': '✅ Copertura 100%' if len(c.get('Slot_Scoperti', [])) == 0 else f"⚠️ Rischio ({len(c['Slot_Scoperti'])} scoperti: {', '.join(c['Slot_Scoperti'])})",
+            'Stato_Copertura': (
+                '✅ Copertura 100% Diretta'
+                if len(c.get('Slot_Scoperti', [])) == 0 and len(c.get('Slot_Coperti_Cambio_Modulo', [])) == 0
+                else (
+                    f"🔄 Coperto con Cambio Modulo ({', '.join(x['Slot'] + '→' + x['Nuovo_Modulo'] for x in c.get('Slot_Coperti_Cambio_Modulo', []))})"
+                    if len(c.get('Slot_Scoperti', [])) == 0
+                    else f"🚨 CRITICO ({len(c['Slot_Scoperti'])} non sostituibili: {', '.join(c['Slot_Scoperti'])})"
+                )
+            ),
             'Delta_vs_Top': round(c['Punti_Attesi_Totali'] - best_formation_result['Punti_Attesi_Totali'], 2),
             'Punti_Robusti': c.get('Punti_Benchmark_Robusto', c['Punti_Attesi_Totali']),
             'Slot_Scoperti': c.get('Slot_Scoperti', [])
@@ -1022,23 +1088,47 @@ def optimize_best_classic_lineup(df_projected_roster, allowed_formations=None):
     for c in candidates:
         tits = c['Titolari']
         tit_names = set(p['Giocatore'] for p in tits)
-        bench = [r for _, r in df_projected_roster.iterrows() if r['Giocatore'] not in tit_names]
+        bench = [r.to_dict() if hasattr(r, 'to_dict') else dict(r) for _, r in df_projected_roster.iterrows() if r['Giocatore'] not in tit_names]
+        starter_p = next((t for t in tits if t.get('Slot_Assegnato') == 'P'), None)
+        starter_p_team = starter_p.get('Squadra') if starter_p else None
+
+        playable_outfield = sorted(
+            [b for b in bench if b.get('RuoloClassic') in ('D', 'C', 'A') and _is_playable_bench_backup(b, is_gk=False)],
+            key=lambda x: (float(x.get('P_Voto', 0)), float(x.get('xFV', 0))),
+            reverse=True
+        )
 
         uncovered = []
-        p_bench = [b for b in bench if b.get('RuoloClassic') == 'P']
+        cambio_modulo_slots = []
+        p_bench = [b for b in bench if b.get('RuoloClassic') == 'P' and _is_playable_bench_backup(b, is_gk=True, starter_gk_team=starter_p_team)]
         if not p_bench:
             uncovered.append('P')
-        d_bench = [b for b in bench if b.get('RuoloClassic') == 'D' and (b.get('Presenze', 0) >= 2 or b.get('P_Voto', 0) >= 0.45)]
-        if not d_bench:
-            uncovered.append('D')
-        c_bench = [b for b in bench if b.get('RuoloClassic') == 'C' and (b.get('Presenze', 0) >= 2 or b.get('P_Voto', 0) >= 0.45)]
-        if not c_bench:
-            uncovered.append('C')
-        a_bench = [b for b in bench if b.get('RuoloClassic') == 'A' and (b.get('Presenze', 0) >= 2 or b.get('P_Voto', 0) >= 0.45)]
-        if not a_bench:
-            uncovered.append('A')
+
+        for r_code in ('D', 'C', 'A'):
+            direct_b = [b for b in playable_outfield if b.get('RuoloClassic') == r_code]
+            if not direct_b:
+                r_starters = [t for t in tits if t.get('Slot_Assegnato') == r_code]
+                if r_starters:
+                    rem_10 = [t for t in tits if t['Giocatore'] != r_starters[0]['Giocatore']]
+                    cov_switch = None
+                    for b_cand in playable_outfield:
+                        is_ok, new_mod, _ = can_lineup_form_any_valid_classic(rem_10 + [b_cand], preferred_formation=c['Modulo'])
+                        if is_ok:
+                            cov_switch = {
+                                'Slot': r_code,
+                                'Titolare': r_starters[0]['Giocatore'],
+                                'Subentrante': b_cand['Giocatore'],
+                                'Ruolo_Sub': b_cand.get('RuoloClassic', ''),
+                                'Nuovo_Modulo': new_mod
+                            }
+                            break
+                    if cov_switch:
+                        cambio_modulo_slots.append(cov_switch)
+                    else:
+                        uncovered.append(r_code)
 
         c['Slot_Scoperti'] = uncovered
+        c['Slot_Coperti_Cambio_Modulo'] = cambio_modulo_slots
         c['Penalita_Fragilita'] = round(len(uncovered) * 1.5, 2)
         c['Punti_Benchmark_Robusto'] = round(c['Punti_Attesi_Totali'] - c['Penalita_Fragilita'], 2)
 
@@ -1047,18 +1137,19 @@ def optimize_best_classic_lineup(df_projected_roster, allowed_formations=None):
     best['Ha_Problemi_Copertura'] = len(best.get('Slot_Scoperti', [])) > 0
 
     safe_alts = []
-    fully_cov = [c for c in candidates[1:] if len(c.get('Slot_Scoperti', [])) == 0]
-    for alt in fully_cov[:2]:
-        delta = round(alt['Punti_Attesi_Totali'] - best['Punti_Attesi_Totali'], 2)
-        safe_alts.append({
-            'Modulo': alt['Modulo'],
-            'Punti_Totali': alt['Punti_Attesi_Totali'],
-            'Delta_Punti': delta,
-            'Slot_Scoperti': [],
-            'Somma_xFV_Titolari': alt['Somma_xFV_Titolari'],
-            'D_Factor': alt['D_Factor_Atteso'],
-            'Dettaglio': "Copertura garantita al 100% su tutti i reparti Classic (P, D, C, A)."
-        })
+    if best['Ha_Problemi_Copertura']:
+        fully_cov = [c for c in candidates[1:] if len(c.get('Slot_Scoperti', [])) == 0]
+        for alt in fully_cov[:2]:
+            delta = round(alt['Punti_Attesi_Totali'] - best['Punti_Attesi_Totali'], 2)
+            safe_alts.append({
+                'Modulo': alt['Modulo'],
+                'Punti_Totali': alt['Punti_Attesi_Totali'],
+                'Delta_Punti': delta,
+                'Slot_Scoperti': [],
+                'Somma_xFV_Titolari': alt['Somma_xFV_Titolari'],
+                'D_Factor': alt['D_Factor_Atteso'],
+                'Dettaglio': "Copertura garantita al 100% (diretta o con cambio modulo valido)."
+            })
     best['Moduli_Sicuri_Alternativi'] = safe_alts
 
     best_tit_names = set(p['Giocatore'] for p in best['Titolari'])
