@@ -37,7 +37,9 @@ def safe_float(val, default=0.0):
 
 def _fvm_of(p):
     """Official Fantacalcio.it FVM/1000 of a player dict (falls back to Costo)."""
-    if not isinstance(p, dict):
+    if hasattr(p, 'to_dict'):
+        p = p.to_dict()
+    elif not isinstance(p, dict):
         return 0
     return safe_int(p.get('FVM', p.get('Costo', 0)))
 
@@ -116,7 +118,11 @@ RECOMMENDED_QUOTAS_CLASSIC = {
 
 
 def compute_real_starter_status(row, tot_matchdays=7):
-    if isinstance(row, dict) and 'Starter_Status' in row and isinstance(row['Starter_Status'], dict):
+    if hasattr(row, 'to_dict'):
+        row = row.to_dict()
+    elif not isinstance(row, dict):
+        row = {}
+    if 'Starter_Status' in row and isinstance(row['Starter_Status'], dict):
         return row['Starter_Status']
     """
     Classifies a Serie A player based on real match minutes and continuous usage:
@@ -126,8 +132,6 @@ def compute_real_starter_status(row, tot_matchdays=7):
     - SUBENTRANTE: Late substitute / bench warmer (< 45 min/app or < 28% team minutes, e.g. Lucca, Nzola, Kevin Carlos, Beto)
     - MARGINALE: Rare or zero appearances (< 2 apps or < 70 min total)
     """
-    if not isinstance(row, dict):
-        row = {}
     pres = safe_float(row.get('Presenze', 0))
     mins = safe_float(row.get('Minuti_Reali', 0))
     tot_mins = tot_matchdays * 90.0
@@ -199,7 +203,11 @@ def compute_real_starter_status(row, tot_matchdays=7):
 
 
 def compute_continuous_trade_value(player_dict, tot_matchdays=7):
-    if isinstance(player_dict, dict) and 'Trade_Eff' in player_dict and isinstance(player_dict['Trade_Eff'], dict):
+    if hasattr(player_dict, 'to_dict'):
+        player_dict = player_dict.to_dict()
+    elif not isinstance(player_dict, dict):
+        player_dict = {}
+    if 'Trade_Eff' in player_dict and isinstance(player_dict['Trade_Eff'], dict):
         return player_dict['Trade_Eff']
     """
     Computes a continuous, objective market trade value based on:
@@ -556,7 +564,9 @@ def is_player_to_release(p, release_names=None):
         if release_names and g in release_names:
             return True
         return False
-    if not isinstance(p, dict):
+    if hasattr(p, 'to_dict'):
+        p = p.to_dict()
+    elif not isinstance(p, dict):
         return False
     if p.get('FuoriSerieA', False) or p.get('Da_Svincolare', False):
         return True
@@ -1083,7 +1093,9 @@ def _get_department_name(roles):
 def _format_trade_player(p, is_opponent=False):
     """Formats player dictionary for trade proposals with full stats, FVM/1000 and starter status."""
     from engine.injuries_manager import classify_injury_status
-    if not isinstance(p, dict):
+    if hasattr(p, 'to_dict'):
+        p = p.to_dict()
+    elif not isinstance(p, dict):
         p = {}
     status_info = compute_real_starter_status(p)
     p_name = p.get('Giocatore', '')

@@ -248,7 +248,7 @@ def evaluate_trade(
     starter_bonuses = []
     from engine.trade_finder import compute_real_starter_status
     for _, r_p in receive_df.iterrows():
-        st_rec = compute_real_starter_status(r_p)
+        st_rec = compute_real_starter_status(r_p.to_dict() if hasattr(r_p, 'to_dict') else r_p)
         if st_rec.get('Status') == 'SUPER_SUB':
             starter_bonuses.append(f"⚡ Jolly da bonus / Super-Sub {r_p['Giocatore']}: in Serie A parte spesso dalla panchina (media ~{st_rec['Min_Per_Pres']} min/partita) ma vanta un'efficienza offensiva d'élite ({st_rec.get('Label')}).")
         elif st_rec['Status'] == 'SUBENTRANTE':
@@ -257,6 +257,8 @@ def evaluate_trade(
             starter_warnings.append(f"🚨 Calciatore marginale {r_p['Giocatore']}: minutaggio quasi nullo (< 2 presenze o spezzoni rari).")
         elif st_rec['Status'] == 'TITOLARE':
             starter_bonuses.append(f"🟢 {r_p['Giocatore']} è un titolare inamovibile in Serie A (media {st_rec['Min_Per_Pres']} min a partita).")
+        elif st_rec['Status'] == 'CO_TITOLARE':
+            starter_bonuses.append(f"🟡 {r_p['Giocatore']} è un co-titolare in rotazione regolare in Serie A (media ~{st_rec['Min_Per_Pres']} min a partita, {st_rec['Pct_Minuti']}% minuti giocati).")
 
     # D-Factor and sufficiency comparison (for Por, Dd, Ds, Dc, B, E, M)
     df_give_dfactor = give_df[give_df['RuoloMantra'].str.contains('Por|Dd|Ds|Dc|B|E|M', na=False) | (give_df['RuoloClassic'] == 'P')]
