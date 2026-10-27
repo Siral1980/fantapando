@@ -1326,7 +1326,13 @@ def get_out_of_serie_a_summary(league_data=None):
     out_list = []
     for team, players in league_data.items():
         for p in players:
-            if p.get('FuoriSerieA', False):
+            is_out = bool(
+                p.get('FuoriSerieA', False)
+                or p.get('Da_Svincolare', False)
+                or '*' in str(p.get('NomeGrezzo', ''))
+                or '*' in str(p.get('Giocatore', ''))
+            )
+            if is_out:
                 out_list.append({
                     'Calciatore': p['Giocatore'],
                     'NomeGrezzo': p.get('NomeGrezzo', p['Giocatore']),
@@ -1345,8 +1351,11 @@ def get_out_of_serie_a_summary(league_data=None):
 def get_team_roster_df(team_name, league_data_or_master=None, df_master=None):
     """
     Returns a enriched DataFrame for a specific team, incorporating loan status and out-of-Serie A flags.
-    Accepts either (team_name, df_master) or (team_name, league_data, df_master).
+    Accepts (team_name, df_master), (team_name, league_data, df_master), or (league_data, team_name, df_master).
     """
+    if isinstance(team_name, dict) and isinstance(league_data_or_master, str):
+        team_name, league_data_or_master = league_data_or_master, team_name
+
     if df_master is None:
         if isinstance(league_data_or_master, pd.DataFrame):
             df_master = league_data_or_master
@@ -1366,6 +1375,15 @@ def get_team_roster_df(team_name, league_data_or_master=None, df_master=None):
     stats_map = {}
     if df_master is not None and not df_master.empty and 'Giocatore' in df_master.columns:
         stats_map = {str(row['Giocatore']).strip(): row.to_dict() for _, row in df_master.iterrows()}
+
+    try:
+        from engine.probable_lineups import load_probable_lineups, get_player_probable_info
+        from engine.injuries_manager import get_player_status, load_injuries_data
+        inj_c = load_injuries_data()
+        prob_c = load_probable_lineups(force_refresh=False)
+    except Exception:
+        inj_c = {}
+        prob_c = {'players': {}}
 
     rows = []
     for p in players:
@@ -1395,10 +1413,51 @@ def get_team_roster_df(team_name, league_data_or_master=None, df_master=None):
         disp_status = 'Disponibile'
         badge_disp = '✅ DISPONIBILE'
         det_disp = ''
+        tit_cat = 'Probabile Titolare'
         if is_out:
             disp_status = 'Fuori Serie A'
-            badge_disp = '⚠️ DA SVINCOLARE'
-            det_disp = 'Fuori dalla Serie A - da svincolare al prossimo mercato'
+            badge_disp = '🚫 DA SVINCOLARE (*)'
+            det_disp = 'Fuori dalla Serie A (*) — da svincolare al prossimo mercato'
+            tit_cat = 'Non Schierabile'
+        elif not schierabile:
+            badge_disp = '📤 PRESTITO OUT'
+            tit_cat = 'Non Schierabile'
+        else:
+            try:
+                st_i = get_player_status(p_name, inj_c)
+                st_v = st_i.get('Stato', 'Disponibile')
+                if st_v == 'Infortunato':
+                    disp_status = 'Infortunato'
+                    badge_disp = '🚑 INFORTUNATO'
+                    det_disp = st_i.get('Dettaglio', '')
+                    schierabile = False
+                    tit_cat = 'Non Schierabile'
+                elif st_v == 'Squalificato':
+                    disp_status = 'Squalificato'
+                    badge_disp = '🟥 SQUALIFICATO'
+                    det_disp = st_i.get('Dettaglio', '')
+                    schierabile = False
+                    tit_cat = 'Non Schierabile'
+                else:
+                    pr_i = get_player_probable_info(p_name, prob_c)
+                    if pr_i is not None:
+                        pr_pct = int(pr_i.get('Fanta_Pct', 0))
+                        if pr_pct == 0 and int(pr_i.get('Fonti_Titolare_Count', 0)) > 0:
+                            pr_pct = int(round(float(pr_i.get('Live_P_Voto', 0.55)) * 100))
+                        is_st = bool(
+                            pr_i.get('Fanta_Slot') == 'TITOLARE'
+                            or int(pr_i.get('Fonti_Titolare_Count', 0)) > 0
+                            or pr_pct >= 55
+                        )
+                    else:
+                        pres_v = float(m_info.get('Presenze', p.get('Presenze', 0)) or 0)
+                        mins_v = float(m_info.get('Minuti_Reali', 0) or 0)
+                        is_st = bool(pres_v >= 3 and (mins_v / max(1.0, pres_v)) >= 55.0)
+                        pr_pct = 70 if is_st else 25
+                    tit_cat = 'Probabile Titolare' if is_st else 'Probabile Panchinaro'
+                    badge_disp = f"🟢 PROB. TITOLARE ({pr_pct}%)" if is_st else f"🪑 PROB. PANCHINARO ({pr_pct}%)"
+            except Exception:
+                pass
 
         row_dict = dict(m_info) if m_info else {}
         row_dict.update({
@@ -1415,8 +1474,10 @@ def get_team_roster_df(team_name, league_data_or_master=None, df_master=None):
             'Stato_Disponibilita': disp_status,
             'Badge_Disponibilita': badge_disp,
             'Dettaglio_Disponibilita': det_disp,
+            'Categoria_Schierabile': tit_cat,
             'Schierabile': schierabile,
             'Da_Svincolare': is_out,
+            'FuoriSerieA': is_out,
             'Presenze': m_info.get('Presenze', p.get('Presenze', 0)),
             'Minuti_Reali': m_info.get('Minuti_Reali', 0),
             'MV_Stagione': m_info.get('MV_Stagione', p.get('MV_Stagione', 0.0)),

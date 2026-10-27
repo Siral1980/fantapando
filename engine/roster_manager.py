@@ -197,12 +197,13 @@ def remove_player_from_roster(player_name, league_id=None):
 def get_roster_dataframe(df_master, player_names=None):
     """
     Returns the subset of df_master corresponding to user's squad.
-    Enriches with loan status and asterisks from the official league data.
+    Enriches with loan status, out-of-Serie-A asterisks (*) from the official league data,
+    injuries/suspensions, and live Probable Starter vs Probable Bench distinction.
     """
     if player_names is None:
         player_names = load_user_roster()
 
-    # Match clean names
+    raw_star_names = {str(p).replace('*', '').strip() for p in player_names if '*' in str(p)}
     clean_targets = [str(p).replace('*', '').strip() for p in player_names]
     df_squad = df_master[df_master['Giocatore'].isin(clean_targets)].copy()
 
@@ -211,27 +212,88 @@ def get_roster_dataframe(df_master, player_names=None):
         from engine.league_manager import build_loan_registry, get_active_my_team, load_league_rosters
         my_team = get_active_my_team()
         league = load_league_rosters()
-        
+
         costs = {}
-        stars = {}
+        stars = {g: True for g in raw_star_names}
+        raw_names_map = {}
+        missing_rows = []
+        present_names = set(df_squad['Giocatore'].tolist()) if not df_squad.empty else set()
+
         if my_team in league:
             for r in league[my_team]:
-                costs[r['Giocatore']] = r.get('Costo', 1)
-                stars[r['Giocatore']] = r.get('FuoriSerieA', False)
-                
+                g_name = r['Giocatore']
+                costs[g_name] = r.get('Costo', 1)
+                is_star = bool(
+                    r.get('FuoriSerieA', False)
+                    or r.get('Da_Svincolare', False)
+                    or '*' in str(r.get('NomeGrezzo', ''))
+                    or '*' in str(r.get('Giocatore', ''))
+                    or g_name in raw_star_names
+                )
+                stars[g_name] = is_star
+                raw_names_map[g_name] = r.get('NomeGrezzo', f"{g_name} *" if is_star else g_name)
+
+                # If an asterisk/released player is not in df_master, still include them in df_squad
+                if g_name not in present_names and g_name in clean_targets:
+                    missing_rows.append({
+                        'Cod': r.get('Cod', 0),
+                        'Giocatore': g_name,
+                        'Squadra': r.get('Squadra', 'Serie A'),
+                        'RuoloClassic': r.get('RuoloClassic', 'C'),
+                        'RuoloMantra': r.get('RuoloMantra', 'C'),
+                        'Presenze': r.get('Presenze', 0),
+                        'MV_Stagione': r.get('MV_Stagione', 0.0),
+                        'FM_Stagione': r.get('FM_Stagione', 0.0),
+                        'GF': r.get('GF', 0),
+                        'GS': r.get('GS', 0),
+                        'ASS': r.get('ASS', 0),
+                        'AMM': r.get('AMM', 0),
+                        'ESP': r.get('ESP', 0),
+                        'Minuti_Reali': 0,
+                        'Pct_Sufficienza': 0.0,
+                        'Pct_Parate': 0.0,
+                        'Goals_Prevented': 0.0,
+                        'Goals_Prevented_90': 0.0,
+                        'Errors_Leading_To_Goal': 0,
+                        'Tiri_90': 0.0,
+                        'xG_90': 0.0,
+                        'xG_Tot': 0.0,
+                        'Delta_xG': 0.0,
+                        'Key_Passes_90': 0.0,
+                        'xA_90': 0.0,
+                        'xA_Tot': 0.0,
+                        'Delta_xA': 0.0,
+                        'Signal': 'NEUTRO'
+                    })
+                    present_names.add(g_name)
+
+        if missing_rows:
+            df_squad = pd.concat([df_squad, pd.DataFrame(missing_rows)], ignore_index=True)
+
         df_squad['Costo'] = df_squad['Giocatore'].map(costs).fillna(1).astype(int)
         df_squad['FuoriSerieA'] = df_squad['Giocatore'].map(stars).fillna(False).astype(bool)
-        
+        df_squad['NomeGrezzo'] = [raw_names_map.get(g, g) for g in df_squad['Giocatore']]
+
         loan_map, _ = build_loan_registry(league)
         df_squad['Stato_Prestito'] = [loan_map.get((my_team, g), {}).get('Stato_Prestito', 'Proprietà') for g in df_squad['Giocatore']]
         df_squad['Badge_Prestito'] = [loan_map.get((my_team, g), {}).get('Badge_Prestito', '✅ PROPRIETÀ') for g in df_squad['Giocatore']]
         df_squad['Dettaglio_Prestito'] = [loan_map.get((my_team, g), {}).get('Dettaglio_Prestito', 'Cartellino di proprietà') for g in df_squad['Giocatore']]
         df_squad['Controparte_Prestito'] = [loan_map.get((my_team, g), {}).get('Controparte', '-') for g in df_squad['Giocatore']]
-        df_squad['Schierabile'] = [loan_map.get((my_team, g), {}).get('Schierabile', True) for g in df_squad['Giocatore']]
-        df_squad['Da_Svincolare'] = [loan_map.get((my_team, g), {}).get('Da_Svincolare', False) for g in df_squad['Giocatore']]
-    except Exception as e:
+
+        da_svincolare_list = [
+            bool(stars.get(g, False) or loan_map.get((my_team, g), {}).get('Da_Svincolare', False))
+            for g in df_squad['Giocatore']
+        ]
+        df_squad['Da_Svincolare'] = da_svincolare_list
+        df_squad['FuoriSerieA'] = da_svincolare_list
+        df_squad['Schierabile'] = [
+            bool(loan_map.get((my_team, g), {}).get('Schierabile', True) and not da_svinc)
+            for g, da_svinc in zip(df_squad['Giocatore'], da_svincolare_list)
+        ]
+    except Exception:
         df_squad['Costo'] = 1
         df_squad['FuoriSerieA'] = False
+        df_squad['NomeGrezzo'] = df_squad['Giocatore']
         df_squad['Stato_Prestito'] = 'Proprietà'
         df_squad['Badge_Prestito'] = '✅ PROPRIETÀ'
         df_squad['Dettaglio_Prestito'] = 'Cartellino di proprietà'
@@ -239,56 +301,125 @@ def get_roster_dataframe(df_master, player_names=None):
         df_squad['Schierabile'] = True
         df_squad['Da_Svincolare'] = False
 
-    # Enrich with Injuries & Suspensions data
+    # Enrich with Injuries & Suspensions data + Live Probable Lineups (Probabile Titolare vs Probabile Panchinaro)
     try:
         from engine.injuries_manager import get_player_status, load_injuries_data
+        from engine.probable_lineups import load_probable_lineups, get_player_probable_info
         inj_cache = load_injuries_data()
-        
+        prob_cache = load_probable_lineups(force_refresh=False)
+
         statuses = []
         badges = []
         details = []
         schierabili_effettivi = []
-        
+        ruolo_titolarita_list = []
+        prob_voto_pct_list = []
+
         for _, row in df_squad.iterrows():
             g = row['Giocatore']
+            sq = row.get('Squadra', '')
+            is_da_svinc = bool(row.get('Da_Svincolare', False) or row.get('FuoriSerieA', False))
+            is_prestito_out = (row.get('Stato_Prestito') == 'Prestito OUT')
+
             info = get_player_status(g, inj_cache)
             st_val = info.get('Stato', 'Disponibile')
             desc_val = info.get('Dettaglio', '')
-            
-            if st_val == 'Infortunato':
+
+            p_prob = get_player_probable_info(g, prob_cache)
+            if p_prob is not None:
+                prob_pct = int(p_prob.get('Fanta_Pct', 0))
+                if prob_pct == 0 and int(p_prob.get('Fonti_Titolare_Count', 0)) > 0:
+                    prob_pct = int(round(float(p_prob.get('Live_P_Voto', 0.55)) * 100))
+                ballottaggio_txt = p_prob.get('Ballottaggio', '')
+            else:
+                prob_pct = 0
+                ballottaggio_txt = ''
+
+            if is_da_svinc:
+                st_val = 'Fuori Serie A'
+                badge_val = '🚫 DA SVINCOLARE (*)'
+                desc_val = 'Fuori lista Serie A (*) — da svincolare al prossimo mercato'
+                is_ok = False
+                tit_cat = 'Non Schierabile'
+                prob_pct = 0
+            elif is_prestito_out:
+                badge_val = '📤 PRESTITO OUT'
+                if not desc_val:
+                    desc_val = f"Ceduto in prestito a {row.get('Controparte_Prestito', 'altra squadra')}"
+                is_ok = False
+                tit_cat = 'Non Schierabile'
+                prob_pct = 0
+            elif st_val == 'Infortunato':
                 badge_val = '🚑 INFORTUNATO'
+                is_ok = False
+                tit_cat = 'Non Schierabile'
+                prob_pct = 0
             elif st_val == 'Squalificato':
                 badge_val = '🟥 SQUALIFICATO'
-            elif st_val == 'In dubbio':
-                badge_val = '⚠️ IN DUBBIO'
-            elif 'Disponibile (Forzato)' in st_val:
-                badge_val = '🟢 FORZATO DISP.'
-            elif st_val == 'Diffidato':
-                badge_val = '🟨 DIFFIDATO'
+                is_ok = False
+                tit_cat = 'Non Schierabile'
+                prob_pct = 0
             else:
-                badge_val = '✅ DISPONIBILE'
-                
+                is_ok = True
+                # Determine if Probable Starter vs Probable Bench among playable players
+                if p_prob is not None:
+                    is_prob_starter = bool(
+                        p_prob.get('Fanta_Slot') == 'TITOLARE'
+                        or int(p_prob.get('Fonti_Titolare_Count', 0)) > 0
+                        or prob_pct >= 55
+                    )
+                else:
+                    pres = float(row.get('Presenze', 0) or 0)
+                    mins = float(row.get('Minuti_Reali', 0) or 0)
+                    avg_m = mins / max(1.0, pres) if pres > 0 else 0.0
+                    is_prob_starter = bool(pres >= 3 and avg_m >= 55.0)
+                    prob_pct = 70 if is_prob_starter else 25
+
+                if is_prob_starter:
+                    tit_cat = 'Probabile Titolare'
+                    base_badge = f"🟢 PROB. TITOLARE ({prob_pct}%)"
+                else:
+                    tit_cat = 'Probabile Panchinaro'
+                    base_badge = f"🪑 PROB. PANCHINARO ({prob_pct}%)"
+
+                if st_val == 'In dubbio':
+                    badge_val = f"⚠️ IN DUBBIO · {base_badge}"
+                elif st_val == 'Diffidato':
+                    badge_val = f"{base_badge} 🟨"
+                elif 'Disponibile (Forzato)' in st_val:
+                    badge_val = f"🟢 FORZATO DISP. · {base_badge}"
+                else:
+                    badge_val = base_badge
+
+                if ballottaggio_txt and ballottaggio_txt not in desc_val:
+                    desc_val = f"{desc_val} | {ballottaggio_txt}".strip(" |")
+                elif not desc_val and p_prob is not None and p_prob.get('Status_Badge'):
+                    desc_val = p_prob.get('Status_Badge')
+
             statuses.append(st_val)
             badges.append(badge_val)
             details.append(desc_val)
-            
-            # Check availability
-            curr_schierabile = row.get('Schierabile', True)
-            if not curr_schierabile:
-                is_ok = False
-            elif st_val in ['Infortunato', 'Squalificato']:
-                is_ok = False
-            else:
-                is_ok = True
             schierabili_effettivi.append(is_ok)
-            
+            ruolo_titolarita_list.append(tit_cat)
+            prob_voto_pct_list.append(prob_pct)
+
         df_squad['Stato_Disponibilita'] = statuses
         df_squad['Badge_Disponibilita'] = badges
         df_squad['Dettaglio_Disponibilita'] = details
         df_squad['Schierabile'] = schierabili_effettivi
-    except Exception as e:
-        df_squad['Stato_Disponibilita'] = 'Disponibile'
-        df_squad['Badge_Disponibilita'] = '✅ DISPONIBILE'
+        df_squad['Categoria_Schierabile'] = ruolo_titolarita_list
+        df_squad['Prob_Voto_Pct'] = prob_voto_pct_list
+    except Exception:
+        df_squad['Stato_Disponibilita'] = [
+            'Fuori Serie A' if d else 'Disponibile' for d in df_squad.get('Da_Svincolare', False)
+        ]
+        df_squad['Badge_Disponibilita'] = [
+            '🚫 DA SVINCOLARE (*)' if d else '✅ DISPONIBILE' for d in df_squad.get('Da_Svincolare', False)
+        ]
         df_squad['Dettaglio_Disponibilita'] = ''
+        df_squad['Categoria_Schierabile'] = [
+            'Probabile Titolare' if s else 'Non Schierabile' for s in df_squad.get('Schierabile', True)
+        ]
+        df_squad['Prob_Voto_Pct'] = [60 if s else 0 for s in df_squad.get('Schierabile', True)]
 
     return df_squad

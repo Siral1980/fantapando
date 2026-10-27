@@ -110,9 +110,13 @@ elif st.session_state['_last_code_version'] != current_code_version:
     import engine.optimizer
     import engine.fanta_calendar
     import engine.auth_manager
+    import engine.roster_manager
+    import engine.league_manager
     importlib.reload(engine.optimizer)
     importlib.reload(engine.fanta_calendar)
     importlib.reload(engine.auth_manager)
+    importlib.reload(engine.roster_manager)
+    importlib.reload(engine.league_manager)
     from engine.optimizer import (
         MANTRA_FORMATIONS, optimize_best_mantra_lineup,
         CLASSIC_FORMATIONS, optimize_best_classic_lineup, optimize_best_lineup
@@ -123,6 +127,8 @@ elif st.session_state['_last_code_version'] != current_code_version:
         load_users_db, save_users_db, create_or_update_user, delete_user_account,
         is_running_on_localhost, sync_users_and_leagues_to_github
     )
+    from engine.roster_manager import get_roster_dataframe
+    from engine.league_manager import get_out_of_serie_a_summary, get_team_roster_df
     st.session_state['_last_code_version'] = current_code_version
     st.toast("🧹 Rilevate modifiche al codice: moduli ricaricati e cache pulita automaticamente!", icon="🔄")
 
@@ -812,21 +818,34 @@ with tab_rosa:
     loans_out = df_my_roster[df_my_roster['Stato_Prestito'] == 'Prestito OUT'] if 'Stato_Prestito' in df_my_roster.columns else pd.DataFrame()
     out_serie_a = df_my_roster[df_my_roster['Da_Svincolare'] == True] if 'Da_Svincolare' in df_my_roster.columns else pd.DataFrame()
     num_schierabili = len(df_my_roster[df_my_roster['Schierabile'] == True]) if 'Schierabile' in df_my_roster.columns else num_tot
+    if 'Categoria_Schierabile' in df_my_roster.columns:
+        num_prob_titolari = len(df_my_roster[(df_my_roster['Schierabile'] == True) & (df_my_roster['Categoria_Schierabile'] == 'Probabile Titolare')])
+        num_prob_panchinari = len(df_my_roster[(df_my_roster['Schierabile'] == True) & (df_my_roster['Categoria_Schierabile'] == 'Probabile Panchinaro')])
+    else:
+        num_prob_titolari = num_schierabili
+        num_prob_panchinari = 0
 
-    # Top KPI Metrics (7 columns)
-    c1, c2, c3, c4, c5, c6, c7 = st.columns(7)
+    # Top KPI Metrics (8 columns)
+    c1, c2, c2b, c3, c4, c5, c6, c7 = st.columns(8)
     with c1:
         st.markdown(f"""
         <div class="metric-card">
             <div class="metric-title">Totale Rosa</div>
-            <div class="metric-val">{num_tot}</div>
+            <div class="metric-val">{num_tot} <span style="font-size:0.75rem; color:#94a3b8;">({num_schierabili} schier.)</span></div>
         </div>
         """, unsafe_allow_html=True)
     with c2:
         st.markdown(f"""
         <div class="metric-card">
-            <div class="metric-title">Schierabili Sani</div>
-            <div class="metric-val" style="color: #15803d;">{num_schierabili}</div>
+            <div class="metric-title">Prob. Titolari 🟢</div>
+            <div class="metric-val" style="color: #15803d;">{num_prob_titolari}</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with c2b:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-title">Prob. Panchinari 🪑</div>
+            <div class="metric-val" style="color: #0369a1;">{num_prob_panchinari}</div>
         </div>
         """, unsafe_allow_html=True)
     with c3:
@@ -1027,10 +1046,20 @@ with tab_rosa:
                 default=[]
             )
     with f_col2:
-        # Filter by loan / contract / injury status
+        # Filter by loan / contract / injury status / starter vs bench
         stato_filter = st.selectbox(
             "Filtra per stato prestito/disponibilità:",
-            options=["TUTTI", "SOLO SCHIERABILI", "🔄 TUTTI I PRESTITI (IN & OUT)", "📥 PRESTITI IN", "📤 PRESTITI OUT", "🚑 INFORTUNATI / SQUALIFICATI", "🚫 FUORI SERIE A (DA SVINCOLARE)"],
+            options=[
+                "TUTTI",
+                "SOLO SCHIERABILI (TUTTI)",
+                "🟢 SOLO PROBABILI TITOLARI",
+                "🪑 SOLO PROBABILI PANCHINARI",
+                "🔄 TUTTI I PRESTITI (IN & OUT)",
+                "📥 PRESTITI IN",
+                "📤 PRESTITI OUT",
+                "🚑 INFORTUNATI / SQUALIFICATI",
+                "🚫 FUORI SERIE A (DA SVINCOLARE)"
+            ],
             index=0
         )
     
@@ -1042,8 +1071,12 @@ with tab_rosa:
             pattern = '|'.join(ruoli_filter)
             display_df = display_df[display_df['RuoloMantra'].str.contains(pattern, na=False)]
         
-    if stato_filter == "SOLO SCHIERABILI" and 'Schierabile' in display_df.columns:
+    if stato_filter in ("SOLO SCHIERABILI", "SOLO SCHIERABILI (TUTTI)") and 'Schierabile' in display_df.columns:
         display_df = display_df[display_df['Schierabile'] == True]
+    elif stato_filter == "🟢 SOLO PROBABILI TITOLARI" and 'Categoria_Schierabile' in display_df.columns:
+        display_df = display_df[(display_df['Schierabile'] == True) & (display_df['Categoria_Schierabile'] == 'Probabile Titolare')]
+    elif stato_filter == "🪑 SOLO PROBABILI PANCHINARI" and 'Categoria_Schierabile' in display_df.columns:
+        display_df = display_df[(display_df['Schierabile'] == True) & (display_df['Categoria_Schierabile'] == 'Probabile Panchinaro')]
     elif stato_filter == "🔄 TUTTI I PRESTITI (IN & OUT)" and 'Stato_Prestito' in display_df.columns:
         display_df = display_df[display_df['Stato_Prestito'].isin(['Prestito IN', 'Prestito OUT'])]
     elif stato_filter == "📥 PRESTITI IN" and 'Stato_Prestito' in display_df.columns:
@@ -1189,6 +1222,39 @@ with tab_formazione:
                     desc_items.append(f"**{r['Giocatore']}** ({motivo})")
                 st.info(f"💡 Esclusi dalla formazione **{len(uneligible_rows)} giocatori non schierabili**: {'; '.join(desc_items)}.")
             eligible_roster = eligible_roster[eligible_roster['Schierabile'] == True]
+
+        # Breakdown of Playable Players: Probabili Titolari vs Probabili Panchinari
+        if not eligible_roster.empty and 'Categoria_Schierabile' in eligible_roster.columns:
+            role_k = 'RuoloClassic' if is_classic else 'RuoloMantra'
+            df_prob_tit = eligible_roster[eligible_roster['Categoria_Schierabile'] == 'Probabile Titolare']
+            df_prob_pan = eligible_roster[eligible_roster['Categoria_Schierabile'] == 'Probabile Panchinaro']
+            tit_badges = ", ".join([
+                f"**{r['Giocatore']}** (`{r.get(role_k, '')}` · {int(r.get('Prob_Voto_Pct', 70))}%)"
+                for _, r in df_prob_tit.iterrows()
+            ]) or "Nessuno"
+            pan_badges = ", ".join([
+                f"**{r['Giocatore']}** (`{r.get(role_k, '')}` · {int(r.get('Prob_Voto_Pct', 25))}%)"
+                for _, r in df_prob_pan.iterrows()
+            ]) or "Nessuno"
+            st.markdown(
+                f"""
+                <div style="background: rgba(15, 23, 42, 0.88); border: 1px solid #334155; border-radius: 10px; padding: 12px 16px; margin-bottom: 12px;">
+                    <div style="font-weight: 800; color: #f8fafc; font-size: 0.96rem; margin-bottom: 6px;">
+                        👥 Giocatori Schierabili per la {selected_giornata}ª Giornata ({len(eligible_roster)} disponibili):
+                        <span style="color:#4ade80; margin-left:8px;">🟢 {len(df_prob_tit)} Probabili Titolari</span>
+                        <span style="color:#94a3b8; margin:0 6px;">•</span>
+                        <span style="color:#38bdf8;">🪑 {len(df_prob_pan)} Probabili Panchinari</span>
+                    </div>
+                    <div style="font-size: 0.84rem; color: #e2e8f0; margin-bottom: 4px;">
+                        <b style="color:#4ade80;">🟢 Probabili Titolari ({len(df_prob_tit)}):</b> {tit_badges}
+                    </div>
+                    <div style="font-size: 0.84rem; color: #cbd5e1;">
+                        <b style="color:#38bdf8;">🪑 Probabili Panchinari ({len(df_prob_pan)}):</b> {pan_badges}
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
 
         with st.expander("🚑 Gestione Disponibilità & Modifiche Manuali (Infortuni / Squalifiche / Dubbi)", expanded=False):
             st.markdown("""
