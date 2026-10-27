@@ -3050,7 +3050,7 @@ with tab_lega:
             hide_index=True,
             on_select="rerun",
             selection_mode="single-row",
-            key=f"inspect_team_df_table_{active_league}_{target_inspect_team}"
+            key=f"inspect_team_df_table_{active_league}_{selected_inspect_team}"
         )
         if event_insp and hasattr(event_insp, 'selection'):
             s_rows = event_insp.selection.get('rows', [])
