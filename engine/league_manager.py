@@ -229,6 +229,9 @@ def set_league_type(league_type, persist_disk=True, league_id=None):
     except Exception:
         pass
 
+    # Purge stale widget states across tabs
+    purge_team_and_league_session_state()
+
     if persist_disk:
         paths = get_league_paths(league_id)
         cfg = {}
@@ -287,6 +290,47 @@ def get_league_paths(league_id=None):
     }
 
 
+def purge_team_and_league_session_state():
+    """
+    Purges all team-specific and league-specific widget states and transient keys
+    from Streamlit session_state, and clears @st.cache_data.
+    Preserves core authentication, active IDs, and user settings.
+    This guarantees that switching teams or leagues produces a 100% clean UI render,
+    identical to an F5 browser reload.
+    """
+    try:
+        import streamlit as st
+        PRESERVED_KEYS = {
+            'auth_username',
+            'auth_user',
+            'current_user',
+            'force_login_screen',
+            'active_league_id',
+            'active_my_team',
+            'active_league_type',
+            'selected_giornata',
+            '_last_auto_giornata',
+            '_last_code_version',
+            'last_processed_stats_sig',
+            '_admin_panel_expanded',
+            '_admin_user_saved_msg',
+            'setup_mode',
+            'custom_league_data',
+            'custom_league_meta'
+        }
+        keys_to_delete = [
+            k for k in list(st.session_state.keys())
+            if k not in PRESERVED_KEYS and not str(k).endswith('_saved_file_sig')
+        ]
+        for k in keys_to_delete:
+            st.session_state.pop(k, None)
+
+        # Clear Streamlit computation caches
+        st.cache_data.clear()
+    except Exception:
+        pass
+
+
 def set_active_league_id(league_id, persist_disk=True):
     """
     Sets the active league ID, updates session_state, URL query_params,
@@ -315,40 +359,52 @@ def set_active_league_id(league_id, persist_disk=True):
         if league_id in reg:
             league_type = reg[league_id].get('type', 'mantra')
 
+    rosters = load_league_rosters(league_id=league_id)
+    avail_teams = list(rosters.keys()) if rosters else []
+
+    # Check if user has a default team configured for this league
+    try:
+        from engine.auth_manager import get_current_user
+        curr_u = get_current_user()
+        if curr_u:
+            def_teams = curr_u.get('default_team_by_league', {}) or {}
+            u_team = def_teams.get(league_id)
+            if u_team and (not avail_teams or u_team in avail_teams):
+                league_team = u_team
+    except Exception:
+        pass
+
+    if not league_team or (avail_teams and league_team not in avail_teams):
+        if 'Bluelock' in avail_teams:
+            league_team = 'Bluelock'
+        elif avail_teams:
+            league_team = avail_teams[0]
+        else:
+            league_team = 'Bluelock'
+
     try:
         import streamlit as st
         st.session_state['active_league_id'] = league_id
         st.session_state['active_league_type'] = league_type
+        st.session_state['active_my_team'] = league_team
         if hasattr(st, 'query_params'):
             st.query_params['league'] = league_id
             st.query_params['mode'] = league_type
+            st.query_params['team'] = league_team
         # Clear custom session override if user switches to a stored league
         st.session_state.pop('custom_league_data', None)
         st.session_state.pop('custom_league_meta', None)
-        
-        if league_team:
-            st.session_state['active_my_team'] = league_team
-            if hasattr(st, 'query_params'):
-                st.query_params['team'] = league_team
-        else:
-            st.session_state.pop('active_my_team', None)
-
-        # Clear stale widget state across tabs
-        stale_keys = [
-            'diag_team_select',
-            'inspect_team_select',
-            'sim_multiselect_give_league',
-            'sim_selectbox_opp',
-            'sim_multiselect_receive_league',
-            'sim_multiselect_give_all',
-            'roster_player_card_select',
-            'override_sel_p',
-            'bl_rival_sel'
-        ]
-        for k in stale_keys:
-            st.session_state.pop(k, None)
     except Exception:
         pass
+
+    # Synchronize user_roster.json for the new league & team (without recursion)
+    try:
+        sync_user_roster_from_league(league_data=rosters, team_name=league_team, league_id=league_id, update_active_team=False)
+    except Exception:
+        pass
+
+    # Purge all stale widget session state across all tabs and clear cache
+    purge_team_and_league_session_state()
 
     if persist_disk:
         os.makedirs(DATA_DIR, exist_ok=True)
@@ -1074,37 +1130,30 @@ def get_active_my_team(league_id=None):
 def set_active_my_team(team_name, persist_disk=False, league_id=None):
     """
     Sets the active team for the user's current session in st.session_state.
-    Cleans up any stale widget state across tabs.
+    Cleans up all stale widget state across tabs so switching teams is 100% clean (like F5).
+    Synchronizes user_roster.json with the new team's players.
     Optionally persists to the active league's config and root config.
     """
+    lid = league_id or get_active_league_id()
     try:
         import streamlit as st
         st.session_state['active_my_team'] = team_name
         if hasattr(st, 'query_params'):
             st.query_params['team'] = team_name
-
-        # Reset any cached widget keys from previous team across all tabs
-        stale_keys = [
-            'diag_team_select',
-            'inspect_team_select',
-            'sim_multiselect_give_league',
-            'sim_selectbox_opp',
-            'sim_multiselect_receive_league',
-            'sim_multiselect_give_all',
-            'roster_player_card_select',
-            'override_sel_p',
-            'bl_rival_sel',
-            'lineup_force_starters',
-            'lineup_exclude_starters',
-            '_last_live_synced_team'
-        ]
-        for k in stale_keys:
-            st.session_state.pop(k, None)
     except Exception:
         pass
 
+    # Synchronize user_roster.json for this team in this league (without recursion)
+    try:
+        sync_user_roster_from_league(team_name=team_name, league_id=lid, update_active_team=False)
+    except Exception:
+        pass
+
+    # Purge all stale widget session state across all tabs and clear cache
+    purge_team_and_league_session_state()
+
     if persist_disk:
-        paths = get_league_paths(league_id)
+        paths = get_league_paths(lid)
         try:
             with open(paths['config'], 'w', encoding='utf-8') as f:
                 json.dump({'my_team': team_name}, f, indent=2)
@@ -1234,14 +1283,15 @@ def add_or_update_loan(player_name, owner_team, borrower_team):
     return True, f"Prestito di {player_name} da {owner_team} a {borrower_team} registrato con successo!"
 
 
-def sync_user_roster_from_league(league_data=None, team_name='Bluelock', league_id=None):
+def sync_user_roster_from_league(league_data=None, team_name='Bluelock', league_id=None, update_active_team=False):
     """Synchronizes user_roster.json directly from the specified team in league_data."""
     if league_data is None:
         league_data = load_league_rosters(league_id)
     if team_name in league_data:
         pnames = [p['Giocatore'] for p in league_data[team_name]]
         save_user_roster(pnames, league_id=league_id)
-        set_active_my_team(team_name, persist_disk=True, league_id=league_id)
+        if update_active_team:
+            set_active_my_team(team_name, persist_disk=True, league_id=league_id)
         return pnames
     return []
 

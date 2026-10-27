@@ -50,7 +50,8 @@ from engine.league_manager import (
     render_league_upload_section, get_league_metadata, save_league_metadata,
     terminate_loan, add_or_update_loan,
     get_available_leagues, get_active_league_id, set_active_league_id,
-    create_new_league, delete_league, get_league_type, set_league_type
+    create_new_league, delete_league, get_league_type, set_league_type,
+    purge_team_and_league_session_state
 )
 from engine.understat_loader import sync_understat_metrics, get_understat_teams_metrics
 from engine.injuries_manager import (
@@ -715,23 +716,21 @@ with st.sidebar.expander("🚑 Infortuni & Squalifiche Live", expanded=False):
         st.success("✅ Infortuni e squalifiche Serie A aggiornati!")
         st.rerun()
 
-user_squad_names = load_user_roster()
-
 # League Integration in Sidebar
 league_dict = load_league_rosters()
 league_teams = list(league_dict.keys()) if league_dict else []
+current_active_team = get_active_my_team()
+
+# Guarantee user squad is perfectly synchronized with active league team in session
+if league_dict and current_active_team in league_dict:
+    league_players = [p['Giocatore'] for p in league_dict[current_active_team]]
+    user_squad_names = league_players
+else:
+    user_squad_names = load_user_roster()
 
 if league_teams:
     st.sidebar.markdown("---")
     st.sidebar.subheader("🏆 La Mia Lega")
-    current_active_team = get_active_my_team()
-    # Guarantee user squad is perfectly synchronized with active league team in session
-    if current_active_team in league_dict:
-        league_players = [p['Giocatore'] for p in league_dict[current_active_team]]
-        user_squad_names = league_players
-    else:
-        user_squad_names = load_user_roster()
-
     idx_team = league_teams.index(current_active_team) if current_active_team in league_teams else 0
     selected_my_team = st.sidebar.selectbox(
         "Squadra Attiva:",
@@ -754,6 +753,7 @@ if league_teams:
             del st.session_state['custom_league_data']
             st.session_state.pop('custom_league_meta', None)
             st.session_state.pop('active_my_team', None)
+            purge_team_and_league_session_state()
             st.rerun()
 
 st.sidebar.markdown(f"**Rosa Attuale ({current_active_team})**: `{len(user_squad_names)} calciatori`")
@@ -1106,7 +1106,7 @@ with tab_rosa:
             "📋 Seleziona un calciatore per aprire la Scheda Dettagliata (Radar, Understat e Fanta):",
             options=["-- Seleziona o Clicca sulla Tabella --"] + squad_player_options,
             index=0,
-            key="roster_player_card_select"
+            key=f"roster_player_card_select_{current_active_team}"
         )
     with qc2:
         st.caption("💡 **Interattività:** Clicca su qualsiasi riga della tabella per aprire istantaneamente il pop-up modale con grafici radar, statistiche reali e proiezioni.")
@@ -1117,7 +1117,8 @@ with tab_rosa:
         width='stretch',
         hide_index=True,
         on_select="rerun",
-        selection_mode="single-row"
+        selection_mode="single-row",
+        key=f"roster_table_{active_league}_{current_active_team}"
     )
 
     clicked_player = None
@@ -1365,7 +1366,7 @@ with tab_formazione:
                 "Modulo Tattico:",
                 options=modulo_options,
                 index=0,
-                key="select_modulo_override"
+                key=f"select_modulo_override_{current_active_team}"
             )
 
         # Coach Manual Lineup Overrides (Force Starters / Exclude to Bench)
@@ -1376,7 +1377,7 @@ with tab_formazione:
                 "📌 Forza nell'11 Titolare (Scelta del Mister):",
                 options=all_squad_names,
                 default=[],
-                key="lineup_force_starters",
+                key=f"lineup_force_starters_{current_active_team}",
                 help="I giocatori selezionati qui verranno schierati obbligatoriamente nell'11 titolare (compatibilmente con il modulo)."
             )
         with co2:
@@ -1384,7 +1385,7 @@ with tab_formazione:
                 "🚫 Escludi dall'11 Titolare (Manda in Panchina / Tribuna):",
                 options=[p for p in all_squad_names if p not in forced_starters],
                 default=[],
-                key="lineup_exclude_starters",
+                key=f"lineup_exclude_starters_{current_active_team}",
                 help="I giocatori selezionati qui non verranno schierati nell'11 iniziale e partiranno dalla panchina."
             )
 
@@ -2163,6 +2164,7 @@ with tab_scambi:
                 "Ruolo che vuoi RICEVERE:",
                 options=target_role_opts,
                 index=1 if my_weak_roles else 0,
+                key=f"trade_winwin_role_{my_team}",
                 help="Seleziona il ruolo che intendi rinforzare. Di default è impostato sulla tua priorità debole principale."
             )
         with r_col2:
@@ -2171,6 +2173,7 @@ with tab_scambi:
                 "Calciatore che vuoi CEDERE:",
                 options=give_opts,
                 index=0,
+                key=f"trade_winwin_give_{my_team}",
                 help="Puoi filtrare per un tuo specifico esubero o lasciare TUTTI per esplorare tutte le combinazioni."
             )
         with r_col3:
@@ -2179,6 +2182,7 @@ with tab_scambi:
                 "Filtra per Squadra Avversaria:",
                 options=opp_opts,
                 index=0,
+                key=f"trade_winwin_opp_{my_team}",
                 help="Scegli se trattare con un avversario specifico o scansionare l'intera lega."
             )
         with r_col4:
@@ -2191,6 +2195,7 @@ with tab_scambi:
                 "Formato Scambio:",
                 options=list(format_filter_map.keys()),
                 index=0,
+                key=f"trade_winwin_fmt_{my_team}",
                 help="Scegli se vedere tutti i formati, oppure focalizzarti su scambi singoli (1x1) o pacchetti multipli (combo titolari + riserve, 2x1, 1x2)."
             )
             selected_format_filter = format_filter_map[selected_format_label]
@@ -2398,7 +2403,7 @@ with tab_scambi:
                 target_opp_team = st.selectbox(
                     "1. Seleziona Squadra Avversaria:",
                     options=opp_team_candidates,
-                    key="target_finder_opp_team"
+                    key=f"target_finder_opp_team_{my_team}"
                 )
 
             # Get target opponent roster (exclude loans and players to release / out of Serie A)
@@ -2433,7 +2438,7 @@ with tab_scambi:
                 selected_labels = st.multiselect(
                     "2. Scegli il/i Giocatore/i da Chiedere all'Avversario:",
                     options=opp_player_labels,
-                    key="target_finder_selected_players",
+                    key=f"target_finder_selected_players_{my_team}",
                     help="Puoi selezionare un singolo obiettivo (es. una prima punta, un top difensore) o un pacchetto di 2 giocatori."
                 )
                 selected_target_pnames = [label_to_pname[lbl] for lbl in selected_labels]
@@ -2450,7 +2455,7 @@ with tab_scambi:
                 pkg_size_label = st.selectbox(
                     "Formato Pacchetto Offerta:",
                     options=["Tutti i formati (1x1, 2x1, 2x2)", "Solo 1x1 (Scambio Diretto)", "Solo Pacchetti Multipli (2x1, 2x2)"],
-                    key="target_finder_pkg_size"
+                    key=f"target_finder_pkg_size_{my_team}"
                 )
                 pkg_types_map = {
                     "Tutti i formati (1x1, 2x1, 2x2)": ('1x1', '2x1', '2x2'),
@@ -2942,7 +2947,7 @@ with tab_lega:
             with m_col1:
                 st.markdown("##### ❌ Termina un Prestito Esistente")
                 loan_options = [f"{r['Calciatore']} ({r['Proprietario']} ➔ {r['In_Prestito_A']})" for _, r in df_all_loans.iterrows()]
-                selected_loan_to_term = st.selectbox("Seleziona il prestito da risolvere:", options=loan_options, key="select_loan_term_tab4")
+                selected_loan_to_term = st.selectbox("Seleziona il prestito da risolvere:", options=loan_options, key=f"select_loan_term_{active_league}")
                 if st.button("Termina Prestito Selezionato", type="secondary", key="btn_term_loan_tab4", width='stretch'):
                     sel_idx = loan_options.index(selected_loan_to_term)
                     row_sel = df_all_loans.iloc[sel_idx]
@@ -3026,7 +3031,7 @@ with tab_lega:
             hide_index=True,
             on_select="rerun",
             selection_mode="single-row",
-            key="inspect_team_df_table"
+            key=f"inspect_team_df_table_{active_league}_{target_inspect_team}"
         )
         if event_insp and hasattr(event_insp, 'selection'):
             s_rows = event_insp.selection.get('rows', [])
@@ -3333,13 +3338,13 @@ with tab_stats:
                     filter_rival = st.selectbox(
                         "Filtra per Squadra Rivale:",
                         options=["TUTTE LE SQUADRE"] + sorted(list(set(df_opp_bl['Squadra Lega']))),
-                        key="bl_rival_sel"
+                        key=f"bl_rival_sel_{active_league}_{my_team}"
                     )
                 with bl_col2:
                     filter_role = st.selectbox(
                         "Filtra per Ruolo Reparto:",
                         options=["TUTTI", "Attaccanti (Pc / A)", "Centrocampisti (C / T / W / M / E)", "Difensori (Dc / Dd / Ds / B)", "Portieri (Por)"],
-                        key="bl_role_sel"
+                        key=f"bl_role_sel_{active_league}_{my_team}"
                     )
                     
                 if filter_rival != "TUTTE LE SQUADRE":
