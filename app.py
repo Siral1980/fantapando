@@ -2119,12 +2119,15 @@ with tab_scambi:
                 matrix_rows = []
                 c_all = diag_res.get('Conteggio_Totale', {})
                 c_act = diag_res.get('Conteggio_Attivi', {})
+                is_two_striker_mod = diag_res.get('Is_Two_Striker_Modulo', False)
                 quotas_to_show = RECOMMENDED_QUOTAS_CLASSIC if is_classic else RECOMMENDED_QUOTAS
                 for role, q in quotas_to_show.items():
                     act = c_act.get(role, 0)
                     tot = c_all.get(role, 0)
                     min_q = q['min_active']
                     tgt = q['target']
+                    if role == 'Pc' and not is_classic and not is_two_striker_mod:
+                        min_q = 2
                     
                     if act < min_q:
                         status = "🚨 Carente"
@@ -2138,7 +2141,7 @@ with tab_scambi:
                     matrix_rows.append({
                         'Ruolo': role,
                         'Descrizione': q['name'],
-                        'Attivi (con Presenze)': act,
+                        'Attivi (Disponibili & Voto Sicuro)': act,
                         'Totali in Rosa': tot,
                         'Minimo Consigliato': min_q,
                         'Target Ideale': tgt,

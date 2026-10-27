@@ -202,6 +202,72 @@ def compute_real_starter_status(row, tot_matchdays=7):
         }
 
 
+def is_active_squad_player(row, tot_matchdays=7):
+    """
+    Determines if a player is actively usable and reliable for matchday lineups:
+    1. Must NOT be marked outside Serie A or to be released (* in raw name, FuoriSerieA, Da_Svincolare).
+    2. Must NOT be long-term injured (>= 3 weeks, surgery, cruciate ligament, months out).
+    3. Must have sufficient playing minutes to be considered secure for receiving a vote:
+       - Goalkeepers (Por / P): starting goalkeeper (Presenze >= 2, P_Voto >= 0.70, or Minuti_Reali >= 180).
+       - Outfield players:
+         * Status in ['TITOLARE', 'CO_TITOLARE', 'SUPER_SUB']
+         * OR (Presenze >= 2 and Min_Per_Pres >= 30.0 and (Presenze >= 3 or P_Voto >= 0.45))
+         * OR (Presenze >= 2 and Minuti_Reali >= 120 and Min_Per_Pres >= 28.0)
+         * Excludes marginal benchwarmers with negligible minutes (< 28-30 min/app or < 2 appearances).
+    """
+    if hasattr(row, 'to_dict'):
+        row = row.to_dict()
+    elif not isinstance(row, dict):
+        return False
+
+    pname = str(row.get('Giocatore', '')).strip()
+    if not pname:
+        return False
+
+    # 1. Check release / out of Serie A
+    if row.get('FuoriSerieA', False) or row.get('Da_Svincolare', False):
+        return False
+    raw_name = str(row.get('NomeGrezzo', ''))
+    if '*' in raw_name or '*' in pname:
+        return False
+
+    # 2. Medical check: Long-term injury (>= 3 weeks)
+    try:
+        from engine.injuries_manager import classify_injury_status
+        inj = classify_injury_status(pname)
+        if inj.get('Is_Long_Term', False):
+            return False
+    except Exception:
+        pass
+
+    # 3. Sufficient minutes for vote guarantee
+    pres = safe_float(row.get('Presenze', 0))
+    mins = safe_float(row.get('Minuti_Reali', 0))
+    p_voto = safe_float(row.get('P_Voto', 0))
+    m_per_app = (mins / pres) if pres > 0 else 0.0
+
+    roles_str = str(row.get('RuoloMantra', '')) + ';' + str(row.get('RuoloClassic', ''))
+    is_gk = ('Por' in roles_str) or ('P' == str(row.get('RuoloClassic', '')).strip())
+
+    if is_gk:
+        return pres >= 2 or p_voto >= 0.70 or mins >= 180
+
+    st_info = compute_real_starter_status(row, tot_matchdays=tot_matchdays)
+    status = st_info.get('Status', 'MARGINALE')
+
+    if status in ['TITOLARE', 'CO_TITOLARE', 'SUPER_SUB']:
+        return True
+
+    if status == 'SUBENTRANTE' and m_per_app >= 30.0 and (pres >= 2 or p_voto >= 0.50):
+        return True
+
+    if pres >= 2 and mins >= 120 and m_per_app >= 28.0 and p_voto >= 0.45:
+        return True
+
+    return False
+
+
+
 def compute_continuous_trade_value(player_dict, tot_matchdays=7):
     if hasattr(player_dict, 'to_dict'):
         player_dict = player_dict.to_dict()
@@ -640,11 +706,11 @@ def analyze_squad_weaknesses(team_name, league_data, df_master, matchday=8, df_a
             p_roles = [str(row.get('RuoloClassic', '')).strip()]
         else:
             p_roles = parse_mantra_roles(row.get('RuoloMantra', ''))
-        is_active = (row.get('Presenze', 0) >= 2 or row.get('P_Voto', 0) >= 0.50)
+        is_act = is_active_squad_player(row, tot_matchdays=7)
         for r in p_roles:
             if r in role_roster_all:
                 role_roster_all[r].append(row)
-                if is_active:
+                if is_act:
                     role_roster_active[r].append(row)
 
     # 2. Diagnose weaknesses and bottlenecks
@@ -949,28 +1015,74 @@ def analyze_squad_weaknesses(team_name, league_data, df_master, matchday=8, df_a
         # Check Strikers (Pc - Pure Centre Forwards)
         pcs = role_roster_all['Pc']
         pc_active = role_roster_active['Pc']
+        a_active = role_roster_active['A']
         top_pc_gf = max([p.get('GF', 0) for p in pcs]) if pcs else 0
+        recommended_mod = opt_res.get('Modulo', '') if opt_res else ''
+        TWO_STRIKER_MODULES = {'3-5-2', '4-3-1-2', '4-4-2', '3-4-1-2'}
+        is_two_striker = (recommended_mod in TWO_STRIKER_MODULES)
         
-        if len(pc_active) < 3:
+        if len(pc_active) == 0:
             weaknesses.append({
                 'Reparto': 'Attacco (Punte Centrali)',
                 'Ruolo': 'Pc',
                 'Severita': 'CRITICA',
-                'Titolo': 'Carenza critica di Punte Centrali (Pc) attive',
-                'Diagnosi': f"Hai solo {len(pc_active)} Pc attive con voto costante ({', '.join(p['Giocatore'] for p in pc_active)}). Nei moduli a 2 punte (3-5-2, 4-3-1-2, 4-4-2) basta un solo infortunio o squalifica per rimanere senza riserve.",
-                'Obiettivo_Mercato': 'Ingaggiare urgentemente una 3ª o 4ª Pc affidabile'
+                'Titolo': 'Nessuna Punta Centrale (Pc) attiva',
+                'Diagnosi': "Nessuna Pc a disposizione con voto sicuro. Necessario intervenire sul mercato.",
+                'Obiettivo_Mercato': 'Ingaggiare urgentemente una Pc titolare'
             })
-        elif top_pc_gf < 3:
+        elif len(pc_active) == 1:
+            if is_two_striker:
+                weaknesses.append({
+                    'Reparto': 'Attacco (Punte Centrali)',
+                    'Ruolo': 'Pc',
+                    'Severita': 'CRITICA',
+                    'Titolo': f"Carenza di Pc per modulo a 2 punte ({recommended_mod})",
+                    'Diagnosi': f"Hai solo 1 Pc attiva ({pc_active[0]['Giocatore']}) ma il modulo consigliato ({recommended_mod}) prevede 2 punte centrali contemporaneamente.",
+                    'Obiettivo_Mercato': 'Ingaggiare una Pc titolare di rotazione'
+                })
+            elif len(a_active) >= 2:
+                weaknesses.append({
+                    'Reparto': 'Attacco (Punte Centrali)',
+                    'Ruolo': 'Pc',
+                    'Severita': 'MEDIA',
+                    'Titolo': 'Una sola Pc pura in rosa (compensata da seconde punte A)',
+                    'Diagnosi': f"Hai 1 sola Pc attiva ({pc_active[0]['Giocatore']}), ma la presenza di {len(a_active)} seconde punte (A) permette di coprire l'unico slot A/Pc del modulo {recommended_mod}.",
+                    'Obiettivo_Mercato': 'Valutare una Pc di riserva'
+                })
+            else:
+                weaknesses.append({
+                    'Reparto': 'Attacco (Punte Centrali)',
+                    'Ruolo': 'Pc',
+                    'Severita': 'ELEVATA',
+                    'Titolo': 'Una sola Pc pura e poche seconde punte A',
+                    'Diagnosi': f"Hai solo 1 Pc attiva ({pc_active[0]['Giocatore']}) e scarse alternative A per lo slot A/Pc.",
+                    'Obiettivo_Mercato': 'Ingaggiare una Pc o una seconda punta A affidabile'
+                })
+        elif len(pc_active) == 2:
+            if is_two_striker:
+                sev = 'ELEVATA' if len(a_active) == 0 else 'MEDIA'
+                weaknesses.append({
+                    'Reparto': 'Attacco (Punte Centrali)',
+                    'Ruolo': 'Pc',
+                    'Severita': sev,
+                    'Titolo': f"Panchina Pc corta per il modulo a 2 punte ({recommended_mod})",
+                    'Diagnosi': f"Il modulo consigliato ({recommended_mod}) schiera 2 punte centrali contemporaneamente. Con sole 2 Pc attive ({', '.join(p['Giocatore'] for p in pc_active)}), un'assenza costringe ad adattare una A o cambiare modulo.",
+                    'Obiettivo_Mercato': 'Ingaggiare una 3ª Pc di rotazione'
+                })
+            else:
+                # Non è un modulo a due punte! Lo slot centrale è singolo (A/Pc) e può essere coperto anche da A
+                strengths.append(f"Attacco centrale ben dimensionato: 2 Pc attive ({', '.join(p['Giocatore'] for p in pc_active)}) per il modulo a punta singola ({recommended_mod}), supportate dalla duttilità delle seconde punte (A).")
+        elif top_pc_gf < 3 and len(pcs) >= 3:
             weaknesses.append({
                 'Reparto': 'Attacco (Punte Centrali)',
                 'Ruolo': 'Pc',
-                'Severita': 'ELEVATA',
+                'Severita': 'MEDIA',
                 'Titolo': 'Mancanza di un bomber di vertice (Pc Top Tier)',
                 'Diagnosi': f"Hai buone punte di rotazione ({', '.join(p['Giocatore'] for p in pc_active)}), ma nessun bomber da oltre 15 gol stagionali. Un attaccante d'élite massimizzerebbe il potenziale della rosa.",
                 'Obiettivo_Mercato': 'Scambiare un pacchetto di esuberi per una Pc di prima fascia'
             })
         else:
-            strengths.append(f"Reparto Punte ben strutturato con {len(pcs)} Pc disponibili.")
+            strengths.append(f"Reparto Punte ben strutturato con {len(pc_active)} Pc attive disponibili.")
 
         # Check Wings & Second Strikers (W / A / T)
         ws = role_roster_active['W']
@@ -983,6 +1095,9 @@ def analyze_squad_weaknesses(team_name, league_data, df_master, matchday=8, df_a
         if len(a_s) >= 3:
             top_a_names = ', '.join(p['Giocatore'] for p in sorted(a_s, key=lambda x: safe_float(x.get('xFV', 0)), reverse=True)[:3])
             strengths.append(f"Profondità di seconde punte: {len(a_s)} A a disposizione ({top_a_names}), eccellente moneta di scambio sul mercato.")
+        elif len(a_s) >= 1:
+            top_a_names = ', '.join(p['Giocatore'] for p in sorted(a_s, key=lambda x: safe_float(x.get('xFV', 0)), reverse=True))
+            strengths.append(f"Seconde punte duttili: {len(a_s)} A attiva ({top_a_names}) per rifinire e coprire gli slot offensivi.")
 
     # 3. Identify Surplus Trade Assets (Calciatori spendibili sul mercato)
     # Note: Players whose ONLY roles are in critically deficient departments are NOT surplus!
@@ -1070,7 +1185,8 @@ def analyze_squad_weaknesses(team_name, league_data, df_master, matchday=8, df_a
         'Surplus_Cedibili': surplus_assets,
         'Conteggio_Totale': {r: len(role_roster_all[r]) for r in quotas_ref.keys()},
         'Conteggio_Attivi': {r: len(role_roster_active[r]) for r in quotas_ref.keys()},
-        'Opt_Lineup': opt_res
+        'Opt_Lineup': opt_res,
+        'Is_Two_Striker_Modulo': is_two_striker if not is_classic else False
     }
 
 
@@ -1481,7 +1597,7 @@ def find_win_win_trades(
         # Count opponent active roles
         opp_roles_active = {}
         for p in opp_proj_list:
-            is_active = (safe_int(p.get('Presenze', 0)) >= 2 or safe_float(p.get('P_Voto', 0)) >= 0.50)
+            is_active = is_active_squad_player(p, tot_matchdays=7)
             for r in _p_roles(p):
                 if is_active:
                     opp_roles_active[r] = opp_roles_active.get(r, 0) + 1
@@ -2105,8 +2221,8 @@ def simulate_opponent_post_trade(
                    ('M', 2, 'Mediani' if not is_classic else 'Centrocampisti'),
                    ('Pc', 1, 'Punte Centrali' if not is_classic else 'Attaccanti')]
     for r, min_safe, label in role_checks:
-        c_before = sum(1 for p in opp_proj_list if _has_role(p, r) and (safe_int(p.get('Presenze', 0)) >= 2 or safe_float(p.get('P_Voto', 0)) >= 0.50))
-        c_after = sum(1 for p in opp_new_list if _has_role(p, r) and (safe_int(p.get('Presenze', 0)) >= 2 or safe_float(p.get('P_Voto', 0)) >= 0.50))
+        c_before = sum(1 for p in opp_proj_list if _has_role(p, r) and is_active_squad_player(p, tot_matchdays=7))
+        c_after = sum(1 for p in opp_new_list if _has_role(p, r) and is_active_squad_player(p, tot_matchdays=7))
         if c_before >= min_safe and c_after < min_safe:
             critical_flaws.append(f"⚠️ Carenza creata in {label} ({r}): scende a {c_after} giocatori attivi.")
 
