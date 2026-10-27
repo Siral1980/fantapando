@@ -67,8 +67,8 @@ from engine.player_profile_view import (
 from engine.theme_helper import get_global_theme_css
 from engine.auth_manager import (
     get_current_user, is_current_user_admin, render_login_screen,
-    load_users_db, create_or_update_user, delete_user_account,
-    is_running_on_localhost
+    load_users_db, save_users_db, create_or_update_user, delete_user_account,
+    is_running_on_localhost, sync_users_and_leagues_to_github
 )
 
 # Page configuration
@@ -109,13 +109,20 @@ elif st.session_state['_last_code_version'] != current_code_version:
     import importlib
     import engine.optimizer
     import engine.fanta_calendar
+    import engine.auth_manager
     importlib.reload(engine.optimizer)
     importlib.reload(engine.fanta_calendar)
+    importlib.reload(engine.auth_manager)
     from engine.optimizer import (
         MANTRA_FORMATIONS, optimize_best_mantra_lineup,
         CLASSIC_FORMATIONS, optimize_best_classic_lineup, optimize_best_lineup
     )
     from engine.fanta_calendar import get_matchday_from_date, SERIE_A_SCHEDULE
+    from engine.auth_manager import (
+        get_current_user, is_current_user_admin, render_login_screen,
+        load_users_db, save_users_db, create_or_update_user, delete_user_account,
+        is_running_on_localhost, sync_users_and_leagues_to_github
+    )
     st.session_state['_last_code_version'] = current_code_version
     st.toast("🧹 Rilevate modifiche al codice: moduli ricaricati e cache pulita automaticamente!", icon="🔄")
 
@@ -295,6 +302,11 @@ with u_col2:
         st.session_state.pop('active_league_id', None)
         st.session_state.pop('active_my_team', None)
         st.session_state['force_login_screen'] = True
+        try:
+            if hasattr(st, 'query_params'):
+                st.query_params.pop('auth', None)
+        except Exception:
+            pass
         st.rerun()
 
 # -------------------------------------------------------------
@@ -400,11 +412,15 @@ with st.sidebar.expander("⚙️ Gestione Leghe", expanded=False):
 # ADMIN PANEL (SOLO PER ADMIN)
 # -------------------------------------------------------------
 if is_current_user_admin():
-    with st.sidebar.expander("👑 Pannello Admin & Utenti", expanded=False):
-        st.caption("Gestisci gli utenti che possono accedere all'app pubblica su Streamlit Cloud e scegli quali leghe può vedere ciascun utente.")
+    with st.sidebar.expander("👑 Pannello Admin & Utenti", expanded=bool(st.session_state.get('_admin_panel_expanded', False))):
+        st.caption("Gestisci gli utenti che possono accedere all'app pubblica su Streamlit Cloud e scegli quali leghe può vedere ciascun utente. Ogni salvataggio viene ora memorizzato in modo permanente in locale e sincronizzato in automatico con GitHub/Cloud.")
+        if '_admin_user_saved_msg' in st.session_state:
+            st.success(st.session_state.pop('_admin_user_saved_msg'))
+
         all_sys_leagues = get_available_leagues(include_all_for_admin=True)
         all_sys_league_ids = list(all_sys_leagues.keys())
-        users_db = load_users_db().get("users", {})
+        full_db_obj = load_users_db()
+        users_db = full_db_obj.get("users", {})
 
         st.markdown("**👥 Utenti Registrati:**")
         for uname_k, u_info in users_db.items():
@@ -498,7 +514,8 @@ if is_current_user_admin():
                     default_team_by_league=def_team_dict
                 )
                 if ok_u:
-                    st.success(msg_u)
+                    st.session_state['_admin_panel_expanded'] = True
+                    st.session_state['_admin_user_saved_msg'] = msg_u
                     st.rerun()
                 else:
                     st.error(msg_u)
@@ -511,28 +528,38 @@ if is_current_user_admin():
             if st.button("🗑️ Elimina Utente", key="admin_btn_del_user", type="secondary", width='stretch'):
                 ok_du, msg_du = delete_user_account(del_u_sel)
                 if ok_du:
-                    st.success(msg_du)
+                    st.session_state['_admin_panel_expanded'] = True
+                    st.session_state['_admin_user_saved_msg'] = msg_du
                     st.rerun()
                 else:
                     st.error(msg_du)
 
+        st.markdown("---")
+        st.markdown("**💾 Backup & Sincronizzazione Cloud**")
+        st.download_button(
+            "📥 Scarica Backup Utenti (JSON)",
+            data=json.dumps(full_db_obj, indent=2, ensure_ascii=False),
+            file_name="users_db_backup.json",
+            mime="application/json",
+            width='stretch'
+        )
+        uploaded_users_bk = st.file_uploader("📤 Ripristina Utenti da file JSON:", type=["json"], key="admin_restore_users_json")
+        if uploaded_users_bk is not None:
+            try:
+                loaded_bk = json.loads(uploaded_users_bk.read().decode('utf-8'))
+                if isinstance(loaded_bk, dict) and "users" in loaded_bk:
+                    save_users_db(loaded_bk, trigger_git_sync=True)
+                    st.session_state['_admin_panel_expanded'] = True
+                    st.session_state['_admin_user_saved_msg'] = "✅ Backup utenti ripristinato e sincronizzato!"
+                    st.rerun()
+            except Exception as ex_bk:
+                st.error(f"File JSON non valido: {ex_bk}")
+
         if is_running_on_localhost():
-            st.markdown("---")
-            st.markdown("**☁️ Pubblica Utenti & Leghe su Streamlit Cloud**")
-            st.caption("Quando crei un utente o una lega in locale, premi qui per sincronizzarli subito con la versione online su Streamlit Cloud.")
-            if st.button("🚀 Sincronizza Utenti & Leghe sul Cloud", key="admin_btn_sync_cloud", width='stretch'):
-                import subprocess
+            if st.button("🚀 Forza Push Utenti & Leghe sul Cloud", key="admin_btn_sync_cloud", width='stretch'):
                 with st.spinner("Sincronizzazione con GitHub (Streamlit Cloud) in corso..."):
-                    try:
-                        subprocess.run(["git", "add", "data/users_db.json", "data/leagues/"], cwd=APP_DIR, check=False)
-                        subprocess.run(["git", "commit", "-m", "Sync users_db and leagues from Admin Panel"], cwd=APP_DIR, check=False)
-                        res_push = subprocess.run(["git", "push", "fantapando", "HEAD:master"], cwd=APP_DIR, capture_output=True, text=True)
-                        if res_push.returncode == 0:
-                            st.success("✅ Utenti e leghe pubblicati su Streamlit Cloud!")
-                        else:
-                            st.warning(f"Nota Git: {res_push.stderr or res_push.stdout}")
-                    except Exception as ex_git:
-                        st.error(f"Errore durante il push: {ex_git}")
+                    sync_users_and_leagues_to_github(background=False)
+                    st.success("✅ Utenti e leghe pubblicati su Streamlit Cloud (`master` e `dev`)!")
 
 # Calcolo automatico della giornata in base a data odierna e calendario ufficiale Serie A
 auto_giornata, matchday_info = get_matchday_from_date()

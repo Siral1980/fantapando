@@ -453,6 +453,11 @@ def create_new_league(display_name, parsed_rosters=None, my_team=None, league_ty
                 json.dump(pnames, f, indent=2, ensure_ascii=False)
 
     set_active_league_id(league_id, persist_disk=True)
+    try:
+        from engine.auth_manager import sync_users_and_leagues_to_github
+        sync_users_and_leagues_to_github(background=True)
+    except Exception:
+        pass
     return True, league_id, f"Lega '{name}' creata e attivata con successo!"
 
 
@@ -944,6 +949,8 @@ def save_league_rosters(league_data, league_id=None):
         os.makedirs(DATA_DIR, exist_ok=True)
         with open(ROOT_LEAGUE_FILE, 'w', encoding='utf-8') as f:
             json.dump(league_data, f, indent=2, ensure_ascii=False)
+        from engine.auth_manager import sync_users_and_leagues_to_github
+        sync_users_and_leagues_to_github(background=True)
     except Exception:
         pass
     return league_data
