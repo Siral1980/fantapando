@@ -69,7 +69,7 @@ MANTRA_FORMATIONS = {
     },
     '3-4-3': {
         'def_type': '3-def',
-        'slots': ['Por', 'Dc', 'Dc', 'Dc/B', 'E', 'E', 'M', 'M/C', 'W/A', 'W/A', 'A/Pc'],
+        'slots': ['Por', 'Dc', 'Dc', 'Dc/B', 'E', 'E', 'M/C', 'C', 'W/A', 'W/A', 'A/Pc'],
         'max_pc': 1
     }
 }
