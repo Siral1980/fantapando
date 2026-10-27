@@ -1223,17 +1223,17 @@ with tab_formazione:
                 st.info(f"💡 Esclusi dalla formazione **{len(uneligible_rows)} giocatori non schierabili**: {'; '.join(desc_items)}.")
             eligible_roster = eligible_roster[eligible_roster['Schierabile'] == True]
 
-        # Breakdown of Playable Players: Probabili Titolari vs Probabili Panchinari
+        # Breakdown of Playable Players: Probabili Titolari (>=60% dal 1') vs Probabili Panchinari (<60% dal 1')
         if not eligible_roster.empty and 'Categoria_Schierabile' in eligible_roster.columns:
             role_k = 'RuoloClassic' if is_classic else 'RuoloMantra'
             df_prob_tit = eligible_roster[eligible_roster['Categoria_Schierabile'] == 'Probabile Titolare']
             df_prob_pan = eligible_roster[eligible_roster['Categoria_Schierabile'] == 'Probabile Panchinaro']
             tit_badges = ", ".join([
-                f"**{r['Giocatore']}** (`{r.get(role_k, '')}` · {int(r.get('Prob_Voto_Pct', 70))}%)"
+                f"<b>{r['Giocatore']}</b> (<code style='color:#93c5fd; background:rgba(30,41,59,0.7); padding:1px 4px; border-radius:4px;'>{r.get(role_k, '')}</code> · {r.get('Prob_Label') or str(int(r.get('Prob_Voto_Pct', 70))) + '%'})"
                 for _, r in df_prob_tit.iterrows()
             ]) or "Nessuno"
             pan_badges = ", ".join([
-                f"**{r['Giocatore']}** (`{r.get(role_k, '')}` · {int(r.get('Prob_Voto_Pct', 25))}%)"
+                f"<b>{r['Giocatore']}</b> (<code style='color:#93c5fd; background:rgba(30,41,59,0.7); padding:1px 4px; border-radius:4px;'>{r.get(role_k, '')}</code> · {r.get('Prob_Label') or 'Sub. ' + str(int(r.get('Prob_Voto_Pct', 25))) + '%'})"
                 for _, r in df_prob_pan.iterrows()
             ]) or "Nessuno"
             st.markdown(
@@ -1241,14 +1241,14 @@ with tab_formazione:
                 <div style="background: rgba(15, 23, 42, 0.88); border: 1px solid #334155; border-radius: 10px; padding: 12px 16px; margin-bottom: 12px;">
                     <div style="font-weight: 800; color: #f8fafc; font-size: 0.96rem; margin-bottom: 6px;">
                         👥 Giocatori Schierabili per la {selected_giornata}ª Giornata ({len(eligible_roster)} disponibili):
-                        <span style="color:#4ade80; margin-left:8px;">🟢 {len(df_prob_tit)} Probabili Titolari</span>
+                        <span style="color:#4ade80; margin-left:8px;">🟢 {len(df_prob_tit)} Probabili Titolari (≥60% dal 1')</span>
                         <span style="color:#94a3b8; margin:0 6px;">•</span>
                         <span style="color:#38bdf8;">🪑 {len(df_prob_pan)} Probabili Panchinari</span>
                     </div>
-                    <div style="font-size: 0.84rem; color: #e2e8f0; margin-bottom: 4px;">
+                    <div style="font-size: 0.86rem; color: #e2e8f0; margin-bottom: 6px; line-height: 1.5;">
                         <b style="color:#4ade80;">🟢 Probabili Titolari ({len(df_prob_tit)}):</b> {tit_badges}
                     </div>
-                    <div style="font-size: 0.84rem; color: #cbd5e1;">
+                    <div style="font-size: 0.86rem; color: #cbd5e1; line-height: 1.5;">
                         <b style="color:#38bdf8;">🪑 Probabili Panchinari ({len(df_prob_pan)}):</b> {pan_badges}
                     </div>
                 </div>

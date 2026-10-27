@@ -1426,36 +1426,54 @@ def get_team_roster_df(team_name, league_data_or_master=None, df_master=None):
             try:
                 st_i = get_player_status(p_name, inj_c)
                 st_v = st_i.get('Stato', 'Disponibile')
+                pr_i = get_player_probable_info(p_name, prob_c)
+                if st_v == 'Disponibile' and pr_i is not None:
+                    if pr_i.get('Fanta_Slot') == 'INFORTUNATO':
+                        st_v = 'Infortunato'
+                    elif pr_i.get('Fanta_Slot') == 'SQUALIFICATO':
+                        st_v = 'Squalificato'
                 if st_v == 'Infortunato':
                     disp_status = 'Infortunato'
                     badge_disp = '🚑 INFORTUNATO'
-                    det_disp = st_i.get('Dettaglio', '')
+                    det_disp = st_i.get('Dettaglio') or (pr_i.get('Dettaglio_Indisponibile', '') if pr_i else '')
                     schierabile = False
                     tit_cat = 'Non Schierabile'
                 elif st_v == 'Squalificato':
                     disp_status = 'Squalificato'
                     badge_disp = '🟥 SQUALIFICATO'
-                    det_disp = st_i.get('Dettaglio', '')
+                    det_disp = st_i.get('Dettaglio') or (pr_i.get('Dettaglio_Indisponibile', '') if pr_i else '')
                     schierabile = False
                     tit_cat = 'Non Schierabile'
                 else:
-                    pr_i = get_player_probable_info(p_name, prob_c)
                     if pr_i is not None:
-                        pr_pct = int(pr_i.get('Fanta_Pct', 0))
-                        if pr_pct == 0 and int(pr_i.get('Fonti_Titolare_Count', 0)) > 0:
-                            pr_pct = int(round(float(pr_i.get('Live_P_Voto', 0.55)) * 100))
-                        is_st = bool(
-                            pr_i.get('Fanta_Slot') == 'TITOLARE'
-                            or int(pr_i.get('Fonti_Titolare_Count', 0)) > 0
-                            or pr_pct >= 55
-                        )
+                        f_slot_i = pr_i.get('Fanta_Slot', '')
+                        f_pct_i = int(pr_i.get('Fanta_Pct', 0))
+                        bal_i = pr_i.get('Ballottaggio', '')
+                        if f_slot_i == 'TITOLARE':
+                            pr_tit = f_pct_i
+                            pr_sub = 0
+                        else:
+                            pr_sub = f_pct_i
+                            m_b = re.search(r'(\d{1,3})%\s*vs\s*', bal_i)
+                            pr_tit = int(m_b.group(1)) if m_b else 0
+                        is_st = bool(f_slot_i == 'TITOLARE' and pr_tit >= 60)
                     else:
                         pres_v = float(m_info.get('Presenze', p.get('Presenze', 0)) or 0)
                         mins_v = float(m_info.get('Minuti_Reali', 0) or 0)
-                        is_st = bool(pres_v >= 3 and (mins_v / max(1.0, pres_v)) >= 55.0)
-                        pr_pct = 70 if is_st else 25
+                        is_st = bool(pres_v >= 3 and (mins_v / max(1.0, pres_v)) >= 60.0)
+                        pr_tit = 70 if is_st else 0
+                        pr_sub = 0 if is_st else 25
                     tit_cat = 'Probabile Titolare' if is_st else 'Probabile Panchinaro'
-                    badge_disp = f"🟢 PROB. TITOLARE ({pr_pct}%)" if is_st else f"🪑 PROB. PANCHINARO ({pr_pct}%)"
+                    if is_st:
+                        badge_disp = f"🟢 PROB. TITOLARE ({pr_tit}%)"
+                    else:
+                        if pr_tit > 0 and pr_sub > 0:
+                            lbl_p = f"Tit. {pr_tit}% · Sub. {pr_sub}%"
+                        elif pr_tit > 0:
+                            lbl_p = f"Tit. {pr_tit}%"
+                        else:
+                            lbl_p = f"Sub. {pr_sub}%"
+                        badge_disp = f"🪑 PROB. PANCHINARO ({lbl_p})"
             except Exception:
                 pass
 

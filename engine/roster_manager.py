@@ -314,6 +314,8 @@ def get_roster_dataframe(df_master, player_names=None):
         schierabili_effettivi = []
         ruolo_titolarita_list = []
         prob_voto_pct_list = []
+        prob_titolare_pct_list = []
+        prob_label_list = []
 
         for _, row in df_squad.iterrows():
             g = row['Giocatore']
@@ -327,12 +329,27 @@ def get_roster_dataframe(df_master, player_names=None):
 
             p_prob = get_player_probable_info(g, prob_cache)
             if p_prob is not None:
-                prob_pct = int(p_prob.get('Fanta_Pct', 0))
-                if prob_pct == 0 and int(p_prob.get('Fonti_Titolare_Count', 0)) > 0:
-                    prob_pct = int(round(float(p_prob.get('Live_P_Voto', 0.55)) * 100))
+                f_slot = p_prob.get('Fanta_Slot', '')
+                f_pct = int(p_prob.get('Fanta_Pct', 0))
                 ballottaggio_txt = p_prob.get('Ballottaggio', '')
+                if st_val == 'Disponibile':
+                    if f_slot == 'INFORTUNATO':
+                        st_val = 'Infortunato'
+                        desc_val = p_prob.get('Dettaglio_Indisponibile') or 'Infortunato'
+                    elif f_slot == 'SQUALIFICATO':
+                        st_val = 'Squalificato'
+                        desc_val = p_prob.get('Dettaglio_Indisponibile') or 'Squalificato'
+                if f_slot == 'TITOLARE':
+                    prob_titolare_pct = f_pct
+                    prob_subentro_pct = 0
+                else:
+                    prob_subentro_pct = f_pct
+                    m_bal = re.search(r'(\d{1,3})%\s*vs\s*', ballottaggio_txt)
+                    prob_titolare_pct = int(m_bal.group(1)) if m_bal else 0
             else:
-                prob_pct = 0
+                f_slot = ''
+                prob_titolare_pct = 0
+                prob_subentro_pct = 0
                 ballottaggio_txt = ''
 
             if is_da_svinc:
@@ -342,6 +359,8 @@ def get_roster_dataframe(df_master, player_names=None):
                 is_ok = False
                 tit_cat = 'Non Schierabile'
                 prob_pct = 0
+                prob_titolare_pct = 0
+                prob_lbl = '0%'
             elif is_prestito_out:
                 badge_val = '📤 PRESTITO OUT'
                 if not desc_val:
@@ -349,38 +368,50 @@ def get_roster_dataframe(df_master, player_names=None):
                 is_ok = False
                 tit_cat = 'Non Schierabile'
                 prob_pct = 0
+                prob_titolare_pct = 0
+                prob_lbl = '0%'
             elif st_val == 'Infortunato':
                 badge_val = '🚑 INFORTUNATO'
                 is_ok = False
                 tit_cat = 'Non Schierabile'
                 prob_pct = 0
+                prob_titolare_pct = 0
+                prob_lbl = '0%'
             elif st_val == 'Squalificato':
                 badge_val = '🟥 SQUALIFICATO'
                 is_ok = False
                 tit_cat = 'Non Schierabile'
                 prob_pct = 0
+                prob_titolare_pct = 0
+                prob_lbl = '0%'
             else:
                 is_ok = True
-                # Determine if Probable Starter vs Probable Bench among playable players
+                # Probabili Titolari MUST have at least 60% probability of starting the match (dal 1')
                 if p_prob is not None:
-                    is_prob_starter = bool(
-                        p_prob.get('Fanta_Slot') == 'TITOLARE'
-                        or int(p_prob.get('Fonti_Titolare_Count', 0)) > 0
-                        or prob_pct >= 55
-                    )
+                    is_prob_starter = bool(f_slot == 'TITOLARE' and prob_titolare_pct >= 60)
                 else:
                     pres = float(row.get('Presenze', 0) or 0)
                     mins = float(row.get('Minuti_Reali', 0) or 0)
                     avg_m = mins / max(1.0, pres) if pres > 0 else 0.0
-                    is_prob_starter = bool(pres >= 3 and avg_m >= 55.0)
-                    prob_pct = 70 if is_prob_starter else 25
+                    is_prob_starter = bool(pres >= 3 and avg_m >= 60.0)
+                    prob_titolare_pct = 70 if is_prob_starter else 0
+                    prob_subentro_pct = 0 if is_prob_starter else 25
 
                 if is_prob_starter:
                     tit_cat = 'Probabile Titolare'
-                    base_badge = f"🟢 PROB. TITOLARE ({prob_pct}%)"
+                    prob_pct = prob_titolare_pct
+                    prob_lbl = f"{prob_titolare_pct}%"
+                    base_badge = f"🟢 PROB. TITOLARE ({prob_titolare_pct}%)"
                 else:
                     tit_cat = 'Probabile Panchinaro'
-                    base_badge = f"🪑 PROB. PANCHINARO ({prob_pct}%)"
+                    prob_pct = prob_titolare_pct if prob_titolare_pct > 0 else prob_subentro_pct
+                    if prob_titolare_pct > 0 and prob_subentro_pct > 0:
+                        prob_lbl = f"Tit. {prob_titolare_pct}% · Sub. {prob_subentro_pct}%"
+                    elif prob_titolare_pct > 0:
+                        prob_lbl = f"Tit. {prob_titolare_pct}%"
+                    else:
+                        prob_lbl = f"Sub. {prob_subentro_pct}%"
+                    base_badge = f"🪑 PROB. PANCHINARO ({prob_lbl})"
 
                 if st_val == 'In dubbio':
                     badge_val = f"⚠️ IN DUBBIO · {base_badge}"
@@ -402,6 +433,8 @@ def get_roster_dataframe(df_master, player_names=None):
             schierabili_effettivi.append(is_ok)
             ruolo_titolarita_list.append(tit_cat)
             prob_voto_pct_list.append(prob_pct)
+            prob_titolare_pct_list.append(prob_titolare_pct)
+            prob_label_list.append(prob_lbl)
 
         df_squad['Stato_Disponibilita'] = statuses
         df_squad['Badge_Disponibilita'] = badges
@@ -409,6 +442,8 @@ def get_roster_dataframe(df_master, player_names=None):
         df_squad['Schierabile'] = schierabili_effettivi
         df_squad['Categoria_Schierabile'] = ruolo_titolarita_list
         df_squad['Prob_Voto_Pct'] = prob_voto_pct_list
+        df_squad['Prob_Titolare_Pct'] = prob_titolare_pct_list
+        df_squad['Prob_Label'] = prob_label_list
     except Exception:
         df_squad['Stato_Disponibilita'] = [
             'Fuori Serie A' if d else 'Disponibile' for d in df_squad.get('Da_Svincolare', False)
@@ -421,5 +456,7 @@ def get_roster_dataframe(df_master, player_names=None):
             'Probabile Titolare' if s else 'Non Schierabile' for s in df_squad.get('Schierabile', True)
         ]
         df_squad['Prob_Voto_Pct'] = [60 if s else 0 for s in df_squad.get('Schierabile', True)]
+        df_squad['Prob_Titolare_Pct'] = [60 if s else 0 for s in df_squad.get('Schierabile', True)]
+        df_squad['Prob_Label'] = ['60%' if s else '0%' for s in df_squad.get('Schierabile', True)]
 
     return df_squad
