@@ -1112,7 +1112,7 @@ def optimize_best_classic_lineup(df_projected_roster, allowed_formations=None):
                     rem_10 = [t for t in tits if t['Giocatore'] != r_starters[0]['Giocatore']]
                     cov_switch = None
                     for b_cand in playable_outfield:
-                        is_ok, new_mod, _ = can_lineup_form_any_valid_classic(rem_10 + [b_cand], preferred_formation=c['Modulo'])
+                        is_ok, new_mod = can_lineup_form_any_valid_classic(rem_10 + [b_cand], preferred_formation=c['Modulo'])
                         if is_ok:
                             cov_switch = {
                                 'Slot': r_code,
@@ -1251,7 +1251,7 @@ def order_bench_classic_mode(titolari, df_bench_candidates, max_subs=5):
     return bench_final
 
 
-def can_lineup_form_any_valid_classic(players_list):
+def can_lineup_form_any_valid_classic(players_list, preferred_formation=None):
     """Checks if 11 players can form any of the 7 Classic formations."""
     if len(players_list) != 11:
         return False, None

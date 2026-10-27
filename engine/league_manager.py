@@ -175,39 +175,43 @@ def get_active_league_id():
 def get_league_type(league_id=None):
     """
     Returns 'mantra' or 'classic' for the active or specified league.
-    Prioritizes session state -> query params -> league config -> registry -> fallback ('mantra').
+    Prioritizes:
+    1. Specified or active league's config (paths['config'])
+    2. Registry entry (leagues_registry.json)
+    3. Session state active_league_type (if active league matches)
+    4. Fallback ('mantra')
     """
-    try:
-        import streamlit as st
-        if 'active_league_type' in st.session_state and st.session_state['active_league_type']:
-            return st.session_state['active_league_type'].lower()
-        if hasattr(st, 'query_params'):
-            param_t = st.query_params.get('mode') or st.query_params.get('type')
-            if isinstance(param_t, list) and len(param_t) > 0:
-                param_t = param_t[0]
-            if param_t and param_t.lower() in ['mantra', 'classic']:
-                st.session_state['active_league_type'] = param_t.lower()
-                return param_t.lower()
-    except Exception:
-        pass
+    lid = league_id or get_active_league_id()
 
-    paths = get_league_paths(league_id)
+    # 1. League config file
+    paths = get_league_paths(lid)
     if os.path.exists(paths['config']):
         try:
             with open(paths['config'], 'r', encoding='utf-8') as f:
                 cfg = json.load(f)
                 lt = cfg.get('league_type')
-                if lt and lt.lower() in ['mantra', 'classic']:
-                    return lt.lower()
+                if lt and str(lt).lower() in ['mantra', 'classic']:
+                    return str(lt).lower()
         except Exception:
             pass
 
-    leagues = get_available_leagues()
-    lid = league_id or get_active_league_id()
+    # 2. Registry file
+    leagues = get_available_leagues(include_all_for_admin=True)
     if lid in leagues and 'type' in leagues[lid]:
         lt = leagues[lid]['type']
-        if lt and lt.lower() in ['mantra', 'classic']:
-            return lt.lower()
+        if lt and str(lt).lower() in ['mantra', 'classic']:
+            return str(lt).lower()
+
+    # 3. Streamlit session state fallback
+    try:
+        import streamlit as st
+        active_lid = st.session_state.get('active_league_id')
+        if (not league_id or active_lid == lid) and 'active_league_type' in st.session_state:
+            lt = st.session_state.get('active_league_type')
+            if lt and str(lt).lower() in ['mantra', 'classic']:
+                return str(lt).lower()
+    except Exception:
+        pass
 
     return 'mantra'
 
@@ -335,7 +339,7 @@ def set_active_league_id(league_id, persist_disk=True):
     """
     Sets the active league ID, updates session_state, URL query_params,
     and optionally persists to active_league.json and syncs root files.
-    Automatically aligns active_my_team with the newly selected league.
+    Automatically aligns active_my_team and active_league_type with the newly selected league.
     """
     leagues = get_available_leagues()
     if league_id not in leagues:
@@ -344,20 +348,25 @@ def set_active_league_id(league_id, persist_disk=True):
     paths = get_league_paths(league_id)
 
     # Read configured team and league_type for this league
+    reg = get_available_leagues(include_all_for_admin=True)
     league_team = None
-    league_type = 'mantra'
+    league_type = None
     if os.path.exists(paths['config']):
         try:
             with open(paths['config'], 'r', encoding='utf-8') as f:
                 cfg = json.load(f)
                 league_team = cfg.get('my_team')
-                league_type = cfg.get('league_type', 'mantra')
+                league_type = cfg.get('league_type')
         except Exception:
             pass
+
+    if not league_type or str(league_type).lower() not in ['mantra', 'classic']:
+        if league_id in reg and 'type' in reg[league_id]:
+            league_type = str(reg[league_id]['type']).lower()
+        else:
+            league_type = 'mantra'
     else:
-        reg = get_available_leagues()
-        if league_id in reg:
-            league_type = reg[league_id].get('type', 'mantra')
+        league_type = str(league_type).lower()
 
     rosters = load_league_rosters(league_id=league_id)
     avail_teams = list(rosters.keys()) if rosters else []
@@ -411,6 +420,18 @@ def set_active_league_id(league_id, persist_disk=True):
         try:
             with open(ACTIVE_LEAGUE_FILE, 'w', encoding='utf-8') as f:
                 json.dump({"active_league": league_id}, f, indent=2)
+        except Exception:
+            pass
+        # Ensure paths['config'] always records both my_team and league_type
+        try:
+            cfg = {}
+            if os.path.exists(paths['config']):
+                with open(paths['config'], 'r', encoding='utf-8') as f:
+                    cfg = json.load(f)
+            cfg['my_team'] = league_team
+            cfg['league_type'] = league_type
+            with open(paths['config'], 'w', encoding='utf-8') as f:
+                json.dump(cfg, f, indent=2)
         except Exception:
             pass
 
@@ -1154,14 +1175,27 @@ def set_active_my_team(team_name, persist_disk=False, league_id=None):
 
     if persist_disk:
         paths = get_league_paths(lid)
+        curr_lt = get_league_type(lid)
         try:
+            cfg = {}
+            if os.path.exists(paths['config']):
+                with open(paths['config'], 'r', encoding='utf-8') as f:
+                    cfg = json.load(f)
+            cfg['my_team'] = team_name
+            cfg['league_type'] = curr_lt
             with open(paths['config'], 'w', encoding='utf-8') as f:
-                json.dump({'my_team': team_name}, f, indent=2)
+                json.dump(cfg, f, indent=2)
         except Exception:
             pass
         try:
+            root_cfg = {}
+            if os.path.exists(ROOT_CONFIG_FILE):
+                with open(ROOT_CONFIG_FILE, 'r', encoding='utf-8') as f:
+                    root_cfg = json.load(f)
+            root_cfg['my_team'] = team_name
+            root_cfg['league_type'] = curr_lt
             with open(ROOT_CONFIG_FILE, 'w', encoding='utf-8') as f:
-                json.dump({'my_team': team_name}, f, indent=2)
+                json.dump(root_cfg, f, indent=2)
         except Exception:
             pass
 

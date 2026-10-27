@@ -920,7 +920,7 @@ with tab_rosa:
         mean_suff = round(float(df_def['Pct_Sufficienza'].fillna(0).mean()), 1) if not df_def.empty and 'Pct_Sufficienza' in df_def.columns else 0.0
         st.markdown(f"""
         <div class="metric-card">
-            <div class="metric-title">Sufficienza D-Factor 🛡️</div>
+            <div class="metric-title">{'Sufficienza Difesa 🛡️' if is_classic else 'Sufficienza D-Factor 🛡️'}</div>
             <div class="metric-val" style="color: #60a5fa;">{mean_suff}%</div>
         </div>
         """, unsafe_allow_html=True)
@@ -948,7 +948,7 @@ with tab_rosa:
             </p>
         """, unsafe_allow_html=True)
         for _, r in out_serie_a.iterrows():
-            st.markdown(f"- 🚫 **{r['Giocatore']} \\*** ({r['RuoloMantra']}) — Costo d'Asta: **{r['Costo']} cr** — *Fuori lista Serie A, non schierabile*")
+            st.markdown(f"- 🚫 **{r['Giocatore']} \\*** ({r['RuoloClassic'] if is_classic else r['RuoloMantra']}) — Costo d'Asta: **{r['Costo']} cr** — *Fuori lista Serie A, non schierabile*")
         st.markdown("</div>", unsafe_allow_html=True)
 
     # 2. Loan Overview Callout
@@ -966,14 +966,14 @@ with tab_rosa:
             if not loans_in.empty:
                 st.markdown("**📥 Prestiti in Entrata (IN):**")
                 for _, r in loans_in.iterrows():
-                    st.markdown(f"- 📥 **{r['Giocatore']}** ({r['RuoloMantra']}): *{r['Dettaglio_Prestito']}* (costo 0 cr) — <span style='color: #00f0ff; font-weight: 800;'>✅ Schierabile</span>", unsafe_allow_html=True)
+                    st.markdown(f"- 📥 **{r['Giocatore']}** ({r['RuoloClassic'] if is_classic else r['RuoloMantra']}): *{r['Dettaglio_Prestito']}* (costo 0 cr) — <span style='color: #00f0ff; font-weight: 800;'>✅ Schierabile</span>", unsafe_allow_html=True)
             else:
                 st.markdown("*(Nessun prestito in entrata)*")
         with col_l2:
             if not loans_out.empty:
                 st.markdown("**📤 Prestiti in Uscita (OUT):**")
                 for _, r in loans_out.iterrows():
-                    st.markdown(f"- 📤 **{r['Giocatore']}** ({r['RuoloMantra']}): *{r['Dettaglio_Prestito']}* (asta: {r['Costo']} cr) — <span style='color: #ff9f1c; font-weight: 800;'>🚫 Non schierabile</span>", unsafe_allow_html=True)
+                    st.markdown(f"- 📤 **{r['Giocatore']}** ({r['RuoloClassic'] if is_classic else r['RuoloMantra']}): *{r['Dettaglio_Prestito']}* (asta: {r['Costo']} cr) — <span style='color: #ff9f1c; font-weight: 800;'>🚫 Non schierabile</span>", unsafe_allow_html=True)
             else:
                 st.markdown("*(Nessun prestito in uscita)*")
         st.markdown("</div>", unsafe_allow_html=True)
@@ -1171,7 +1171,7 @@ with tab_rosa:
         st.download_button(
             "📥 Scarica Rosa in CSV",
             data=display_df[cols_to_show].to_csv(index=False),
-            file_name="mia_rosa_mantra.csv",
+            file_name=f"mia_rosa_{'classic' if is_classic else 'mantra'}.csv",
             mime="text/csv"
         )
     with exp_c2:
@@ -1188,10 +1188,16 @@ with tab_rosa:
 with tab_formazione:
     st.header(f"🏆 Formazione Consigliata per la Giornata {selected_giornata} — {current_active_team}")
     st.caption(f"💡 Formazione e modulo ottimizzati in tempo reale per la rosa di **{current_active_team}** ({len(df_my_roster)} calciatori).")
-    st.markdown(
-        "L'algoritmo valuta **tutti i 10 moduli ufficiali Mantra**, rispetta i vincoli di ruolo e massimizza la "
-        "somma di $xFV$ + il **D-Factor Mantra con Portiere compreso** e bonus imbattibilità."
-    )
+    if is_classic:
+        st.markdown(
+            "L'algoritmo valuta **tutti i 7 moduli ufficiali Classic** (4-3-3, 3-4-3, 4-4-2, 3-5-2, 4-5-1, 5-3-2, 5-4-1), "
+            "rispetta i ruoli Classic (**P, D, C, A**) e massimizza la somma di $xFV$ + il **Modificatore della Difesa Classic** e bonus imbattibilità."
+        )
+    else:
+        st.markdown(
+            "L'algoritmo valuta **tutti i 10 moduli ufficiali Mantra**, rispetta i vincoli di ruolo e massimizza la "
+            "somma di $xFV$ + il **D-Factor Mantra con Portiere compreso** e bonus imbattibilità."
+        )
     
     if df_my_roster.empty:
         st.warning("La tua rosa è vuota! Aggiungi dei giocatori nella scheda 'La Mia Rosa'.")
@@ -1456,7 +1462,7 @@ with tab_formazione:
             with k4:
                 st.markdown(f"""
                 <div class="metric-card">
-                    <div class="metric-title">Bonus D-Factor Atteso</div>
+                    <div class="metric-title">{'Bonus Modif. Difesa' if is_classic else 'Bonus D-Factor Atteso'}</div>
                     <div class="metric-val" style="color: #f59e0b;">+{opt_res['D_Factor_Atteso']} pts</div>
                 </div>
                 """, unsafe_allow_html=True)
@@ -1518,10 +1524,12 @@ with tab_formazione:
             mid_line = [t for t in titolari_list if t['Slot_Assegnato'] in ['E', 'E/W', 'M', 'M/C', 'C', 'C/T', 'W', 'W/T', 'T', 'T/A']]
             att_line = [t for t in titolari_list if t['Slot_Assegnato'] in ['A/Pc', 'W/A', 'Pc', 'A', 'T/A/Pc']]
 
+            def_title = "🛡️ DIFESA (MODIFICATORE)" if is_classic else "🛡️ DIFESA (D-FACTOR REPARTO)"
+            mid_title = "⚙️ CENTROCAMPO" if is_classic else "⚙️ CENTROCAMPO & TREQUARTI"
             for section_name, section_players in [
                 ("🧤 PORTIERE", por_line),
-                ("🛡️ DIFESA (D-FACTOR REPARTO)", def_line),
-                ("⚙️ CENTROCAMPO & TREQUARTI", mid_line),
+                (def_title, def_line),
+                (mid_title, mid_line),
                 ("⚽ ATTACCO", att_line)
             ]:
                 if section_players:
@@ -1660,8 +1668,12 @@ with tab_formazione:
                         motivo = f"Shot-stopping d'élite ({gp:+.2f} gol evitati vs PSxG, {parate_p:.1f}% parate) e tenuta difensiva ({def_xga:.2f} xGA contro {t['Match']})."
                     elif any(r in slot_n for r in ['Dc', 'Dd', 'Ds', 'B', 'D']):
                         metrica_chiave = f"🛡️ Sufficienza: {suff_v:.1f}% (>=6) | MV: {mv_v:.2f}"
-                        impatto_bonus = f"D-Factor Reparto (Voto atteso: {t['Pred_Voto']})"
-                        motivo = f"Pilastro difensivo: garantisce costanza di voto ({suff_v:.1f}% >= 6) per massimizzare il bonus D-Factor."
+                        if is_classic:
+                            impatto_bonus = f"Modificatore Difesa (Voto atteso: {t['Pred_Voto']})"
+                            motivo = f"Pilastro difensivo: garantisce costanza di voto ({suff_v:.1f}% >= 6) per concorrere al bonus Modificatore Difesa."
+                        else:
+                            impatto_bonus = f"D-Factor Reparto (Voto atteso: {t['Pred_Voto']})"
+                            motivo = f"Pilastro difensivo: garantisce costanza di voto ({suff_v:.1f}% >= 6) per massimizzare il bonus D-Factor."
                     elif any(r in slot_n for r in ['E', 'M']):
                         metrica_chiave = f"🛡️ Suff: {suff_v:.1f}% | KP: {kp_v:.1f}/90 | xA: {xa_v:.2f}"
                         impatto_bonus = f"+ASS: {exp_ass_v:.2f} | D-Factor filtro"
@@ -1964,7 +1976,7 @@ with tab_formazione:
                         'Delta_vs_Top': st.column_config.NumberColumn('Δ vs Top', format='%+.2f'),
                         'Stato_Copertura': st.column_config.TextColumn('Copertura Panchina', width='large'),
                         'xFV_Titolari': st.column_config.NumberColumn('xFV Titolari', format='%.2f'),
-                        'D_Factor': st.column_config.NumberColumn('D-Factor', format='%.2f'),
+                        'D_Factor': st.column_config.NumberColumn('Modificatore Difesa' if is_classic else 'D-Factor', format='%.2f'),
                         'Punti_Robusti': st.column_config.NumberColumn('Punteggio Robusto', format='%.2f'),
                     }
                 )
@@ -2295,17 +2307,19 @@ with tab_scambi:
                         """, unsafe_allow_html=True)
                         for cedi in give_list:
                             sig_badge = f"<span style='background:#f97316;color:white;padding:1px 6px;border-radius:4px;font-size:0.75rem;font-weight:bold;'>{cedi.get('Signal', '')}</span>" if 'SELL-HIGH' in cedi.get('Signal', '') else ""
-                            if 'Por' in cedi.get('RuoloMantra', ''):
+                            is_gk_cedi = (cedi.get('RuoloClassic') == 'P') if is_classic else ('Por' in cedi.get('RuoloMantra', ''))
+                            if is_gk_cedi:
                                 adv_give_html = f"<div style='color: #38bdf8; font-size: 0.80rem; margin-top: 2px;'>🧤 G.Prevented: <b>{cedi.get('Goals_Prevented', 0.0):+.2f} ({cedi.get('Goals_Prevented_90', 0.0):+.2f}/90)</b> | Parate: <b>{cedi.get('Pct_Parate', 70.0):.1f}%</b> | Blunders: <b>{cedi.get('Errors_Leading_To_Goal', 0)}</b></div>"
                             else:
                                 adv_give_html = f"<div style='color: #6ee7b7; font-size: 0.80rem; margin-top: 2px;'>⚽ xG: <b>{cedi.get('xG_Tot', 0.0):.2f} ({cedi.get('xG_90', 0.0):.2f}/90)</b> | Tiri: <b>{cedi.get('Tiri_90', 0.0):.1f}/90</b> | ΔxG: <b>{cedi.get('Delta_xG', 0.0):+.2f}</b></div>"
+                            role_disp_give = cedi.get('RuoloClassic' if is_classic else 'RuoloMantra', cedi.get('RuoloMantra', ''))
                             st.markdown(f"""
                             <div style="background: rgba(239, 68, 68, 0.08); border-left: 4px solid #ef4444; padding: 10px 14px; border-radius: 6px; margin-bottom: 8px;">
                                 <div style="font-size: 1.05rem; font-weight: bold; color: #f8fafc;">
                                     {cedi['Giocatore']} {sig_badge}
                                     <span style="font-size: 0.78rem; color: #94a3b8; font-weight: normal;">(FVM: <b>{cedi.get('FVM', cedi.get('Costo', 0))}</b>)</span>
                                 </div>
-                                <div style="color: #cbd5e1; font-size: 0.85rem;">{cedi['Squadra']} — <b>{cedi['RuoloMantra']}</b></div>
+                                <div style="color: #cbd5e1; font-size: 0.85rem;">{cedi['Squadra']} — <b>{role_disp_give}</b></div>
                                 <div style="color: #94a3b8; font-size: 0.80rem; margin-top: 2px;">xFV Giornata: <b>{cedi['xFV']:.2f}</b> | FM: <b>{cedi['FM']:.2f}</b></div>
                                 {adv_give_html}
                             </div>
@@ -2337,18 +2351,20 @@ with tab_scambi:
                             tit_badge = f"<span style='background:{tit_color};color:white;padding:1px 6px;border-radius:4px;font-size:0.75rem;font-weight:bold;'>{ricevi.get('Badge_Titolarita', status_tit)}</span>"
                             stash_badge = f"<span style='background:#d97706;color:white;padding:1px 6px;border-radius:4px;font-size:0.75rem;font-weight:bold;'>🩹 STASH INFORTUNIO</span>" if ricevi.get('Is_Stash_Injury') else ""
 
-                            if 'Por' in ricevi.get('RuoloMantra', ''):
+                            is_gk_rec = (ricevi.get('RuoloClassic') == 'P') if is_classic else ('Por' in ricevi.get('RuoloMantra', ''))
+                            if is_gk_rec:
                                 adv_rec_html = f"<div style='color: #38bdf8; font-size: 0.80rem; margin-top: 2px;'>🧤 G.Prevented: <b>{ricevi.get('Goals_Prevented', 0.0):+.2f} ({ricevi.get('Goals_Prevented_90', 0.0):+.2f}/90)</b> | Parate: <b>{ricevi.get('Pct_Parate', 70.0):.1f}%</b> | Blunders: <b>{ricevi.get('Errors_Leading_To_Goal', 0)}</b></div>"
                             else:
                                 adv_rec_html = f"<div style='color: #6ee7b7; font-size: 0.80rem; margin-top: 2px;'>⚽ xG: <b>{ricevi.get('xG_Tot', 0.0):.2f} ({ricevi.get('xG_90', 0.0):.2f}/90)</b> | KP: <b>{ricevi.get('Key_Passes_90', 0.0):.1f}/90</b> | ΔxG: <b>{ricevi.get('Delta_xG', 0.0):+.2f}</b></div>"
 
+                            role_disp_rec = ricevi.get('RuoloClassic' if is_classic else 'RuoloMantra', ricevi.get('RuoloMantra', ''))
                             st.markdown(f"""
                             <div style="background: rgba(16, 185, 129, 0.08); border-left: 4px solid #10b981; padding: 10px 14px; border-radius: 6px; margin-bottom: 8px;">
                                 <div style="font-size: 1.05rem; font-weight: bold; color: #f8fafc;">
                                     {ricevi['Giocatore']} {tit_badge} {stash_badge} {sig_rec_badge} {bench_badge}
                                     <span style="font-size: 0.78rem; color: #94a3b8; font-weight: normal;">(FVM: <b>{ricevi.get('FVM', ricevi.get('Costo', 0))}</b>)</span>
                                 </div>
-                                <div style="color: #cbd5e1; font-size: 0.85rem;">{ricevi['Squadra']} — <b>{ricevi['RuoloMantra']}</b></div>
+                                <div style="color: #cbd5e1; font-size: 0.85rem;">{ricevi['Squadra']} — <b>{role_disp_rec}</b></div>
                                 <div style="color: #94a3b8; font-size: 0.80rem; margin-top: 2px;">
                                     xFV Giornata: <b>{ricevi['xFV']:.2f}</b> | FM: <b>{ricevi['FM']:.2f}</b> | Sufficienze: <b>{ricevi.get('Pct_Sufficienza', 0)}%</b>
                                 </div>
@@ -3315,7 +3331,7 @@ with tab_stats:
                         opp_buylow.append({
                             'Squadra Lega': t_name,
                             'Giocatore': r['Giocatore'],
-                            'RuoloMantra': r['RuoloMantra'],
+                            'Ruolo': r.get('RuoloClassic' if is_classic else 'RuoloMantra', r.get('RuoloMantra', '')),
                             'Club Serie A': r['Squadra'],
                             'Costo Asta': int(r.get('Costo', 0)),
                             'Presenze': int(r.get('Presenze', 0)),
@@ -3341,22 +3357,39 @@ with tab_stats:
                         key=f"bl_rival_sel_{active_league}_{my_team}"
                     )
                 with bl_col2:
-                    filter_role = st.selectbox(
-                        "Filtra per Ruolo Reparto:",
-                        options=["TUTTI", "Attaccanti (Pc / A)", "Centrocampisti (C / T / W / M / E)", "Difensori (Dc / Dd / Ds / B)", "Portieri (Por)"],
-                        key=f"bl_role_sel_{active_league}_{my_team}"
-                    )
+                    if is_classic:
+                        filter_role = st.selectbox(
+                            "Filtra per Ruolo Reparto:",
+                            options=["TUTTI", "Attaccanti (A)", "Centrocampisti (C)", "Difensori (D)", "Portieri (P)"],
+                            key=f"bl_role_sel_{active_league}_{my_team}"
+                        )
+                    else:
+                        filter_role = st.selectbox(
+                            "Filtra per Ruolo Reparto:",
+                            options=["TUTTI", "Attaccanti (Pc / A)", "Centrocampisti (C / T / W / M / E)", "Difensori (Dc / Dd / Ds / B)", "Portieri (Por)"],
+                            key=f"bl_role_sel_{active_league}_{my_team}"
+                        )
                     
                 if filter_rival != "TUTTE LE SQUADRE":
                     df_opp_bl = df_opp_bl[df_opp_bl['Squadra Lega'] == filter_rival]
-                if filter_role == "Attaccanti (Pc / A)":
-                    df_opp_bl = df_opp_bl[df_opp_bl['RuoloMantra'].str.contains('Pc|A', na=False)]
-                elif filter_role == "Centrocampisti (C / T / W / M / E)":
-                    df_opp_bl = df_opp_bl[df_opp_bl['RuoloMantra'].str.contains('C|T|W|M|E', na=False)]
-                elif filter_role == "Difensori (Dc / Dd / Ds / B)":
-                    df_opp_bl = df_opp_bl[df_opp_bl['RuoloMantra'].str.contains('Dc|Dd|Ds|B', na=False)]
-                elif filter_role == "Portieri (Por)":
-                    df_opp_bl = df_opp_bl[df_opp_bl['RuoloMantra'].str.contains('Por', na=False)]
+                if is_classic:
+                    if filter_role == "Attaccanti (A)":
+                        df_opp_bl = df_opp_bl[df_opp_bl['Ruolo'] == 'A']
+                    elif filter_role == "Centrocampisti (C)":
+                        df_opp_bl = df_opp_bl[df_opp_bl['Ruolo'] == 'C']
+                    elif filter_role == "Difensori (D)":
+                        df_opp_bl = df_opp_bl[df_opp_bl['Ruolo'] == 'D']
+                    elif filter_role == "Portieri (P)":
+                        df_opp_bl = df_opp_bl[df_opp_bl['Ruolo'] == 'P']
+                else:
+                    if filter_role == "Attaccanti (Pc / A)":
+                        df_opp_bl = df_opp_bl[df_opp_bl['Ruolo'].str.contains('Pc|A', na=False)]
+                    elif filter_role == "Centrocampisti (C / T / W / M / E)":
+                        df_opp_bl = df_opp_bl[df_opp_bl['Ruolo'].str.contains('C|T|W|M|E', na=False)]
+                    elif filter_role == "Difensori (Dc / Dd / Ds / B)":
+                        df_opp_bl = df_opp_bl[df_opp_bl['Ruolo'].str.contains('Dc|Dd|Ds|B', na=False)]
+                    elif filter_role == "Portieri (Por)":
+                        df_opp_bl = df_opp_bl[df_opp_bl['Ruolo'].str.contains('Por', na=False)]
                     
                 st.dataframe(
                     df_opp_bl,
