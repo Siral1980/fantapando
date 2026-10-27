@@ -2013,7 +2013,7 @@ def find_win_win_trades(
                 curr_opt = opt_opp_cache.get(opp_t)
                 tgt = [p for p in opp_list if p['Giocatore'] in rec_names]
                 give = [proj_map[n] for n in give_names if n in proj_map]
-                sim = simulate_opponent_post_trade(opp_t, opp_list, tgt, give, opt_opp_curr=curr_opt)
+                sim = simulate_opponent_post_trade(opp_t, opp_list, tgt, give, opt_opp_curr=curr_opt, league_type=league_type)
                 prop['Delta_Punti_Avversario'] = sim.get('delta_opp_pts', 0.0)
                 sim_count += 1
                 if safe_float(sim.get('delta_opp_pts', 0.0)) < -0.30 or sim.get('critical_flaws'):
@@ -2032,7 +2032,8 @@ def simulate_opponent_post_trade(
     target_players,
     give_pkg,
     opt_opp_curr=None,
-    allowed_formations=None
+    allowed_formations=None,
+    league_type=None
 ):
     """
     Simulates the opponent squad and starting 11 after the trade:
@@ -2041,17 +2042,39 @@ def simulate_opponent_post_trade(
     3. Solves the opponent's new optimal starting 11 and calculates net points gained/lost (delta_opp_pts).
     4. Evaluates rival appeal and generates tactical reassurance arguments.
     """
+    if league_type is None:
+        try:
+            from engine.league_manager import get_league_type
+            league_type = get_league_type()
+        except Exception:
+            league_type = 'mantra'
+
+    is_classic = (str(league_type).lower() == 'classic')
     target_pnames = set(p['Giocatore'] for p in target_players)
     opp_new_list = [p for p in opp_proj_list if p['Giocatore'] not in target_pnames] + give_pkg
 
+    def _has_role(p, r):
+        if is_classic:
+            c_r = str(p.get('RuoloClassic', '')).strip()
+            if r == 'Por':
+                return c_r == 'P'
+            elif r == 'Dc':
+                return c_r == 'D'
+            elif r == 'M':
+                return c_r == 'C'
+            elif r == 'Pc':
+                return c_r == 'A'
+            return False
+        return r in parse_mantra_roles(p.get('RuoloMantra', ''))
+
     # 1. Goalkeeper check
-    opp_pors_before = [p for p in opp_proj_list if 'Por' in parse_mantra_roles(p.get('RuoloMantra', ''))]
-    opp_pors_after = [p for p in opp_new_list if 'Por' in parse_mantra_roles(p.get('RuoloMantra', ''))]
+    opp_pors_before = [p for p in opp_proj_list if _has_role(p, 'Por')]
+    opp_pors_after = [p for p in opp_new_list if _has_role(p, 'Por')]
     opp_starters_before = [p for p in opp_pors_before if safe_int(p.get('Presenze', 0)) >= 3 or safe_float(p.get('P_Voto', 0)) >= 0.70]
     opp_starters_after = [p for p in opp_pors_after if safe_int(p.get('Presenze', 0)) >= 3 or safe_float(p.get('P_Voto', 0)) >= 0.70]
 
-    target_has_por = any('Por' in parse_mantra_roles(p.get('RuoloMantra', '')) for p in target_players)
-    give_has_por = any('Por' in parse_mantra_roles(p.get('RuoloMantra', '')) for p in give_pkg)
+    target_has_por = any(_has_role(p, 'Por') for p in target_players)
+    give_has_por = any(_has_role(p, 'Por') for p in give_pkg)
 
     is_goal_uncovered = False
     critical_flaws = []
@@ -2062,13 +2085,16 @@ def simulate_opponent_post_trade(
             is_goal_uncovered = True
             critical_flaws.append("🚨 Porta scoperta: l'avversario resterebbe con meno di 2 portieri o senza un titolare a voto.")
         elif give_has_por:
-            por_names = [p['Giocatore'] for p in give_pkg if 'Por' in parse_mantra_roles(p.get('RuoloMantra', ''))]
+            por_names = [p['Giocatore'] for p in give_pkg if _has_role(p, 'Por')]
             reassurances.append(f"🛡️ Porta salvaguardata al 100%: riceve {', '.join(por_names)} come titolare affidabile.")
 
     # 2. Outfield core depth checks (Dc, M, Pc)
-    for r, min_safe, label in [('Dc', 3, 'Difensori Centrali'), ('M', 2, 'Mediani'), ('Pc', 1, 'Punte Centrali')]:
-        c_before = sum(1 for p in opp_proj_list if r in parse_mantra_roles(p.get('RuoloMantra', '')) and (safe_int(p.get('Presenze', 0)) >= 2 or safe_float(p.get('P_Voto', 0)) >= 0.50))
-        c_after = sum(1 for p in opp_new_list if r in parse_mantra_roles(p.get('RuoloMantra', '')) and (safe_int(p.get('Presenze', 0)) >= 2 or safe_float(p.get('P_Voto', 0)) >= 0.50))
+    role_checks = [('Dc', 3, 'Difensori Centrali' if not is_classic else 'Difensori'),
+                   ('M', 2, 'Mediani' if not is_classic else 'Centrocampisti'),
+                   ('Pc', 1, 'Punte Centrali' if not is_classic else 'Attaccanti')]
+    for r, min_safe, label in role_checks:
+        c_before = sum(1 for p in opp_proj_list if _has_role(p, r) and (safe_int(p.get('Presenze', 0)) >= 2 or safe_float(p.get('P_Voto', 0)) >= 0.50))
+        c_after = sum(1 for p in opp_new_list if _has_role(p, r) and (safe_int(p.get('Presenze', 0)) >= 2 or safe_float(p.get('P_Voto', 0)) >= 0.50))
         if c_before >= min_safe and c_after < min_safe:
             critical_flaws.append(f"⚠️ Carenza creata in {label} ({r}): scende a {c_after} giocatori attivi.")
 
@@ -2512,7 +2538,8 @@ def find_trades_for_target_players(
             target_players=target_players,
             give_pkg=give_pkg,
             opt_opp_curr=opt_opp_curr,
-            allowed_formations=opp_sim_formations
+            allowed_formations=opp_sim_formations,
+            league_type=league_type
         )
 
         # STRICT RULE: Never leave the opponent with an uncovered net or fatal flaw!

@@ -2482,17 +2482,21 @@ with tab_scambi:
                 st.info("👆 Seleziona almeno un calciatore dal menu a tendina sopra per generare le proposte di offerta su misura.")
             else:
                 with st.spinner("Analisi delle criticità dell'avversario e formulazione offerte intelligenti in corso..."):
-                    target_proposals = find_trades_for_target_players(
-                        my_team_name=my_team,
-                        opp_team_name=target_opp_team,
-                        target_player_names=selected_target_pnames,
-                        league_data=league_dict,
-                        df_master=df_master,
-                        matchday=selected_giornata,
-                        allow_starters=allow_starters_flag,
-                        package_types=chosen_pkg_types,
-                        league_type=active_league_type
-                    )
+                    try:
+                        target_proposals = find_trades_for_target_players(
+                            my_team_name=my_team,
+                            opp_team_name=target_opp_team,
+                            target_player_names=selected_target_pnames,
+                            league_data=league_dict,
+                            df_master=df_master,
+                            matchday=selected_giornata,
+                            allow_starters=allow_starters_flag,
+                            package_types=chosen_pkg_types,
+                            league_type=active_league_type
+                        )
+                    except Exception as e:
+                        st.error(f"Errore durante l'elaborazione delle proposte per {', '.join(selected_target_pnames)}: {e}")
+                        target_proposals = []
 
                 if not target_proposals:
                     st.warning(
@@ -2530,9 +2534,10 @@ with tab_scambi:
                             st.markdown("##### 🔴 Cosa Cedi Tu")
                             for p in prop['Tu_Cedi']:
                                 tier_color = "#10b981" if p['Tier'] == 'SURPLUS' else ("#0ea5e9" if p['Tier'] == 'PANCHINARO' else "#f59e0b")
+                                role_display = p.get('RuoloClassic' if is_classic else 'RuoloMantra', p.get('Ruolo', ''))
                                 st.markdown(f"""
                                 <div style="background: rgba(255,255,255,0.04); border-left: 3px solid {tier_color}; padding: 8px 12px; border-radius: 6px; margin-bottom: 6px;">
-                                    <div style="font-weight: 700; color: #ffffff;">{p['Giocatore']} <span style="font-weight: 450; color: #94a3b8; font-size: 0.85rem;">({p['RuoloMantra']} - {p['Squadra']})</span></div>
+                                    <div style="font-weight: 700; color: #ffffff;">{p['Giocatore']} <span style="font-weight: 450; color: #94a3b8; font-size: 0.85rem;">({role_display} - {p['Squadra']})</span></div>
                                     <div style="font-size: 0.8rem; color: #cbd5e1;">Status: <strong style="color: {tier_color};">{p['Tier']}</strong> | FM: <strong>{p['FM']:.2f}</strong> | xFV: <strong>{p['xFV']:.2f}</strong> | FVM: <strong>{p.get('FVM', p.get('Costo', 0))}</strong></div>
                                 </div>
                                 """, unsafe_allow_html=True)
@@ -2541,9 +2546,10 @@ with tab_scambi:
                         with col_rec:
                             st.markdown(f"##### 🟢 Cosa Ricevi da {target_opp_team}")
                             for p in prop['Tu_Ricevi']:
+                                role_display = p.get('RuoloClassic' if is_classic else 'RuoloMantra', p.get('Ruolo', ''))
                                 st.markdown(f"""
                                 <div style="background: rgba(16, 185, 129, 0.08); border-left: 3px solid #10b981; padding: 8px 12px; border-radius: 6px; margin-bottom: 6px;">
-                                    <div style="font-weight: 700; color: #ffffff;">{p['Giocatore']} <span style="font-weight: 450; color: #94a3b8; font-size: 0.85rem;">({p['RuoloMantra']} - {p['Squadra']})</span></div>
+                                    <div style="font-weight: 700; color: #ffffff;">{p['Giocatore']} <span style="font-weight: 450; color: #94a3b8; font-size: 0.85rem;">({role_display} - {p['Squadra']})</span></div>
                                     <div style="font-size: 0.8rem; color: #cbd5e1;">FM: <strong>{p['FM']:.2f}</strong> | xFV: <strong>{p['xFV']:.2f}</strong> | FVM: <strong>{p.get('FVM', p.get('Costo', 0))}</strong></div>
                                 </div>
                                 """, unsafe_allow_html=True)
