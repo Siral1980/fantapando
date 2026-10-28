@@ -44,51 +44,90 @@ def _fvm_of(p):
     return safe_int(p.get('FVM', p.get('Costo', 0)))
 
 
-def check_fvm_parity(give_pkg, target_pkg, min_total_ratio=0.70, min_anchor_ratio=0.55, floor=20):
+def check_fvm_parity(give_pkg, target_pkg, min_total_ratio=0.55, min_anchor_ratio=0.45, floor=15):
     """
-    Hard market-credibility gate based on official FVM/1000.
-    - Total FVM given and received must be within a band: min/max >= min_total_ratio.
-    - The top asset of each side (anchors) must be comparable: min/max >= min_anchor_ratio.
-    - The opponent must never be asked to hand over (much) more FVM than it receives, and the
-      user must never overpay by a symmetric margin (win-win must be believable for both).
+    Market-credibility gate based on official FVM/1000.
+    - If user offers LESS FVM than target (underpaying):
+      Opponent must receive a credible fraction of the market value (>= min_total_ratio).
+    - If user offers MORE FVM than target (overpaying / premium to acquire target):
+      Allowed naturally, especially in 2x1 multi-player packages or when acquiring low-cost targets,
+      bounded only by a generous sanity ceiling to avoid self-destructive proposals.
+    - Anchor comparison:
+      In 1x1, primary assets should be comparable.
+      In 2x1, user pays with multiple pieces, so anchor requirement is naturally lower.
     Returns (ok, reason).
     """
     g_vals = [_fvm_of(p) for p in give_pkg]
     t_vals = [_fvm_of(p) for p in target_pkg]
     g_tot, t_tot = sum(g_vals), sum(t_vals)
-    max_tot = max(g_tot, t_tot)
-    if max_tot >= floor and (min(g_tot, t_tot) / max(max_tot, 1)) < min_total_ratio:
-        return False, f"FVM totale sbilanciato ({g_tot} offerto vs {t_tot} richiesto)."
+    n_give = len(give_pkg)
+    n_target = len(target_pkg)
+
+    # 1. Underpayment protection (protects opponent from receiving garbage)
+    if g_tot < t_tot:
+        if t_tot >= floor:
+            allowed_ratio = min_total_ratio if n_give == n_target else max(0.45, min_total_ratio - 0.10)
+            if (g_tot / max(t_tot, 1)) < allowed_ratio:
+                return False, f"FVM totale offerto insufficiente ({g_tot} offerto vs {t_tot} richiesto)."
+    else:
+        # 2. Overpayment sanity ceiling (protects user from offering absurdly massive overpays)
+        if t_tot <= 20:
+            max_allowed_g = max(65, t_tot * 4)
+        else:
+            max_allowed_g = max(80, int(t_tot * (2.4 if n_give > n_target else 1.8)))
+        if g_tot > max_allowed_g:
+            return False, f"FVM totale sproporzionatamente elevato ({g_tot} offerto vs {t_tot} richiesto)."
+
+    # 3. Anchor asset comparison
     g_top, t_top = max(g_vals or [0]), max(t_vals or [0])
-    max_top = max(g_top, t_top)
-    if max_top >= 30 and (min(g_top, t_top) / max(max_top, 1)) < min_anchor_ratio:
-        return False, f"Pezzo principale non comparabile (FVM {g_top} vs {t_top})."
+    if t_top >= 35:
+        anchor_ratio = min_anchor_ratio if n_give == n_target else max(0.35, min_anchor_ratio - 0.15)
+        if (g_top / max(t_top, 1)) < anchor_ratio:
+            return False, f"Pezzo principale non comparabile (FVM {g_top} vs {t_top})."
+
     return True, ""
 
 
-def check_effective_fairness(give_pkg, target_pkg, min_total=0.85, max_total=1.25, min_anchor=0.78):
+def check_effective_fairness(give_pkg, target_pkg, min_total=0.75, max_total=1.75, min_anchor=0.55):
     """
-    On-field fairness gate based on the continuous effective value (FM + xFV blend,
-    real starter status, xG/xA production, role scarcity).
-    - Total offered value must be within [min_total, max_total] of the total requested value:
-      the opponent must not lose quality, and the user must not overpay either.
-    - The top asset of each side must be comparable (min/max >= min_anchor), so a top player
-      can't be bought with filler pieces (and vice versa).
+    On-field fairness gate based on continuous effective value.
+    - For 1x1: effective value within [0.68, 1.45], anchor ratio >= 0.58.
+    - For 2x1: user offers 2 players for 1 target. Total offered value can be higher [0.75, 1.95]
+      and primary anchor piece ratio >= 0.48.
+    - For 1x2: user offers 1 player for 2 targets. Total value [0.58, 1.35].
     Returns (ok, reason, give_eff_total, target_eff_total).
     """
     g_vals = [compute_continuous_trade_value(p)['effective_val'] for p in give_pkg]
     t_vals = [compute_continuous_trade_value(p)['effective_val'] for p in target_pkg]
     g_tot, t_tot = sum(g_vals), sum(t_vals)
+    n_give = len(give_pkg)
+    n_target = len(target_pkg)
+
+    if n_give > n_target:
+        eff_min = 0.75
+        eff_max = 1.95
+        anchor_min = 0.48
+    elif n_give == n_target:
+        eff_min = 0.68
+        eff_max = 1.45
+        anchor_min = 0.58
+    else:
+        eff_min = 0.58
+        eff_max = 1.35
+        anchor_min = 0.45
+
     if t_tot > 0:
         ratio = g_tot / t_tot
-        if ratio < min_total:
+        if ratio < eff_min:
             return False, f"Rendimento offerto ({g_tot:.2f}) inferiore a quello richiesto ({t_tot:.2f}): l'avversario ci rimette.", g_tot, t_tot
-        if ratio > max_total:
+        if ratio > eff_max:
             return False, f"Rendimento offerto ({g_tot:.2f}) molto superiore a quello richiesto ({t_tot:.2f}): scambio non conveniente per te.", g_tot, t_tot
+
     g_top, t_top = max(g_vals or [0.0]), max(t_vals or [0.0])
-    max_top = max(g_top, t_top)
-    if max_top > 0 and (min(g_top, t_top) / max_top) < min_anchor:
-        return False, f"Pezzo principale non comparabile per rendimento ({g_top:.2f} vs {t_top:.2f}).", g_tot, t_tot
+    if t_top > 3.0:
+        if (g_top / t_top) < anchor_min:
+            return False, f"Pezzo principale non comparabile per rendimento ({g_top:.2f} vs {t_top:.2f}).", g_tot, t_tot
+
     return True, "", g_tot, t_tot
 
 
@@ -289,39 +328,64 @@ def compute_continuous_trade_value(player_dict, tot_matchdays=7):
     """
     raw_xfv = safe_float(player_dict.get('xFV', player_dict.get('FM_Stagione', 0.0)))
     fm_stag = safe_float(player_dict.get('FM_Stagione', 0.0))
+    fm_tri = safe_float(player_dict.get('FM_Triennio', 0.0))
+    pred_voto = safe_float(player_dict.get('Pred_Voto', 0.0))
     mv_stag = safe_float(player_dict.get('MV_Stagione', 6.0))
+    fvm = safe_int(player_dict.get('FVM', player_dict.get('Costo', 0)))
     pres = safe_float(player_dict.get('Presenze', 0))
     mins = safe_float(player_dict.get('Minuti_Reali', 0))
+    p_voto = safe_float(player_dict.get('P_Voto', 0))
+    st_label = str(player_dict.get('Status_Titolarita', ''))
     roles = parse_mantra_roles(player_dict.get('RuoloMantra', ''))
     
-    # Long-term baseline: avoids single-fixture distortion in permanent trades
-    if fm_stag > 0:
+    # Long-term baseline: avoids single-fixture distortion in permanent trades, with robust fallbacks
+    if fm_stag > 0 and raw_xfv > 0:
         base_val = (0.55 * fm_stag) + (0.45 * raw_xfv)
-    else:
+    elif fm_stag > 0:
+        base_val = fm_stag
+    elif raw_xfv > 0:
         base_val = raw_xfv
+    elif fm_tri > 0:
+        base_val = fm_tri
+    elif pred_voto > 0:
+        base_val = pred_voto
+    elif fvm > 0:
+        base_val = 5.5 + min(3.0, fvm * 0.05)
+    else:
+        base_val = 5.5
         
     tot_team_mins = tot_matchdays * 90.0
     m_per_app = (mins / pres) if pres > 0 else 0.0
     pct_mins = (mins / tot_team_mins) if tot_team_mins > 0 else 0.0
     
-    is_gk = ('Por' in roles)
+    is_gk = ('Por' in roles) or (str(player_dict.get('RuoloClassic', '')).strip() == 'P')
     
     if is_gk:
-        if pres >= 3 or safe_float(player_dict.get('P_Voto', 0)) >= 0.70:
+        if pres >= 3 or p_voto >= 0.70 or 'TITOLARE' in st_label:
             i_tit = 1.0
-        elif pres >= 1:
-            i_tit = 0.55
+        elif pres >= 1 or p_voto >= 0.40 or fvm >= 15:
+            i_tit = 0.65
         else:
-            i_tit = 0.30
+            i_tit = 0.35
     else:
         if pres >= 2:
             m_factor = min(1.0, m_per_app / 65.0)
             t_factor = min(1.0, pct_mins / 0.45)
             i_tit = float(np.clip(0.20 + 0.80 * (m_factor * 0.55 + t_factor * 0.45), 0.20, 1.0))
         elif pres == 1:
-            i_tit = float(np.clip(0.15 + 0.35 * (mins / 90.0), 0.15, 0.45))
+            i_tit = float(np.clip(0.25 + 0.35 * (mins / 90.0), 0.25, 0.60))
         else:
-            i_tit = 0.12
+            i_tit = 0.25
+
+        # Incorporate probable lineups and market status:
+        if p_voto >= 0.70 or 'TITOLARE' in st_label:
+            i_tit = max(i_tit, 0.75)
+        elif p_voto >= 0.50 or 'BALLOTTAGGIO' in st_label:
+            i_tit = max(i_tit, 0.55)
+        if fvm >= 30:
+            i_tit = max(i_tit, 0.65)
+        elif fvm >= 15:
+            i_tit = max(i_tit, 0.45)
 
     # Bayesian shrinkage on underlying per-90 rates (stabilization threshold 270 minutes ~ 3 games)
     is_striker = any(r in ['Pc', 'A'] for r in roles)
@@ -369,6 +433,9 @@ def compute_continuous_trade_value(player_dict, tot_matchdays=7):
         w_role = 1.00
 
     effective_val = (base_val + prod_boost + reversion_adj) * (0.28 + 0.72 * i_tit) * w_role
+    effective_val = max(effective_val, 2.50)
+    if fvm >= 10:
+        effective_val = max(effective_val, 3.20)
     return {
         'raw_xfv': round(raw_xfv, 2),
         'base_val': round(base_val, 2),
@@ -412,7 +479,18 @@ def evaluate_pairwise_trade_balance(give_pkg, target_pkg, tot_matchdays=7):
     
     pairwise_pairs = []
     surplus_pool = 0.0
-    has_primary_starter = any(p['i_tit'] >= 0.65 for p in give_sorted)
+    has_primary_starter = any(
+        p.get('i_tit', 0) >= 0.60 or
+        p.get('Tier') == 'TITOLARE' or
+        safe_float(p.get('P_Voto', 0)) >= 0.60 or
+        safe_int(p.get('FVM', p.get('Costo', 0))) >= 20 or
+        compute_real_starter_status(p).get('Status') in ['TITOLARE', 'CO_TITOLARE', 'SUPER_SUB']
+        for p in give_sorted
+    )
+    # In 2x1: if both offered players are active regular contributors, package has starter caliber
+    if n_give > n_target and not has_primary_starter:
+        if all(safe_float(p.get('effective_val', 0)) >= 3.8 and compute_real_starter_status(p).get('Status') != 'MARGINALE' for p in give_sorted):
+            has_primary_starter = True
 
     for i in range(min_len):
         g = give_sorted[i]
@@ -510,7 +588,7 @@ def evaluate_pairwise_trade_balance(give_pkg, target_pkg, tot_matchdays=7):
                 'pairwise_pairs': pairwise_pairs
             }
     elif n_give > n_target:  # 2x1 (give 2, ask 1)
-        if give_tot_eff < (target_tot_eff * 0.90):
+        if give_tot_eff < (target_tot_eff * 0.80):
             return {
                 'is_valid': False,
                 'rejection_reason': f"Offerta 2x1 insufficiente per il top asset avversario ({target_sorted[0]['Giocatore']}).",
@@ -521,7 +599,7 @@ def evaluate_pairwise_trade_balance(give_pkg, target_pkg, tot_matchdays=7):
             }
 
     # 4. FVM/1000 Parity Check
-    fvm_ok, fvm_reason = check_fvm_parity(give_pkg, target_pkg, min_total_ratio=0.70, min_anchor_ratio=0.55)
+    fvm_ok, fvm_reason = check_fvm_parity(give_pkg, target_pkg)
     if not fvm_ok:
         return {
             'is_valid': False,
@@ -533,7 +611,7 @@ def evaluate_pairwise_trade_balance(give_pkg, target_pkg, tot_matchdays=7):
         }
 
     # 5. Continuous Effective Value Parity Check
-    eff_ok, eff_reason, _, _ = check_effective_fairness(give_pkg, target_pkg, min_total=0.85, max_total=1.25, min_anchor=0.75)
+    eff_ok, eff_reason, _, _ = check_effective_fairness(give_pkg, target_pkg)
     if not eff_ok:
         return {
             'is_valid': False,
@@ -544,36 +622,45 @@ def evaluate_pairwise_trade_balance(give_pkg, target_pkg, tot_matchdays=7):
             'pairwise_pairs': pairwise_pairs
         }
 
-    # 6. xFV & Fantamedia Parity Protection (Strict Two-Way Bounding)
+    # 6. xFV & Fantamedia Parity Protection
     tot_xfv_give = sum(safe_float(p.get('xFV', 0.0)) for p in give_sorted)
     tot_xfv_rec = sum(safe_float(p.get('xFV', 0.0)) for p in target_sorted)
-    max_xfv = max(tot_xfv_give, tot_xfv_rec)
-    min_xfv = min(tot_xfv_give, tot_xfv_rec)
-    if max_xfv > 0:
-        # Both sides must receive at least 80% of the xFV being exchanged
-        if (min_xfv / max_xfv) < 0.80:
+    if n_give == n_target:
+        max_xfv = max(tot_xfv_give, tot_xfv_rec)
+        min_xfv = min(tot_xfv_give, tot_xfv_rec)
+        if max_xfv > 4.0:
+            if (min_xfv / max_xfv) < 0.65:
+                return {
+                    'is_valid': False,
+                    'rejection_reason': f"Disparità xFV eccessiva ({tot_xfv_give:.2f} offerto vs {tot_xfv_rec:.2f} richiesto, rapporto {min_xfv/max_xfv:.2f} < 0.65).",
+                    'give_tot_eff': round(give_tot_eff, 2),
+                    'target_tot_eff': round(target_tot_eff, 2),
+                    'delta_eff': round(give_tot_eff - target_tot_eff, 2),
+                    'pairwise_pairs': pairwise_pairs
+                }
+            if abs(tot_xfv_rec - tot_xfv_give) > 2.20:
+                return {
+                    'is_valid': False,
+                    'rejection_reason': f"Sbilanciamento xFV ({abs(tot_xfv_rec - tot_xfv_give):.2f} pt di differenza tra i pacchetti).",
+                    'give_tot_eff': round(give_tot_eff, 2),
+                    'target_tot_eff': round(target_tot_eff, 2),
+                    'delta_eff': round(give_tot_eff - target_tot_eff, 2),
+                    'pairwise_pairs': pairwise_pairs
+                }
+    elif n_give > n_target:
+        if target_tot_eff > 3.0 and tot_xfv_give < (tot_xfv_rec * 0.75):
             return {
                 'is_valid': False,
-                'rejection_reason': f"Disparità xFV eccessiva ({tot_xfv_give:.2f} offerto vs {tot_xfv_rec:.2f} richiesto, rapporto {min_xfv/max_xfv:.2f} < 0.80).",
-                'give_tot_eff': round(give_tot_eff, 2),
-                'target_tot_eff': round(target_tot_eff, 2),
-                'delta_eff': round(give_tot_eff - target_tot_eff, 2),
-                'pairwise_pairs': pairwise_pairs
-            }
-        # Absolute difference cannot exceed 1.50 xFV points
-        if abs(tot_xfv_rec - tot_xfv_give) > 1.50:
-            return {
-                'is_valid': False,
-                'rejection_reason': f"Sbilanciamento xFV ({abs(tot_xfv_rec - tot_xfv_give):.2f} pt di differenza tra i pacchetti).",
+                'rejection_reason': f"xFV complessivo offerto insufficiente ({tot_xfv_give:.2f} offerto vs {tot_xfv_rec:.2f} richiesto).",
                 'give_tot_eff': round(give_tot_eff, 2),
                 'target_tot_eff': round(target_tot_eff, 2),
                 'delta_eff': round(give_tot_eff - target_tot_eff, 2),
                 'pairwise_pairs': pairwise_pairs
             }
 
-    avg_fm_give = sum(safe_float(p.get('FM', p.get('FM_Stagione', 0.0))) for p in give_sorted) / len(give_sorted)
-    avg_fm_rec = sum(safe_float(p.get('FM', p.get('FM_Stagione', 0.0))) for p in target_sorted) / len(target_sorted)
-    if avg_fm_rec > 0 and (avg_fm_give - avg_fm_rec) < -0.38:
+    avg_fm_give = sum(safe_float(p.get('FM', p.get('FM_Stagione', 0.0))) for p in give_sorted) / max(len(give_sorted), 1)
+    avg_fm_rec = sum(safe_float(p.get('FM', p.get('FM_Stagione', 0.0))) for p in target_sorted) / max(len(target_sorted), 1)
+    if avg_fm_rec > 5.5 and avg_fm_give > 0 and (avg_fm_give - avg_fm_rec) < -0.55:
         return {
             'is_valid': False,
             'rejection_reason': f"Fantamedia offerta ({avg_fm_give:.2f}) nettamente inferiore a quella richiesta ({avg_fm_rec:.2f}).",
@@ -1302,9 +1389,12 @@ def is_trade_role_parity_credible(give_dict, receive_dict):
     # -------------------------------------------------------------
     # FVM/1000 hard parity gate (1x1)
     # -------------------------------------------------------------
-    _max_fvm = max(give_fvm, rec_fvm)
-    if _max_fvm >= 20 and (min(give_fvm, rec_fvm) / max(_max_fvm, 1)) < 0.60:
-        return False
+    if give_fvm < rec_fvm:
+        if rec_fvm >= 25 and (give_fvm / max(rec_fvm, 1)) < 0.50 and not (give_fvm >= 30 and give_fm >= 6.4):
+            return False
+    else:
+        if give_fvm > max(65, rec_fvm * 2.5):
+            return False
 
     # -------------------------------------------------------------
     # 0. GOALKEEPER SANITY & INTEGRITY
@@ -2224,6 +2314,16 @@ def simulate_opponent_post_trade(
         c_before = sum(1 for p in opp_proj_list if _has_role(p, r) and is_active_squad_player(p, tot_matchdays=7))
         c_after = sum(1 for p in opp_new_list if _has_role(p, r) and is_active_squad_player(p, tot_matchdays=7))
         if c_before >= min_safe and c_after < min_safe:
+            # In Mantra, if Pc drops to 0 but opponent has at least 2 active 'A' players, formation remains fully viable
+            if not is_classic and r == 'Pc':
+                active_a = sum(1 for p in opp_new_list if _has_role(p, 'A') and is_active_squad_player(p, tot_matchdays=7))
+                if active_a >= 2:
+                    continue
+            # In Mantra, if M drops below 2 but opponent has >= 4 active C players, formations like 4-3-3 / 3-4-3 are viable
+            if not is_classic and r == 'M':
+                active_c = sum(1 for p in opp_new_list if _has_role(p, 'C') and is_active_squad_player(p, tot_matchdays=7))
+                if active_c >= 4:
+                    continue
             critical_flaws.append(f"⚠️ Carenza creata in {label} ({r}): scende a {c_after} giocatori attivi.")
 
     # 3. Simulate opponent lineup
@@ -2340,20 +2440,20 @@ def find_trades_for_target_players(
             league_type = 'mantra'
     is_classic = (str(league_type).lower() == 'classic')
 
-    opp_diag = analyze_squad_weaknesses(opp_team_name, league_data, df_master, matchday=matchday, league_type=league_type)
+    if df_all_proj is None or df_all_proj.empty:
+        df_all_proj = batch_predict_xfv(df_master, matchday=matchday)
+    proj_map = {row['Giocatore']: row.to_dict() for _, row in df_all_proj.iterrows()}
+
+    opp_diag = analyze_squad_weaknesses(opp_team_name, league_data, df_master, matchday=matchday, df_all_proj=df_all_proj, league_type=league_type)
     if 'error' in opp_diag:
         return []
     opp_weaknesses = opp_diag.get('Punti_Deboli', [])
     opp_weak_roles = {w['Ruolo']: w.get('Severita', 'MEDIA') for w in opp_weaknesses}
 
     # 2. Diagnose my squad
-    my_diag = analyze_squad_weaknesses(my_team_name, league_data, df_master, matchday=matchday, league_type=league_type)
+    my_diag = analyze_squad_weaknesses(my_team_name, league_data, df_master, matchday=matchday, df_all_proj=df_all_proj, league_type=league_type)
     if 'error' in my_diag:
         return []
-
-    if df_all_proj is None or df_all_proj.empty:
-        df_all_proj = batch_predict_xfv(df_master, matchday=matchday)
-    proj_map = {row['Giocatore']: row.to_dict() for _, row in df_all_proj.iterrows()}
 
     # My squad players (owned assets only, excluding to-be-released)
     my_owned = [
@@ -2589,8 +2689,8 @@ def find_trades_for_target_players(
             if not is_trade_role_parity_credible(give_pkg[0], target_players[0]):
                 continue
 
-        # If offer neither solves an opponent weakness nor offers superior value (and not goalkeeper replacement), skip
-        if not matched_weak_roles and give_xfv_sum < target_xfv_sum and not por_emergency:
+        # If offer neither solves an opponent weakness nor offers balanced/superior value, skip
+        if not matched_weak_roles and give_xfv_sum < (target_xfv_sum * 0.90) and give_eff_sum < (target_eff_sum * 0.92) and not por_emergency:
             continue
 
         # Package Tier Classification & Surplus Preference
