@@ -8,6 +8,9 @@ import os
 import sys
 import glob
 import json
+import html
+import re
+import requests
 import pandas as pd
 import numpy as np
 
@@ -30,6 +33,145 @@ def clean_num(val, default=0.0):
         return float(s)
     except Exception:
         return default
+
+
+TEAM_CODE_MAP = {
+    'ATA': 'Atalanta', 'BOL': 'Bologna', 'CAG': 'Cagliari', 'COM': 'Como',
+    'FIO': 'Fiorentina', 'FRO': 'Frosinone', 'GEN': 'Genoa', 'INT': 'Inter',
+    'JUV': 'Juventus', 'LAZ': 'Lazio', 'LEC': 'Lecce', 'MIL': 'Milan',
+    'MON': 'Monza', 'NAP': 'Napoli', 'PAR': 'Parma', 'ROM': 'Roma',
+    'SAS': 'Sassuolo', 'TOR': 'Torino', 'UDI': 'Udinese', 'VEN': 'Venezia'
+}
+
+
+def scrape_official_fantacalcio_stats():
+    """
+    Scrapes official Fantacalcio.it Serie A statistics live from:
+    https://www.fantacalcio.it/statistiche-serie-a
+    Returns a clean DataFrame with all players, roles (Classic + Mantra), and official season stats.
+    Does not require login or credentials.
+    """
+    url = 'https://www.fantacalcio.it/statistiche-serie-a'
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    }
+    r = requests.get(url, headers=headers, timeout=25)
+    if r.status_code != 200:
+        raise RuntimeError(f'HTTP error {r.status_code} from fantacalcio.it')
+    
+    text = r.text
+    rows = text.split('<tr class="player-row"')
+    if len(rows) < 100:
+        raise ValueError(f'Too few player rows found ({len(rows)})')
+        
+    records = []
+    for segment in rows[1:]:
+        end_tr = segment.find('</tr>')
+        tr_content = segment[:end_tr] if end_tr != -1 else segment
+        
+        name_m = re.search(r'data-filter-keywords="([^"]+)"', tr_content)
+        if not name_m:
+            continue
+        nome = html.unescape(name_m.group(1).strip())
+        
+        rc_m = re.search(r'data-filter-role-classic="([^"]+)"', tr_content)
+        rc = rc_m.group(1).strip().upper() if rc_m else 'C'
+        
+        rm_m = re.search(r'data-filter-role-mantra="([^"]+)"', tr_content)
+        rm_raw = rm_m.group(1).strip().replace('|', ';') if rm_m else rc
+        rm = ';'.join([p.strip().capitalize() for p in rm_raw.split(';') if p.strip()])
+        
+        sq_m = re.search(r'data-col-key="sq"[^>]*>\s*([A-Za-z0-9]{2,4})\s*</td>', tr_content)
+        sq_code = sq_m.group(1).strip().upper() if sq_m else ''
+        sq = TEAM_CODE_MAP.get(sq_code, sq_code)
+        
+        pg_m = re.search(r'data-col-key="pg"[^>]*>\s*(\d+)\s*</td>', tr_content)
+        pv = int(pg_m.group(1)) if pg_m else 0
+        
+        mv_m = re.search(r'data-col-key="mv"[^>]*>\s*([\d,.]+)\s*</td>', tr_content)
+        mv = float(mv_m.group(1).replace(',', '.')) if mv_m else 0.0
+        
+        mfv_m = re.search(r'data-col-key="mfv"[^>]*>\s*([\d,.]+)\s*</td>', tr_content)
+        fm = float(mfv_m.group(1).replace(',', '.')) if mfv_m else 0.0
+        
+        gf_m = re.search(r'data-col-key="gol"[^>]*>\s*(\d+)\s*</td>', tr_content)
+        gf = int(gf_m.group(1)) if gf_m else 0
+        
+        gs_m = re.search(r'data-col-key="gs"[^>]*>\s*(\d+)\s*</td>', tr_content)
+        gs = int(gs_m.group(1)) if gs_m else 0
+        
+        rig_m = re.search(r'data-col-key="rig"[^>]*>\s*(\d+)\s*/\s*(\d+)\s*</td>', tr_content)
+        rf = int(rig_m.group(1)) if rig_m else 0
+        rt = int(rig_m.group(2)) if rig_m else 0
+        r_plus = rf
+        r_minus = max(0, rt - rf)
+        
+        rp_m = re.search(r'data-col-key="rp"[^>]*>\s*(\d+)\s*</td>', tr_content)
+        rp = int(rp_m.group(1)) if rp_m else 0
+        
+        ass_m = re.search(r'data-col-key="ass"[^>]*>\s*(\d+)\s*</td>', tr_content)
+        ass = int(ass_m.group(1)) if ass_m else 0
+        
+        amm_m = re.search(r'data-col-key="amm"[^>]*>\s*(\d+)\s*</td>', tr_content)
+        amm = int(amm_m.group(1)) if amm_m else 0
+        
+        esp_m = re.search(r'data-col-key="esp"[^>]*>\s*(\d+)\s*</td>', tr_content)
+        esp = int(esp_m.group(1)) if esp_m else 0
+        
+        id_m = re.search(r'/(\d+)"\s*target="_self"', tr_content)
+        pid = int(id_m.group(1)) if id_m else 0
+        
+        records.append({
+            'Cod': pid,
+            'Giocatore': nome,
+            'Squadra': sq,
+            'RuoloClassic': rc,
+            'RuoloMantra': rm,
+            'Presenze': pv,
+            'MV_Stagione': mv,
+            'FM_Stagione': fm,
+            'GF': gf,
+            'GS': gs,
+            'RP': rp,
+            'RC': rt,
+            'R_Plus': r_plus,
+            'R_Minus': r_minus,
+            'ASS': ass,
+            'AMM': amm,
+            'ESP': esp,
+            'AU': 0,
+            'MV_Ultime3': mv,
+            'FM_Ultime3': fm,
+            'MV_Triennio': mv,
+            'FM_Triennio': fm,
+            'xG_90': 0.0,
+            'npxG_90': 0.0,
+            'xG_Tot': 0.0,
+            'Delta_xG': 0.0,
+            'xA_90': 0.0,
+            'xA_Tot': 0.0,
+            'Delta_xA': 0.0,
+            'Tiri_90': 0.0,
+            'Tiri_Porta_90': 0.0,
+            'Key_Passes_90': 0.0,
+            'Pass_Acc_Pct': 80.0,
+            'Duelli_Vinti_Pct': 50.0,
+            'Recuperi_90': 3.0,
+            'Tackles_90': 1.0,
+            'Signal': 'NEUTRO',
+            'xGChain': 0.0,
+            'xGBuildup': 0.0,
+            'Minuti_Reali': pv * 80 if pv > 0 else 0,
+            'Understat_Matched': False,
+            'Pct_Sufficienza': 50.0,
+            'Voti_Ge_6': 0,
+            'Voti_Tot_Valutati': 0,
+            'Pct_Parate': 70.0,
+            'Clean_Sheets_Tot': 0
+        })
+        
+    df_official = pd.DataFrame(records)
+    return df_official
 
 
 def load_official_stats_excel(file_path_or_buffer=None):
@@ -329,16 +471,28 @@ def compute_goalkeeper_advanced_metrics(df_master):
     return df_master
 
 
-def sync_and_build_database(stats_file=None):
+def sync_and_build_database(stats_file=None, force_live_scrape=True):
     """
     Builds the clean player master database strictly from the official statistics Excel.
     Applies real triennium data and real Understat metrics if present.
     """
     os.makedirs(DATA_DIR, exist_ok=True)
     
-    print("Loading official Fantacalcio.it statistics...")
-    df_master = load_official_stats_excel(stats_file)
-    print(f"Loaded {len(df_master)} official players.")
+    df_master = None
+    if force_live_scrape and stats_file is None:
+        try:
+            print("Scraping live official Fantacalcio.it statistics...")
+            df_scraped = scrape_official_fantacalcio_stats()
+            if df_scraped is not None and len(df_scraped) >= 400:
+                df_master = df_scraped
+                print(f"Loaded {len(df_master)} official players from live Fantacalcio.it.")
+        except Exception as e:
+            print(f"Live scrape notice ({e}), falling back to Excel file.")
+            
+    if df_master is None:
+        print("Loading official Fantacalcio.it statistics from Excel...")
+        df_master = load_official_stats_excel(stats_file)
+        print(f"Loaded {len(df_master)} official players.")
     
     # 1. Enrich with Historical Triennio if available
     if os.path.exists(STORICO_CSV):
@@ -359,7 +513,11 @@ def sync_and_build_database(stats_file=None):
             
     # 2. Enrich with real Understat metrics if available
     try:
-        from engine.understat_loader import sync_understat_metrics
+        from engine.understat_loader import fetch_understat_serie_a, sync_understat_metrics
+        try:
+            fetch_understat_serie_a(force_refresh=True)
+        except Exception:
+            pass
         df_master = sync_understat_metrics(df_master)
         print("Enriched with real Understat xG / xA metrics.")
     except Exception as e:

@@ -484,23 +484,13 @@
       "datetime": "2026-10-31 19:45:00"
     },
     {
-      "home": "Atalanta",
-      "away": "Parma",
-      "datetime": "2026-11-01 14:00:00"
-    },
-    {
       "home": "Como",
       "away": "Venezia",
-      "datetime": "2026-11-01 14:00:00"
+      "datetime": "2026-11-01 11:30:00"
     },
     {
       "home": "Frosinone",
       "away": "Torino",
-      "datetime": "2026-11-01 14:00:00"
-    },
-    {
-      "home": "Juventus",
-      "away": "Napoli",
       "datetime": "2026-11-01 14:00:00"
     },
     {
@@ -511,24 +501,54 @@
     {
       "home": "Lecce",
       "away": "Genoa",
-      "datetime": "2026-11-01 14:00:00"
+      "datetime": "2026-11-01 17:00:00"
+    },
+    {
+      "home": "Juventus",
+      "away": "Napoli",
+      "datetime": "2026-11-01 19:45:00"
     },
     {
       "home": "Sassuolo",
       "away": "Fiorentina",
-      "datetime": "2026-11-01 14:00:00"
+      "datetime": "2026-11-02 17:30:00"
+    },
+    {
+      "home": "Atalanta",
+      "away": "Parma",
+      "datetime": "2026-11-02 19:45:00"
     }
   ],
   "11": [
     {
-      "home": "Roma",
-      "away": "Sassuolo",
-      "datetime": "2026-11-08 14:00:00"
+      "home": "Venezia",
+      "away": "Udinese",
+      "datetime": "2026-11-06 19:45:00"
     },
     {
-      "home": "Inter",
-      "away": "Como",
-      "datetime": "2026-11-08 14:00:00"
+      "home": "Torino",
+      "away": "Lecce",
+      "datetime": "2026-11-07 14:00:00"
+    },
+    {
+      "home": "Cagliari",
+      "away": "Frosinone",
+      "datetime": "2026-11-07 14:00:00"
+    },
+    {
+      "home": "Parma",
+      "away": "Bologna",
+      "datetime": "2026-11-07 17:00:00"
+    },
+    {
+      "home": "Roma",
+      "away": "Sassuolo",
+      "datetime": "2026-11-07 19:45:00"
+    },
+    {
+      "home": "Napoli",
+      "away": "Lazio",
+      "datetime": "2026-11-08 11:30:00"
     },
     {
       "home": "Monza",
@@ -536,51 +556,46 @@
       "datetime": "2026-11-08 14:00:00"
     },
     {
-      "home": "Napoli",
-      "away": "Lazio",
+      "home": "Genoa",
+      "away": "Milan",
       "datetime": "2026-11-08 14:00:00"
     },
     {
-      "home": "Parma",
-      "away": "Bologna",
-      "datetime": "2026-11-08 14:00:00"
-    },
-    {
-      "home": "Torino",
-      "away": "Lecce",
-      "datetime": "2026-11-08 14:00:00"
-    },
-    {
-      "home": "Venezia",
-      "away": "Udinese",
-      "datetime": "2026-11-08 14:00:00"
-    },
-    {
-      "home": "Cagliari",
-      "away": "Frosinone",
-      "datetime": "2026-11-08 14:00:00"
+      "home": "Inter",
+      "away": "Como",
+      "datetime": "2026-11-08 17:00:00"
     },
     {
       "home": "Fiorentina",
       "away": "Juventus",
-      "datetime": "2026-11-08 14:00:00"
-    },
-    {
-      "home": "Genoa",
-      "away": "Milan",
-      "datetime": "2026-11-08 14:00:00"
+      "datetime": "2026-11-08 19:45:00"
     }
   ],
   "12": [
     {
-      "home": "Milan",
-      "away": "Frosinone",
-      "datetime": "2026-11-22 14:00:00"
+      "home": "Como",
+      "away": "Cagliari",
+      "datetime": "2026-11-21 14:00:00"
     },
     {
-      "home": "Atalanta",
-      "away": "Inter",
-      "datetime": "2026-11-22 14:00:00"
+      "home": "Lazio",
+      "away": "Lecce",
+      "datetime": "2026-11-21 14:00:00"
+    },
+    {
+      "home": "Parma",
+      "away": "Roma",
+      "datetime": "2026-11-21 17:00:00"
+    },
+    {
+      "home": "Napoli",
+      "away": "Torino",
+      "datetime": "2026-11-21 19:45:00"
+    },
+    {
+      "home": "Juventus",
+      "away": "Venezia",
+      "datetime": "2026-11-22 11:30:00"
     },
     {
       "home": "Bologna",
@@ -588,56 +603,51 @@
       "datetime": "2026-11-22 14:00:00"
     },
     {
-      "home": "Como",
-      "away": "Cagliari",
-      "datetime": "2026-11-22 14:00:00"
-    },
-    {
       "home": "Sassuolo",
       "away": "Genoa",
       "datetime": "2026-11-22 14:00:00"
     },
     {
-      "home": "Parma",
-      "away": "Roma",
-      "datetime": "2026-11-22 14:00:00"
+      "home": "Milan",
+      "away": "Frosinone",
+      "datetime": "2026-11-22 17:00:00"
     },
     {
-      "home": "Napoli",
-      "away": "Torino",
-      "datetime": "2026-11-22 14:00:00"
+      "home": "Atalanta",
+      "away": "Inter",
+      "datetime": "2026-11-22 19:45:00"
     },
     {
       "home": "Monza",
       "away": "Fiorentina",
-      "datetime": "2026-11-22 14:00:00"
-    },
-    {
-      "home": "Juventus",
-      "away": "Venezia",
-      "datetime": "2026-11-22 14:00:00"
-    },
-    {
-      "home": "Lazio",
-      "away": "Lecce",
-      "datetime": "2026-11-22 14:00:00"
+      "datetime": "2026-11-23 19:45:00"
     }
   ],
   "13": [
     {
-      "home": "Roma",
-      "away": "Monza",
-      "datetime": "2026-11-29 14:00:00"
+      "home": "Venezia",
+      "away": "Bologna",
+      "datetime": "2026-11-27 19:45:00"
     },
     {
-      "home": "Como",
-      "away": "Juventus",
-      "datetime": "2026-11-29 14:00:00"
+      "home": "Frosinone",
+      "away": "Parma",
+      "datetime": "2026-11-28 14:00:00"
     },
     {
-      "home": "Cagliari",
-      "away": "Milan",
-      "datetime": "2026-11-29 14:00:00"
+      "home": "Torino",
+      "away": "Lazio",
+      "datetime": "2026-11-28 17:00:00"
+    },
+    {
+      "home": "Inter",
+      "away": "Genoa",
+      "datetime": "2026-11-28 19:45:00"
+    },
+    {
+      "home": "Udinese",
+      "away": "Fiorentina",
+      "datetime": "2026-11-29 11:30:00"
     },
     {
       "home": "Sassuolo",
@@ -645,34 +655,24 @@
       "datetime": "2026-11-29 14:00:00"
     },
     {
+      "home": "Roma",
+      "away": "Monza",
+      "datetime": "2026-11-29 17:00:00"
+    },
+    {
+      "home": "Como",
+      "away": "Juventus",
+      "datetime": "2026-11-29 19:45:00"
+    },
+    {
       "home": "Lecce",
       "away": "Atalanta",
-      "datetime": "2026-11-29 14:00:00"
+      "datetime": "2026-11-30 17:30:00"
     },
     {
-      "home": "Inter",
-      "away": "Genoa",
-      "datetime": "2026-11-29 14:00:00"
-    },
-    {
-      "home": "Frosinone",
-      "away": "Parma",
-      "datetime": "2026-11-29 14:00:00"
-    },
-    {
-      "home": "Venezia",
-      "away": "Bologna",
-      "datetime": "2026-11-29 14:00:00"
-    },
-    {
-      "home": "Udinese",
-      "away": "Fiorentina",
-      "datetime": "2026-11-29 14:00:00"
-    },
-    {
-      "home": "Torino",
-      "away": "Lazio",
-      "datetime": "2026-11-29 14:00:00"
+      "home": "Cagliari",
+      "away": "Milan",
+      "datetime": "2026-11-30 19:45:00"
     }
   ],
   "14": [

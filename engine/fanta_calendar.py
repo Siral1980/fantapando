@@ -52,6 +52,45 @@ def compute_current_standings(refresh=False):
     if _STANDINGS_CACHE is not None and not refresh:
         return _STANDINGS_CACHE
 
+    # 1. Prefer live Understat data if available (covers all matchdays through 9+)
+    if os.path.exists(UNDERSTAT_FILE):
+        try:
+            with open(UNDERSTAT_FILE, 'r', encoding='utf-8') as f_u:
+                u_data = json.load(f_u)
+            u_teams = u_data.get('teams', {})
+            if u_teams:
+                from engine.understat_loader import UNDERSTAT_TO_FANTACALCIO_TEAM
+                standings = []
+                for tid, tdata in u_teams.items():
+                    raw_title = tdata.get('title', '')
+                    sq_name = UNDERSTAT_TO_FANTACALCIO_TEAM.get(raw_title, raw_title)
+                    hist = tdata.get('history', [])
+                    pts = sum(h.get('pts', 0) for h in hist)
+                    gf = sum(h.get('scored', 0) for h in hist)
+                    ga = sum(h.get('missed', 0) for h in hist)
+                    w = sum(h.get('wins', 0) for h in hist)
+                    d = sum(h.get('draws', 0) for h in hist)
+                    l = sum(h.get('loses', 0) for h in hist)
+                    standings.append({
+                        'Squadra': sq_name,
+                        'Partite': len(hist),
+                        'Punti': pts,
+                        'V': w,
+                        'N': d,
+                        'P': l,
+                        'GF': gf,
+                        'GS': ga,
+                        'DR': gf - ga,
+                        'PPG': round(pts / max(1, len(hist)), 2)
+                    })
+                df_stand = pd.DataFrame(standings).sort_values(by=['Punti', 'DR', 'GF'], ascending=False).reset_index(drop=True)
+                df_stand.index += 1
+                df_stand['Posizione'] = df_stand.index
+                _STANDINGS_CACHE = df_stand
+                return df_stand
+        except Exception as e:
+            print(f"Understat standings calculation notice: {e}")
+
     if not os.path.exists(VOTI_FILE):
         rows = [{'Squadra': t, 'Punti': 5, 'V': 1, 'N': 2, 'P': 2, 'GF': 5, 'GS': 5, 'DR': 0, 'Partite': 5} for t in TEAMS]
         df_fb = pd.DataFrame(rows)

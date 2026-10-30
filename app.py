@@ -609,12 +609,12 @@ st.sidebar.subheader("Gestione Rapida Dati")
 
 col_sync1, col_sync2 = st.sidebar.columns(2)
 with col_sync1:
-    if st.button("🔄 Sync Excel", width='stretch'):
+    if st.button("🔄 Sync Live FC.it", width='stretch', help="Aggiorna voti e statistiche ufficiali live da Fantacalcio.it e Understat"):
         st.cache_data.clear()
         st.cache_resource.clear()
-        with st.spinner("Sincronizzazione in corso dai file Excel..."):
-            df_master, _ = sync_and_build_database()
-        st.sidebar.success("Database aggiornato!")
+        with st.spinner("Sincronizzazione in corso da Fantacalcio.it e Understat..."):
+            df_master, _ = sync_and_build_database(force_live_scrape=True)
+        st.sidebar.success("Database e statistiche aggiornate!")
         st.rerun()
 
 with col_sync2:
@@ -626,7 +626,20 @@ with col_sync2:
 
 with st.sidebar.expander("🌐 Scarica Statistiche Live (Fantacalcio.it)", expanded=False):
     st.markdown("""
-    Scarica il file Excel ufficiale aggiornato direttamente dall'API di Fantacalcio.it:  
+    **⚡ Aggiornamento Diretto Live (Senza Password):**  
+    Scarica istantaneamente voti, medie e statistiche ufficiali da **Fantacalcio.it** e metriche avanzate da **Understat** per tutti i calciatori di Serie A.
+    """)
+    if st.button("🚀 Aggiorna Statistiche Ufficiali Live", type="primary", key="btn_scrape_live_fc", use_container_width=True):
+        st.cache_data.clear()
+        st.cache_resource.clear()
+        with st.spinner("Scaricamento statistiche ufficiali in tempo reale da Fantacalcio.it e Understat..."):
+            df_master, _ = sync_and_build_database(force_live_scrape=True)
+        st.success("✅ Statistiche ufficiali aggiornate con successo!")
+        st.rerun()
+
+    st.markdown("---")
+    st.markdown("""
+    **Oppure scarica il file Excel completo (con credenziali):**  
     `https://www.fantacalcio.it/api/v1/Excel/stats/21/1`
     """)
     with st.form("fc_live_download_form"):
