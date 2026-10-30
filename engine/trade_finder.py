@@ -156,7 +156,7 @@ RECOMMENDED_QUOTAS_CLASSIC = {
 }
 
 
-def compute_real_starter_status(row, tot_matchdays=7):
+def compute_real_starter_status(row, tot_matchdays=None):
     if hasattr(row, 'to_dict'):
         row = row.to_dict()
     elif not isinstance(row, dict):
@@ -173,10 +173,14 @@ def compute_real_starter_status(row, tot_matchdays=7):
     """
     pres = safe_float(row.get('Presenze', 0))
     mins = safe_float(row.get('Minuti_Reali', 0))
+    if tot_matchdays is None:
+        tot_matchdays = max(1.0, float(row.get('Tot_Giornate', 0) or max(pres, 7.0)))
+    else:
+        tot_matchdays = max(1.0, float(tot_matchdays), pres)
     tot_mins = tot_matchdays * 90.0
     
     m_per_app = (mins / pres) if pres > 0 else 0.0
-    pct_mins = (mins / tot_mins * 100.0) if tot_mins > 0 else 0.0
+    pct_mins = min(100.0, (mins / tot_mins * 100.0)) if tot_mins > 0 else 0.0
     pct_suff = safe_float(row.get('Pct_Sufficienza', 50.0))
     
     xg_90 = safe_float(row.get('xG_90_Regressed', row.get('xG_90', 0.0)))
@@ -241,7 +245,7 @@ def compute_real_starter_status(row, tot_matchdays=7):
         }
 
 
-def is_active_squad_player(row, tot_matchdays=7):
+def is_active_squad_player(row, tot_matchdays=None):
     """
     Determines if a player is actively usable and reliable for matchday lineups:
     1. Must NOT be marked outside Serie A or to be released (* in raw name, FuoriSerieA, Da_Svincolare).
@@ -291,6 +295,11 @@ def is_active_squad_player(row, tot_matchdays=7):
     if is_gk:
         return pres >= 2 or p_voto >= 0.70 or mins >= 180
 
+    if tot_matchdays is None:
+        tot_matchdays = max(1.0, float(row.get('Tot_Giornate', 0) or max(pres, 7.0)))
+    else:
+        tot_matchdays = max(1.0, float(tot_matchdays), pres)
+
     st_info = compute_real_starter_status(row, tot_matchdays=tot_matchdays)
     status = st_info.get('Status', 'MARGINALE')
 
@@ -307,7 +316,7 @@ def is_active_squad_player(row, tot_matchdays=7):
 
 
 
-def compute_continuous_trade_value(player_dict, tot_matchdays=7):
+def compute_continuous_trade_value(player_dict, tot_matchdays=None):
     if hasattr(player_dict, 'to_dict'):
         player_dict = player_dict.to_dict()
     elif not isinstance(player_dict, dict):
@@ -354,9 +363,13 @@ def compute_continuous_trade_value(player_dict, tot_matchdays=7):
     else:
         base_val = 5.5
         
+    if tot_matchdays is None:
+        tot_matchdays = max(1.0, float(player_dict.get('Tot_Giornate', 0) or max(pres, 7.0)))
+    else:
+        tot_matchdays = max(1.0, float(tot_matchdays), pres)
     tot_team_mins = tot_matchdays * 90.0
     m_per_app = (mins / pres) if pres > 0 else 0.0
-    pct_mins = (mins / tot_team_mins) if tot_team_mins > 0 else 0.0
+    pct_mins = min(1.0, (mins / tot_team_mins)) if tot_team_mins > 0 else 0.0
     
     is_gk = ('Por' in roles) or (str(player_dict.get('RuoloClassic', '')).strip() == 'P')
     
@@ -449,7 +462,7 @@ def compute_continuous_trade_value(player_dict, tot_matchdays=7):
     }
 
 
-def evaluate_pairwise_trade_balance(give_pkg, target_pkg, tot_matchdays=7):
+def evaluate_pairwise_trade_balance(give_pkg, target_pkg, tot_matchdays=None):
     """
     Evaluates multi-player trades via continuous Pairwise Ranking Matching (Vasi Comunicanti):
     1. Computes continuous effective market value for each player.
@@ -793,7 +806,7 @@ def analyze_squad_weaknesses(team_name, league_data, df_master, matchday=8, df_a
             p_roles = [str(row.get('RuoloClassic', '')).strip()]
         else:
             p_roles = parse_mantra_roles(row.get('RuoloMantra', ''))
-        is_act = is_active_squad_player(row, tot_matchdays=7)
+        is_act = is_active_squad_player(row, tot_matchdays=None)
         for r in p_roles:
             if r in role_roster_all:
                 role_roster_all[r].append(row)
@@ -1582,8 +1595,8 @@ def find_win_win_trades(
         val = fvm_map.get(name, safe_int(p_data.get('FVM', 1)))
         p_data['FVM'] = val
         p_data['Costo'] = val  # Standardize player cost on official FVM/1000
-        p_data['Trade_Eff'] = compute_continuous_trade_value(p_data, tot_matchdays=7)
-        p_data['Starter_Status'] = compute_real_starter_status(p_data, tot_matchdays=7)
+        p_data['Trade_Eff'] = compute_continuous_trade_value(p_data, tot_matchdays=None)
+        p_data['Starter_Status'] = compute_real_starter_status(p_data, tot_matchdays=None)
 
     # Diagnose My Team optimal lineup & offerable players
     my_owned = [
@@ -1687,7 +1700,7 @@ def find_win_win_trades(
         # Count opponent active roles
         opp_roles_active = {}
         for p in opp_proj_list:
-            is_active = is_active_squad_player(p, tot_matchdays=7)
+            is_active = is_active_squad_player(p, tot_matchdays=None)
             for r in _p_roles(p):
                 if is_active:
                     opp_roles_active[r] = opp_roles_active.get(r, 0) + 1
@@ -2311,17 +2324,17 @@ def simulate_opponent_post_trade(
                    ('M', 2, 'Mediani' if not is_classic else 'Centrocampisti'),
                    ('Pc', 1, 'Punte Centrali' if not is_classic else 'Attaccanti')]
     for r, min_safe, label in role_checks:
-        c_before = sum(1 for p in opp_proj_list if _has_role(p, r) and is_active_squad_player(p, tot_matchdays=7))
-        c_after = sum(1 for p in opp_new_list if _has_role(p, r) and is_active_squad_player(p, tot_matchdays=7))
+        c_before = sum(1 for p in opp_proj_list if _has_role(p, r) and is_active_squad_player(p, tot_matchdays=None))
+        c_after = sum(1 for p in opp_new_list if _has_role(p, r) and is_active_squad_player(p, tot_matchdays=None))
         if c_before >= min_safe and c_after < min_safe:
             # In Mantra, if Pc drops to 0 but opponent has at least 2 active 'A' players, formation remains fully viable
             if not is_classic and r == 'Pc':
-                active_a = sum(1 for p in opp_new_list if _has_role(p, 'A') and is_active_squad_player(p, tot_matchdays=7))
+                active_a = sum(1 for p in opp_new_list if _has_role(p, 'A') and is_active_squad_player(p, tot_matchdays=None))
                 if active_a >= 2:
                     continue
             # In Mantra, if M drops below 2 but opponent has >= 4 active C players, formations like 4-3-3 / 3-4-3 are viable
             if not is_classic and r == 'M':
-                active_c = sum(1 for p in opp_new_list if _has_role(p, 'C') and is_active_squad_player(p, tot_matchdays=7))
+                active_c = sum(1 for p in opp_new_list if _has_role(p, 'C') and is_active_squad_player(p, tot_matchdays=None))
                 if active_c >= 4:
                     continue
             critical_flaws.append(f"⚠️ Carenza creata in {label} ({r}): scende a {c_after} giocatori attivi.")

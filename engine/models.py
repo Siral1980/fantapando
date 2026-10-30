@@ -50,7 +50,7 @@ def calculate_expected_dfactor(ratings_list):
     ev_dfactor = (p_ge_600 * 1.0) + (p_ge_625 * 1.0) + (p_ge_650 * 1.0) + (p_ge_675 * 1.0) + (p_ge_700 * 1.0)
     return round(ev_dfactor, 2), round(mu_unit, 2)
 
-def predict_player_xfv(player_row, matchday=6, calendar=None, ratings_cache=None, prob_lineups_cache=None):
+def predict_player_xfv(player_row, matchday=6, calendar=None, ratings_cache=None, prob_lineups_cache=None, tot_matchdays=None):
     """
     Calculates detailed expected performance and xFV for a player at a specific matchday.
     """
@@ -88,7 +88,12 @@ def predict_player_xfv(player_row, matchday=6, calendar=None, ratings_cache=None
     
     raw_presenze = float(player_row.get('Presenze', 0))
     presenze = max(1.0, raw_presenze)
-    tot_giornate = 7.0  # Current Serie A matchdays played in season 2026/27
+    if tot_matchdays is not None:
+        tot_giornate = float(max(1.0, float(tot_matchdays), raw_presenze))
+    else:
+        row_tot_g = float(player_row.get('Tot_Giornate', 0.0) or 0.0)
+        cal_played = float(matchday - 1 if matchday > 1 else 1)
+        tot_giornate = float(max(1.0, raw_presenze, row_tot_g, cal_played))
     
     gf_tot = float(player_row.get('GF', 0))
     gf_per_game = gf_tot / presenze
@@ -105,7 +110,7 @@ def predict_player_xfv(player_row, matchday=6, calendar=None, ratings_cache=None
 
     # 0. Titolarità & Probabilità di Andare a Voto (P_Voto)
     min_per_app = (minuti_reali / raw_presenze) if raw_presenze > 0 else 0.0
-    pct_min_tot = (minuti_reali / (tot_giornate * 90.0)) * 100.0 if tot_giornate > 0 else 0.0
+    pct_min_tot = min(100.0, (minuti_reali / (tot_giornate * 90.0)) * 100.0) if tot_giornate > 0 else 0.0
     
     if raw_presenze <= 0:
         p_voto = 0.05
@@ -114,7 +119,7 @@ def predict_player_xfv(player_row, matchday=6, calendar=None, ratings_cache=None
         # Realistic blend between attendance rate and actual minutes played per game:
         # A sub entering at minute 75 is NOT a full starter and faces high S.V. / low-rating risk.
         density = min(1.0, min_per_app / 70.0)
-        att_frac = raw_presenze / tot_giornate
+        att_frac = min(1.0, raw_presenze / tot_giornate)
         p_voto = float(np.clip(
             0.05 + 0.35 * att_frac + 0.60 * (att_frac * density),
             0.05,
@@ -387,6 +392,7 @@ def predict_player_xfv(player_row, matchday=6, calendar=None, ratings_cache=None
             'Min_Per_App': int(min_per_app),
             'Minute_Quality_Factor': round(minute_quality_factor, 2),
             'Presenze_Tot': int(raw_presenze),
+            'Tot_Giornate': int(tot_giornate),
             'SV_Penalty': sv_penalty,
             'xFV_Raw': raw_xfv,
             'Exp_Cards': exp_cards,
@@ -520,6 +526,7 @@ def predict_player_xfv(player_row, matchday=6, calendar=None, ratings_cache=None
             'Min_Per_App': int(min_per_app),
             'Minute_Quality_Factor': round(minute_quality_factor, 2),
             'Presenze_Tot': int(raw_presenze),
+            'Tot_Giornate': int(tot_giornate),
             'SV_Penalty': sv_penalty,
             'xFV_Raw': raw_xfv,
             'Exp_Cards': exp_cards,
@@ -540,7 +547,7 @@ def predict_player_xfv(player_row, matchday=6, calendar=None, ratings_cache=None
 
     return details
 
-def batch_predict_xfv(df_players, matchday=6, calendar=None, ratings_cache=None, prob_lineups_cache=None):
+def batch_predict_xfv(df_players, matchday=6, calendar=None, ratings_cache=None, prob_lineups_cache=None, tot_matchdays=None):
     """Computes projections for a collection of players for a specific matchday."""
     if calendar is None:
         calendar = get_or_create_calendar()
@@ -553,6 +560,13 @@ def batch_predict_xfv(df_players, matchday=6, calendar=None, ratings_cache=None,
         except Exception:
             prob_lineups_cache = None
         
+    if tot_matchdays is None:
+        max_p = 0.0
+        if isinstance(df_players, pd.DataFrame) and 'Presenze' in df_players.columns and not df_players.empty:
+            max_p = float(pd.to_numeric(df_players['Presenze'], errors='coerce').max() or 0.0)
+        cal_played = float(matchday - 1 if matchday > 1 else 1)
+        tot_matchdays = max(1.0, max_p, cal_played)
+
     results = []
     for _, row in df_players.iterrows():
         try:
@@ -561,7 +575,8 @@ def batch_predict_xfv(df_players, matchday=6, calendar=None, ratings_cache=None,
                 matchday=matchday,
                 calendar=calendar,
                 ratings_cache=ratings_cache,
-                prob_lineups_cache=prob_lineups_cache
+                prob_lineups_cache=prob_lineups_cache,
+                tot_matchdays=tot_matchdays
             )
             results.append(res)
         except Exception as e:

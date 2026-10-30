@@ -197,7 +197,8 @@ def solve_lineup_for_formation(formation_name, df_projected_roster):
                     # Deterministic micro-tie-breaker (< 0.005 pt):
                     # Prioritizes guaranteed starters (P_Voto), sample size (Presenze) and consistency (Pct_Sufficienza)
                     p_voto_val = float(p['Raw'].get('P_Voto', 0.5))
-                    pres_val = min(1.0, float(p['Raw'].get('Presenze', 0)) / 7.0)
+                    tot_g_opt = float(p['Raw'].get('Tot_Giornate', 0) or max(float(p['Raw'].get('Presenze', 0)), 7.0))
+                    pres_val = min(1.0, float(p['Raw'].get('Presenze', 0)) / max(1.0, tot_g_opt))
                     suff_val = float(p['Raw'].get('Pct_Sufficienza', 50.0)) / 100.0
                     fdr_val = float(p['Raw'].get('FDR', 3))
                     tie_breaker = (p_voto_val * 0.002) + (pres_val * 0.001) + (suff_val * 0.001) - (fdr_val * 0.0003)
@@ -987,7 +988,8 @@ def solve_lineup_for_classic_formation(formation_name, df_projected_roster):
                 rc = 'C'
 
         p_voto_val = float(p_dict.get('P_Voto', 0.5))
-        pres_val = min(1.0, float(p_dict.get('Presenze', 0)) / 7.0)
+        tot_g_opt = float(p_dict.get('Tot_Giornate', 0) or max(float(p_dict.get('Presenze', 0)), 7.0))
+        pres_val = min(1.0, float(p_dict.get('Presenze', 0)) / max(1.0, tot_g_opt))
         suff_val = float(p_dict.get('Pct_Sufficienza', 50.0)) / 100.0
         fdr_val = float(p_dict.get('FDR', 3))
         tie_breaker = (p_voto_val * 0.002) + (pres_val * 0.001) + (suff_val * 0.001) - (fdr_val * 0.0003)

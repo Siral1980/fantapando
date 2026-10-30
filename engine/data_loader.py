@@ -308,7 +308,9 @@ def compute_goalkeeper_advanced_metrics(df_master):
                     blunders += 1
                     
         # Total PSxG: scale to appearances
-        psxg = round(team_tot_xga * (pres / 7.0), 2)
+        team_matches = float(len(hist)) if hist else pres
+        match_denom = max(1.0, team_matches, pres)
+        psxg = round(team_tot_xga * (pres / match_denom), 2)
         goals_prevented = round(psxg - gs, 2)
         gp_90 = round(goals_prevented / pres, 2) if pres > 0 else 0.0
         blunder_rate = round(blunders / pres, 2) if pres > 0 else 0.0

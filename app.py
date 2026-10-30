@@ -1603,7 +1603,10 @@ with tab_formazione:
                             bonus_block = f'<div style="margin-top: 3px;">{bonus_html}</div>' if bonus_html else ''
                             p_voto_pct = int(float(p.get('P_Voto', 0.90)) * 100)
                             tit_badge = str(p.get('Status_Titolarita', '🟢 TITOLARE FISSO'))
-                            pres_txt = f"{p.get('Presenze_Tot', p.get('Presenze', 0))}/7 pres"
+                            pres_val = int(p.get('Presenze_Tot', p.get('Presenze', 0)))
+                            tot_g = int(p.get('Tot_Giornate', 0) or max(pres_val, int(selected_giornata - 1) if selected_giornata > 1 else 1))
+                            tot_g = max(tot_g, pres_val, 1)
+                            pres_txt = f"{pres_val}/{tot_g} pres"
                             bal_info = str(p.get('Ballottaggio_Info', '')).strip()
                             bal_line = f'<div style="font-size: 0.76rem; color: #fbbf24; margin-top: 2px;">⚖️ {bal_info}</div>' if bal_info else ''
                             tit_html = f'<div style="font-size: 0.8rem; color: #94a3b8; margin-top: 2px;">{tit_badge} • <b>{p_voto_pct}%</b> a voto ({pres_txt})</div>{bal_line}'
@@ -1692,7 +1695,10 @@ with tab_formazione:
                     stat_tit = t.get('Status_Titolarita', '🟢 TITOLARE')
                     mins_avg = int(t.get('Min_Per_App', 0))
                     bal_t = t.get('Ballottaggio_Info', '')
-                    tit_display = f"{stat_tit} | P(Voto): {p_voto_val}% ({pres_tot}/7 • {mins_avg}'/g)"
+                    pres_tot = int(t.get('Presenze_Tot', t.get('Presenze', 0)))
+                    tot_g = int(t.get('Tot_Giornate', 0) or max(pres_tot, int(selected_giornata - 1) if selected_giornata > 1 else 1))
+                    tot_g = max(tot_g, pres_tot, 1)
+                    tit_display = f"{stat_tit} | P(Voto): {p_voto_val}% ({pres_tot}/{tot_g} • {mins_avg}'/g)"
                     if bal_t:
                         tit_display += f" • ⚖️ {bal_t}"
 
@@ -1864,7 +1870,10 @@ with tab_formazione:
                 bench_display = []
                 for _, b in df_panchina.iterrows():
                     p_voto_pct = int(float(b.get('P_Voto', 0.85)) * 100)
-                    pres_str = f"{b.get('Presenze_Tot', b.get('Presenze', 0))}/7 pres"
+                    pres_b = int(b.get('Presenze_Tot', b.get('Presenze', 0)))
+                    tot_g = int(b.get('Tot_Giornate', 0) or max(pres_b, int(selected_giornata - 1) if selected_giornata > 1 else 1))
+                    tot_g = max(tot_g, pres_b, 1)
+                    pres_str = f"{pres_b}/{tot_g} pres"
                     score_panchina = float(b.get('Score_Panchina', b.get('EV', 5.0)))
                     prob_voto6_bonus = float(b.get('Prob_Voto6_o_Bonus', 50.0))
                     bonus_pts = float(b.get('Bonus_Atteso', 0.0))
