@@ -303,7 +303,7 @@ def get_roster_dataframe(df_master, player_names=None):
 
     # Enrich with Injuries & Suspensions data + Live Probable Lineups (Probabile Titolare vs Probabile Panchinaro)
     try:
-        from engine.injuries_manager import get_player_status, load_injuries_data
+        from engine.injuries_manager import get_player_status, load_injuries_data, parse_injury_details
         from engine.probable_lineups import load_probable_lineups, get_player_probable_info
         inj_cache = load_injuries_data()
         prob_cache = load_probable_lineups(force_refresh=False)
@@ -316,6 +316,10 @@ def get_roster_dataframe(df_master, player_names=None):
         prob_voto_pct_list = []
         prob_titolare_pct_list = []
         prob_label_list = []
+        motivi_indisp = []
+        rientri_previsti = []
+        badge_rientri = []
+        giornate_rientro = []
 
         for _, row in df_squad.iterrows():
             g = row['Giocatore']
@@ -427,6 +431,12 @@ def get_roster_dataframe(df_master, player_names=None):
                 elif not desc_val and p_prob is not None and p_prob.get('Status_Badge'):
                     desc_val = p_prob.get('Status_Badge')
 
+            parsed_inj = parse_injury_details(desc_val, st_val, current_giornata=10)
+            motivi_indisp.append(parsed_inj['Motivo'])
+            rientri_previsti.append(parsed_inj['Rientro_Previsto'])
+            badge_rientri.append(parsed_inj['Badge_Rientro'])
+            giornate_rientro.append(parsed_inj['Giornata_Target'])
+
             statuses.append(st_val)
             badges.append(badge_val)
             details.append(desc_val)
@@ -444,7 +454,13 @@ def get_roster_dataframe(df_master, player_names=None):
         df_squad['Prob_Voto_Pct'] = prob_voto_pct_list
         df_squad['Prob_Titolare_Pct'] = prob_titolare_pct_list
         df_squad['Prob_Label'] = prob_label_list
-    except Exception:
+        df_squad['Motivo_Indisponibilita'] = motivi_indisp
+        df_squad['Rientro_Previsto'] = rientri_previsti
+        df_squad['Badge_Rientro'] = badge_rientri
+        df_squad['Giornata_Rientro'] = giornate_rientro
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
         df_squad['Stato_Disponibilita'] = [
             'Fuori Serie A' if d else 'Disponibile' for d in df_squad.get('Da_Svincolare', False)
         ]
@@ -452,6 +468,10 @@ def get_roster_dataframe(df_master, player_names=None):
             '🚫 DA SVINCOLARE (*)' if d else '✅ DISPONIBILE' for d in df_squad.get('Da_Svincolare', False)
         ]
         df_squad['Dettaglio_Disponibilita'] = ''
+        df_squad['Motivo_Indisponibilita'] = 'Disponibile'
+        df_squad['Rientro_Previsto'] = '-'
+        df_squad['Badge_Rientro'] = 'Disponibile'
+        df_squad['Giornata_Rientro'] = None
         df_squad['Categoria_Schierabile'] = [
             'Probabile Titolare' if s else 'Non Schierabile' for s in df_squad.get('Schierabile', True)
         ]

@@ -57,7 +57,8 @@ from engine.understat_loader import sync_understat_metrics, get_understat_teams_
 from engine.injuries_manager import (
     fetch_live_injuries_from_fantacalcio, load_injuries_data,
     set_player_manual_override, clear_player_manual_override,
-    clear_all_manual_overrides, get_all_unavailable_players
+    clear_all_manual_overrides, get_all_unavailable_players,
+    parse_injury_details, get_all_unavailable_df
 )
 from engine.probable_lineups import (
     load_probable_lineups, get_player_probable_info, refresh_live_lineups_and_injuries
@@ -520,14 +521,17 @@ with tab_formazione:
                 desc_items = []
                 for _, r in uneligible_rows.iterrows():
                     st_disp = r.get('Stato_Disponibilita', 'Disponibile')
+                    motivo_sintetico = r.get('Motivo_Indisponibilita', '')
+                    badge_rientro = r.get('Badge_Rientro', '')
                     if st_disp == 'Infortunato':
-                        motivo = f"🚑 {r.get('Dettaglio_Disponibilita', 'infortunato')}"
+                        info_txt = f"{motivo_sintetico} · {badge_rientro}" if badge_rientro and badge_rientro != 'Disponibile' else (motivo_sintetico or 'infortunato')
+                        motivo = f"🚑 {info_txt}"
                     elif st_disp == 'Squalificato':
-                        motivo = "🟥 squalificato"
+                        motivo = "🟥 squalificato (1 turno)"
                     elif r.get('Stato_Prestito') == 'Prestito OUT':
-                        motivo = f"prestito a {r.get('Controparte_Prestito', 'altra squadra')}"
+                        motivo = f"📤 prestito a {r.get('Controparte_Prestito', 'altra squadra')}"
                     else:
-                        motivo = "fuori Serie A (* da svincolare)"
+                        motivo = "🚫 fuori Serie A (* da svincolare)"
                     desc_items.append(f"**{r['Giocatore']}** ({motivo})")
                 st.info(f"💡 Esclusi dalla formazione **{len(uneligible_rows)} giocatori non schierabili**: {'; '.join(desc_items)}.")
             eligible_roster = eligible_roster[eligible_roster['Schierabile'] == True]
@@ -572,11 +576,38 @@ with tab_formazione:
             """)
             
             # List current injuries in squad
-            curr_indisp = df_my_roster[df_my_roster['Stato_Disponibilita'] != 'Disponibile']
+            curr_indisp = df_my_roster[df_my_roster['Stato_Disponibilita'] != 'Disponibile'].copy()
             if not curr_indisp.empty:
-                st.markdown("**Calciatori della tua rosa con attenzioni mediche o disciplinari:**")
-                for _, ci in curr_indisp.iterrows():
-                    st.markdown(f"- {ci['Badge_Disponibilita']} **{ci['Giocatore']}** ({ci['Squadra']}): *{ci['Dettaglio_Disponibilita']}*")
+                st.markdown("**📋 Riepilogo Indisponibili e Rientri Stimati (Rosa Attiva):**")
+                role_col_disp = 'RuoloClassic' if is_classic else 'RuoloMantra'
+                df_indisp_display = pd.DataFrame({
+                    'Calciatore': curr_indisp['Giocatore'],
+                    'Ruolo': curr_indisp.get(role_col_disp, curr_indisp.get('Ruolo', '-')),
+                    'Squadra': curr_indisp.get('Squadra', '-'),
+                    'Stato': curr_indisp['Stato_Disponibilita'],
+                    'Diagnosi / Motivo': curr_indisp.get('Motivo_Indisponibilita', '-'),
+                    'Rientro Stimato': curr_indisp.get('Rientro_Previsto', '-'),
+                    'Giornata Prevista': curr_indisp.get('Badge_Rientro', '-')
+                })
+                st.dataframe(
+                    df_indisp_display,
+                    hide_index=True,
+                    width='stretch',
+                    column_config={
+                        'Calciatore': st.column_config.TextColumn(width='medium'),
+                        'Ruolo': st.column_config.TextColumn(width='small'),
+                        'Squadra': st.column_config.TextColumn(width='small'),
+                        'Stato': st.column_config.TextColumn(width='small'),
+                        'Diagnosi / Motivo': st.column_config.TextColumn(width='medium'),
+                        'Rientro Stimato': st.column_config.TextColumn(width='small'),
+                        'Giornata Prevista': st.column_config.TextColumn(width='medium')
+                    }
+                )
+                with st.expander("📄 Dettagli clinici completi da Fantacalcio.it", expanded=False):
+                    for _, ci in curr_indisp.iterrows():
+                        raw_det = ci.get('Dettaglio_Disponibilita', '')
+                        if raw_det:
+                            st.markdown(f"- **{ci['Giocatore']}** ({ci.get('Squadra', '')}): *{raw_det}*")
             else:
                 st.success("✅ Nessun infortunato o squalificato rilevato nella tua rosa!")
                 
@@ -1598,7 +1629,7 @@ with tab_rosa:
         
     role_col = 'RuoloClassic' if is_classic else 'RuoloMantra'
     cols_to_show = [
-        'Badge_Disponibilita', 'Badge_Prestito', 'Giocatore', 'Dettaglio_Disponibilita', 'Dettaglio_Prestito', 'Squadra', role_col, 'Costo', 'Presenze',
+        'Badge_Disponibilita', 'Badge_Prestito', 'Giocatore', 'Motivo_Indisponibilita', 'Badge_Rientro', 'Dettaglio_Prestito', 'Squadra', role_col, 'Costo', 'Presenze',
         'MV_Stagione', 'Pct_Sufficienza', 'FM_Stagione', 'MV_Ultime3', 'Pct_Parate', 'Goals_Prevented', 'Errors_Leading_To_Goal', 'GF', 'ASS',
         'Tiri_90', 'xG_90', 'Delta_xG', 'Key_Passes_90', 'xA_90', 'Delta_xA', 'Signal'
     ]
@@ -2638,10 +2669,11 @@ with tab_scambi:
 with tab_esplora:
     st.header('🔍 Esplora, Scouting & Competizione')
     st.caption('Database unificato di Serie A: ricerca calciatori per metriche reali, ispezione rose avversarie e calendario.')
-    sub_scout, sub_lega_insp, sub_cal = st.tabs([
+    sub_scout, sub_lega_insp, sub_cal, sub_indisp = st.tabs([
         '🎯 Scouting Calciatori Serie A',
         '👥 Rose & Squadre della Lega',
-        '📅 Calendario Serie A & FDR'
+        '📅 Calendario Serie A & FDR',
+        '🚑 Indisponibili & Rientri Serie A'
     ])
     with sub_scout:
         st.markdown(
@@ -3295,6 +3327,87 @@ with tab_esplora:
                 width='stretch',
                 hide_index=True
             )
+
+    with sub_indisp:
+        st.subheader("🚑 Monitoraggio Indisponibili Serie A & Date di Rientro")
+        st.markdown(
+            "Elenco sintetico e aggiornato in tempo reale di **infortuni, squalifiche e diffide** "
+            "per tutte le squadre di Serie A, con diagnosi sintetica e **previsione della giornata di rientro**."
+        )
+
+        df_all_unavail = get_all_unavailable_df(df_master, current_giornata=selected_giornata)
+        
+        # Action Bar: Sync & Counts
+        top_c1, top_c2 = st.columns([3, 1])
+        with top_c1:
+            if not df_all_unavail.empty:
+                n_inf = len(df_all_unavail[df_all_unavail['Stato'] == 'Infortunato'])
+                n_squ = len(df_all_unavail[df_all_unavail['Stato'] == 'Squalificato'])
+                n_dub = len(df_all_unavail[df_all_unavail['Stato'].isin(['In dubbio', 'Diffidato'])])
+                st.markdown(
+                    f"**Totale Segnalati:** `{len(df_all_unavail)}` calciatori · "
+                    f"<span style='color:#ef4444; font-weight:700;'>🚑 {n_inf} Infortunati</span> · "
+                    f"<span style='color:#f97316; font-weight:700;'>🟥 {n_squ} Squalificati</span> · "
+                    f"<span style='color:#eab308; font-weight:700;'>⚠️ {n_dub} In dubbio/Diffidati</span>",
+                    unsafe_allow_html=True
+                )
+            else:
+                st.info("Nessun calciatore indisponibile registrato.")
+        with top_c2:
+            if st.button("🔄 Aggiorna Live da Fantacalcio.it", key="btn_sync_inj_esplora", type="primary"):
+                with st.spinner("Scaricamento dati live in corso..."):
+                    fetch_live_injuries_from_fantacalcio()
+                    st.cache_data.clear()
+                st.success("✅ Dati aggiornati con successo!")
+                st.rerun()
+
+        if not df_all_unavail.empty:
+            # Filter bar
+            fb1, fb2, fb3 = st.columns([2, 2, 2])
+            with fb1:
+                search_p = st.text_input("🔍 Cerca calciatore per nome:", key="search_indisp_p")
+            with fb2:
+                all_teams = ["TUTTE LE SQUADRE"] + sorted(df_all_unavail['Squadra'].unique().tolist())
+                sel_sq = st.selectbox("Filtra per squadra:", options=all_teams, key="filter_indisp_sq")
+            with fb3:
+                all_stati = ["TUTTI GLI STATI", "Solo Infortunati", "Solo Squalificati", "Solo In dubbio", "Solo Diffidati"]
+                sel_st = st.selectbox("Filtra per stato:", options=all_stati, key="filter_indisp_st")
+
+            df_filtered_indisp = df_all_unavail.copy()
+            if search_p:
+                df_filtered_indisp = df_filtered_indisp[df_filtered_indisp['Giocatore'].str.contains(search_p, case=False, na=False)]
+            if sel_sq != "TUTTE LE SQUADRE":
+                df_filtered_indisp = df_filtered_indisp[df_filtered_indisp['Squadra'] == sel_sq]
+            if sel_st == "Solo Infortunati":
+                df_filtered_indisp = df_filtered_indisp[df_filtered_indisp['Stato'] == 'Infortunato']
+            elif sel_st == "Solo Squalificati":
+                df_filtered_indisp = df_filtered_indisp[df_filtered_indisp['Stato'] == 'Squalificato']
+            elif sel_st == "Solo In dubbio":
+                df_filtered_indisp = df_filtered_indisp[df_filtered_indisp['Stato'] == 'In dubbio']
+            elif sel_st == "Solo Diffidati":
+                df_filtered_indisp = df_filtered_indisp[df_filtered_indisp['Stato'] == 'Diffidato']
+
+            show_cols = ['Giocatore', 'Ruolo', 'Squadra', 'Stato', 'Diagnosi', 'Rientro Stimato', 'Giornata Prevista']
+            st.dataframe(
+                df_filtered_indisp[show_cols],
+                width='stretch',
+                hide_index=True,
+                column_config={
+                    'Giocatore': st.column_config.TextColumn(width='medium'),
+                    'Ruolo': st.column_config.TextColumn(width='small'),
+                    'Squadra': st.column_config.TextColumn(width='small'),
+                    'Stato': st.column_config.TextColumn(width='small'),
+                    'Diagnosi': st.column_config.TextColumn(width='medium'),
+                    'Rientro Stimato': st.column_config.TextColumn(width='small'),
+                    'Giornata Prevista': st.column_config.TextColumn(width='medium')
+                }
+            )
+
+            with st.expander("📄 Consulta bollettini clinici estesi da Fantacalcio.it", expanded=False):
+                for _, r in df_filtered_indisp.iterrows():
+                    raw_txt = r.get('Dettaglio Completo', '')
+                    if raw_txt:
+                        st.markdown(f"- **{r['Giocatore']}** ({r['Squadra']}): *{raw_txt}*")
 
 # =============================================================
 # TAB 5: IMPOSTAZIONI & SYNC

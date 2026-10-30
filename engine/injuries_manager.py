@@ -180,6 +180,142 @@ def get_player_status(player_name, cache_data=None):
     }
 
 
+def parse_injury_details(det, status, current_giornata=10):
+    """
+    Parses verbose medical bulletin text and returns structured fields:
+    - Motivo: concise diagnosis (e.g. 'Lesione bicipite femorale', 'Rottura crociato', 'Squalifica')
+    - Rientro_Previsto: human return timeframe (e.g. 'Metà Novembre')
+    - Badge_Rientro: badge tied to matchday (e.g. '🟡 Rientro 12ª G.')
+    - Giornata_Target: integer target matchday or None
+    - Dettaglio_Completo: original full text
+    """
+    det_lower = str(det).lower()
+    
+    # 1. Status specific
+    if status == 'Squalificato':
+        target_g = current_giornata + 1 if current_giornata else 11
+        return {
+            'Tipo': '🟥 Squalifica',
+            'Motivo': 'Squalificato per il turno',
+            'Rientro_Previsto': f'{target_g}ª Giornata',
+            'Badge_Rientro': f'🟢 Rientro {target_g}ª G.',
+            'Giornata_Target': target_g,
+            'Dettaglio_Completo': det or 'Squalificato per il turno di campionato'
+        }
+        
+    if status == 'Diffidato':
+        return {
+            'Tipo': '🟨 Diffida',
+            'Motivo': 'In diffida (a rischio)',
+            'Rientro_Previsto': 'Disponibile',
+            'Badge_Rientro': 'In campo',
+            'Giornata_Target': current_giornata,
+            'Dettaglio_Completo': det or 'In diffida'
+        }
+        
+    # 2. Extract Motivo Sintetico
+    motivo = 'Guaio fisico'
+    if 'crociato' in det_lower:
+        motivo = 'Rottura crociato'
+    elif 'menisco' in det_lower:
+        motivo = 'Lesione menisco'
+    elif 'bicipite femorale' in det_lower:
+        motivo = 'Lesione bicipite femorale'
+    elif 'flessore' in det_lower or 'flessori' in det_lower:
+        motivo = 'Problema ai flessori'
+    elif 'retto femorale' in det_lower or 'retto-adduttoria' in det_lower:
+        motivo = 'Problema retto femorale'
+    elif 'adduttore' in det_lower or 'adduttori' in det_lower:
+        motivo = 'Problema adduttori'
+    elif 'polpaccio' in det_lower:
+        motivo = 'Problema al polpaccio'
+    elif 'caviglia' in det_lower:
+        motivo = 'Distorsione/caviglia'
+    elif 'ginocchio' in det_lower:
+        motivo = 'Problema al ginocchio'
+    elif 'tendine' in det_lower:
+        motivo = 'Problema al tendine'
+    elif 'frattura' in det_lower:
+        motivo = 'Frattura'
+    elif 'spalla' in det_lower:
+        motivo = 'Problema alla spalla'
+    elif 'risentimento' in det_lower:
+        motivo = 'Risentimento muscolare'
+    elif 'affaticamento' in det_lower or 'sovraccarico' in det_lower:
+        motivo = 'Affaticamento muscolare'
+    elif 'distrazione' in det_lower:
+        motivo = 'Distrazione muscolare'
+    elif 'lesione' in det_lower:
+        motivo = 'Lesione muscolare'
+    elif 'operat' in det_lower:
+        motivo = 'Post-operatorio'
+    elif 'trauma' in det_lower or 'contusion' in det_lower:
+        motivo = 'Trauma contusivo'
+        
+    # 3. Extract Rientro & Mappa Giornata
+    rientro_txt = 'Da valutare'
+    g_target = None
+    badge_rientro = '🟡 Da valutare'
+    
+    if any(k in det_lower for k in ['inizio novembre', 'inizio di novembre', "dall'inizio di novembre", 'prima metà di novembre', 'inizio nov']):
+        rientro_txt = 'Inizio Novembre'
+        g_target = 11
+        badge_rientro = '🟢 Rientro 11ª G.'
+    elif any(k in det_lower for k in ['metà novembre', 'metà di novembre', 'seconda metà di novembre', 'metà nov']):
+        rientro_txt = 'Metà Novembre'
+        g_target = 12
+        badge_rientro = '🟡 Rientro 12ª G.'
+    elif any(k in det_lower for k in ['fine novembre', 'fine di novembre', 'dalla fine di novembre', 'fine nov']):
+        rientro_txt = 'Fine Novembre'
+        g_target = 13
+        badge_rientro = '🟠 Rientro 13ª G.'
+    elif any(k in det_lower for k in ['inizio dicembre', 'inizio di dicembre', 'prima metà di dicembre']):
+        rientro_txt = 'Inizio Dicembre'
+        g_target = 14
+        badge_rientro = '🟠 Rientro 14ª G.'
+    elif any(k in det_lower for k in ['metà dicembre', 'metà di dicembre', 'dicembre']):
+        rientro_txt = 'Dicembre'
+        g_target = 15
+        badge_rientro = '🔴 Rientro 15ª-16ª G.'
+    elif any(k in det_lower for k in ['gennaio', 'inizio gennaio', 'metà gennaio']):
+        rientro_txt = 'Gennaio 2027'
+        g_target = 19
+        badge_rientro = '🔴 Rientro ~19ª G.'
+    elif 'febbraio' in det_lower:
+        rientro_txt = 'Febbraio 2027'
+        g_target = 23
+        badge_rientro = '⛔ Rientro ~23ª G.'
+    elif 'marzo' in det_lower:
+        rientro_txt = 'Marzo 2027'
+        g_target = 27
+        badge_rientro = '⛔ Rientro ~27ª G.'
+    elif 'aprile' in det_lower:
+        rientro_txt = 'Aprile 2027'
+        g_target = 31
+        badge_rientro = '⛔ Rientro ~31ª G.'
+    elif any(k in det_lower for k in ['maggio', 'stagione finita']):
+        rientro_txt = 'Fine Stagione'
+        g_target = 36
+        badge_rientro = '⛔ Stagione finita'
+    elif any(k in det_lower for k in ['fine ottobre', 'fine di ottobre']):
+        rientro_txt = 'Fine Ottobre'
+        g_target = 10
+        badge_rientro = '🟢 Rientro 10ª-11ª G.'
+    elif any(k in det_lower for k in ['prossimo turno', 'in dubbio', 'da valutare']):
+        rientro_txt = 'In dubbio'
+        g_target = current_giornata
+        badge_rientro = '🟡 In dubbio'
+        
+    return {
+        'Tipo': '🚑 Infortunio',
+        'Motivo': motivo,
+        'Rientro_Previsto': rientro_txt,
+        'Badge_Rientro': badge_rientro,
+        'Giornata_Target': g_target,
+        'Dettaglio_Completo': det
+    }
+
+
 def classify_injury_status(player_name, cache_data=None):
     """
     Analyzes medical bulletin and return timeline for a player.
@@ -326,6 +462,47 @@ def get_all_unavailable_players(cache_data=None):
             combined[p] = info
 
     return list(combined.values())
+
+
+def get_all_unavailable_df(df_master=None, current_giornata=10):
+    """
+    Returns a clean, sorted pandas DataFrame of all unavailable Serie A players
+    with synthetic diagnosis, return date, and target Serie A matchday badge.
+    """
+    unavail = get_all_unavailable_players()
+    if not unavail:
+        return pd.DataFrame(columns=['Giocatore', 'Ruolo', 'Squadra', 'Stato', 'Diagnosi', 'Rientro Stimato', 'Giornata Prevista', 'Giornata_Target', 'Dettaglio Completo'])
+    
+    role_map = {}
+    if df_master is not None and not df_master.empty:
+        for _, row in df_master.iterrows():
+            g = row.get('Giocatore')
+            r = row.get('RuoloMantra') or row.get('RuoloClassic') or row.get('Ruolo', '')
+            if g and r:
+                role_map[g] = r
+
+    rows = []
+    for u in unavail:
+        g_name = u.get('Giocatore', '')
+        st_val = u.get('Stato', 'Infortunato')
+        det_val = u.get('Dettaglio', '')
+        parsed = parse_injury_details(det_val, st_val, current_giornata=current_giornata)
+        
+        rows.append({
+            'Giocatore': g_name,
+            'Ruolo': role_map.get(g_name, '-'),
+            'Squadra': u.get('Squadra', '-'),
+            'Stato': st_val,
+            'Diagnosi': parsed['Motivo'],
+            'Rientro Stimato': parsed['Rientro_Previsto'],
+            'Giornata Prevista': parsed['Badge_Rientro'],
+            'Giornata_Target': parsed['Giornata_Target'] or 99,
+            'Dettaglio Completo': det_val
+        })
+
+    df = pd.DataFrame(rows)
+    df = df.sort_values(by=['Giornata_Target', 'Squadra', 'Giocatore'], ascending=[True, True, True]).reset_index(drop=True)
+    return df
 
 
 if __name__ == '__main__':
