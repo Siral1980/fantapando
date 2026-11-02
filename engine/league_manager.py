@@ -34,11 +34,13 @@ ROOT_LEAGUE_FILE = os.path.join(DATA_DIR, "league_rosters.json")
 ROOT_CONFIG_FILE = os.path.join(DATA_DIR, "league_config.json")
 ROOT_METADATA_FILE = os.path.join(DATA_DIR, "league_metadata.json")
 ROOT_USER_ROSTER_FILE = os.path.join(DATA_DIR, "user_roster.json")
+ROOT_LOANS_REGISTRY_FILE = os.path.join(DATA_DIR, "loans_registry.json")
 
 # Backwards compatibility aliases
 LEAGUE_FILE = ROOT_LEAGUE_FILE
 CONFIG_FILE = ROOT_CONFIG_FILE
 METADATA_FILE = ROOT_METADATA_FILE
+LOANS_REGISTRY_FILE = ROOT_LOANS_REGISTRY_FILE
 
 
 def sanitize_league_id(name):
@@ -290,7 +292,8 @@ def get_league_paths(league_id=None):
         'rosters': os.path.join(ldir, "league_rosters.json"),
         'config': os.path.join(ldir, "league_config.json"),
         'metadata': os.path.join(ldir, "league_metadata.json"),
-        'user_roster': os.path.join(ldir, "user_roster.json")
+        'user_roster': os.path.join(ldir, "user_roster.json"),
+        'loans_registry': os.path.join(ldir, "loans_registry.json")
     }
 
 
@@ -1105,16 +1108,7 @@ def sync_all_league_rosters(df_master=None):
         if p_name:
             master_by_name[p_name] = r_dict
 
-    # Check if lista_calciatori_mantra_lega_attuale.xlsx exists to re-parse officially
-    lega_xlsx = os.path.join(DATA_DIR, "lista_calciatori_mantra_lega_attuale.xlsx")
-    if os.path.exists(lega_xlsx):
-        try:
-            parsed_from_xlsx = parse_official_league_excel(lega_xlsx, df_master)
-            if parsed_from_xlsx and len(parsed_from_xlsx) >= 2:
-                save_league_rosters(parsed_from_xlsx)
-                print(f"[LeagueManager] Re-parsed {len(parsed_from_xlsx)} teams from {lega_xlsx}")
-        except Exception as e:
-            print(f"[LeagueManager] Notice re-parsing {lega_xlsx}: {e}")
+    # Live sync updates player stats across teams without re-parsing static outdated files
 
     # Update all league_rosters.json files on disk
     target_files = [ROOT_LEAGUE_FILE]
@@ -1386,59 +1380,227 @@ def get_league_metadata(league_id=None):
     }
 
 
-def terminate_loan(player_name, borrower_team, owner_team=None):
+def load_loans_registry(league_id=None):
     """
-    Terminates a loan: removes the loan entry (Costo == 0) from borrower_team.
-    The player remains strictly owned by owner_team (where Costo > 0).
-    Saves the updated rosters immediately.
+    Loads persistent loans registry for the specified or active league.
+    Returns: {"loans": [...], "terminated_loans": [...]}
     """
-    rosters = load_league_rosters()
-    if borrower_team in rosters:
-        orig_len = len(rosters[borrower_team])
-        rosters[borrower_team] = [
-            p for p in rosters[borrower_team]
-            if not (p['Giocatore'] == player_name and p.get('Costo', 0) == 0)
+    paths = get_league_paths(league_id)
+    reg_file = paths.get('loans_registry')
+    
+    if reg_file and os.path.exists(reg_file):
+        try:
+            with open(reg_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                if isinstance(data, dict):
+                    data.setdefault('loans', [])
+                    data.setdefault('terminated_loans', [])
+                    return data
+        except Exception:
+            pass
+
+    # Root fallback
+    if os.path.exists(ROOT_LOANS_REGISTRY_FILE):
+        try:
+            with open(ROOT_LOANS_REGISTRY_FILE, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                if isinstance(data, dict):
+                    data.setdefault('loans', [])
+                    data.setdefault('terminated_loans', [])
+                    return data
+        except Exception:
+            pass
+
+    return {'loans': [], 'terminated_loans': []}
+
+
+def save_loans_registry(registry_data, league_id=None):
+    """
+    Saves persistent loans registry for the specified or active league
+    and mirrors to root data/loans_registry.json.
+    """
+    paths = get_league_paths(league_id)
+    reg_file = paths.get('loans_registry')
+    if not reg_file:
+        return False
+    
+    try:
+        os.makedirs(os.path.dirname(reg_file), exist_ok=True)
+        with open(reg_file, 'w', encoding='utf-8') as f:
+            json.dump(registry_data, f, indent=2, ensure_ascii=False)
+    except Exception as e:
+        print(f"Error saving loans registry to {reg_file}: {e}")
+        return False
+
+    # Mirror to root if active league
+    try:
+        os.makedirs(DATA_DIR, exist_ok=True)
+        with open(ROOT_LOANS_REGISTRY_FILE, 'w', encoding='utf-8') as f:
+            json.dump(registry_data, f, indent=2, ensure_ascii=False)
+    except Exception:
+        pass
+
+    return True
+
+
+def terminate_loan(player_name, borrower_team, owner_team=None, league_id=None):
+    """
+    Terminates a loan:
+    1. Removes player entry from borrower_team.
+    2. Moves loan from active loans to terminated_loans in loans_registry.json.
+    3. Restores owner's ownership and availability.
+    4. Updates league_rosters.json and user_roster.json.
+    5. Clears Streamlit cache.
+    """
+    lid = league_id or get_active_league_id()
+    rosters = load_league_rosters(lid)
+    registry = load_loans_registry(lid)
+
+    p_clean = str(player_name).strip()
+    b_team = str(borrower_team).strip()
+
+    # Find registered loan
+    found_loan = None
+    remaining_loans = []
+    for l in registry.get('loans', []):
+        if l['player_name'].strip() == p_clean and l['borrower_team'].strip() == b_team:
+            found_loan = l
+        else:
+            remaining_loans.append(l)
+
+    resolved_owner = owner_team or (found_loan['owner_team'] if found_loan else None)
+    if not resolved_owner:
+        # Search owner in rosters
+        for t, pls in rosters.items():
+            if t != b_team and any(p['Giocatore'].strip() == p_clean and p.get('Costo', 0) > 0 for p in pls):
+                resolved_owner = t
+                break
+
+    # 1. Update registry
+    registry['loans'] = remaining_loans
+    term_entry = {
+        'player_name': p_clean,
+        'owner_team': resolved_owner or 'Sconosciuta',
+        'borrower_team': b_team,
+        'terminated_at': datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    }
+    registry['terminated_loans'] = [
+        t for t in registry.get('terminated_loans', [])
+        if not (t.get('player_name', '').strip() == p_clean and t.get('borrower_team', '').strip() == b_team)
+    ]
+    registry['terminated_loans'].append(term_entry)
+    save_loans_registry(registry, lid)
+
+    # 2. Update rosters: remove from borrower_team
+    removed_from_borrower = False
+    if b_team in rosters:
+        orig_len = len(rosters[b_team])
+        rosters[b_team] = [
+            p for p in rosters[b_team]
+            if not (p['Giocatore'].strip() == p_clean and (p.get('Costo', 0) == 0 or p.get('InPrestito', False)))
         ]
-        if len(rosters[borrower_team]) < orig_len:
-            save_league_rosters(rosters)
-            save_league_metadata(source=f"Risoluzione prestito manuale: {player_name}")
-            active_team = get_active_my_team()
-            if active_team in rosters:
-                sync_user_roster_from_league(rosters, active_team)
-            return True, f"Prestito di {player_name} a {borrower_team} risolto con successo! Il calciatore rimane al 100% di proprietà."
-    return False, f"Calciatore {player_name} a costo 0 non trovato in {borrower_team}."
+        removed_from_borrower = (len(rosters[b_team]) < orig_len)
 
+    # 3. Ensure owner still has player with full ownership
+    if resolved_owner and resolved_owner in rosters:
+        for p in rosters[resolved_owner]:
+            if p['Giocatore'].strip() == p_clean:
+                p['InPrestito'] = False
 
-def add_or_update_loan(player_name, owner_team, borrower_team):
-    """
-    Registers or updates a loan: creates an entry with Costo == 0 in borrower_team
-    referencing player from owner_team.
-    """
-    rosters = load_league_rosters()
-    if owner_team not in rosters or borrower_team not in rosters:
-        return False, "Una o entrambe le squadre non esistono nella lega."
-    
-    owner_pls = rosters[owner_team]
-    target_p = next((p for p in owner_pls if p['Giocatore'] == player_name and p.get('Costo', 0) > 0), None)
-    if not target_p:
-        target_p = next((p for p in owner_pls if p['Giocatore'] == player_name), None)
-    if not target_p:
-        return False, f"Calciatore '{player_name}' non trovato nella rosa di '{owner_team}'."
-    
-    # Check if already present in borrower_team
-    if any(p['Giocatore'] == player_name for p in rosters[borrower_team]):
-        return False, f"'{player_name}' è già presente nella rosa di '{borrower_team}'."
-    
-    loan_entry = copy.deepcopy(target_p)
-    loan_entry['Costo'] = 0
-    loan_entry['InPrestito'] = True
-    rosters[borrower_team].append(loan_entry)
-    save_league_rosters(rosters)
-    save_league_metadata(source=f"Nuovo prestito manuale: {player_name} ({owner_team} -> {borrower_team})")
+    save_league_rosters(rosters, lid)
+    save_league_metadata(source=f"Risoluzione prestito: {p_clean}", league_id=lid)
+
+    # 4. Sync user_roster.json if active team is affected
     active_team = get_active_my_team()
-    if active_team in rosters:
-        sync_user_roster_from_league(rosters, active_team)
-    return True, f"Prestito di {player_name} da {owner_team} a {borrower_team} registrato con successo!"
+    if active_team in [b_team, resolved_owner]:
+        sync_user_roster_from_league(rosters, team_name=active_team, league_id=lid)
+
+    # 5. Clear cache
+    try:
+        import streamlit as st
+        st.cache_data.clear()
+    except Exception:
+        pass
+
+    owner_str = f"di {resolved_owner}" if resolved_owner else "del proprietario"
+    return True, f"Prestito di {p_clean} a {b_team} risolto con successo! Il calciatore rimane al 100% di proprietà {owner_str}."
+
+
+def add_or_update_loan(player_name, owner_team, borrower_team, loan_fee=0, league_id=None):
+    """
+    Registers a new loan:
+    1. Creates loan entry in loans_registry.json.
+    2. Adds player to borrower_team with InPrestito = True and Costo = loan_fee.
+    3. Saves league_rosters.json and syncs active user_roster.json.
+    4. Clears Streamlit cache.
+    """
+    lid = league_id or get_active_league_id()
+    rosters = load_league_rosters(lid)
+
+    p_clean = str(player_name).strip()
+    o_team = str(owner_team).strip()
+    b_team = str(borrower_team).strip()
+
+    if o_team not in rosters or b_team not in rosters:
+        return False, "Una o entrambe le squadre non esistono nella lega."
+    if o_team == b_team:
+        return False, "La squadra proprietaria e la squadra ricevente devono essere diverse."
+
+    owner_pls = rosters[o_team]
+    target_p = next((p for p in owner_pls if p['Giocatore'].strip() == p_clean and p.get('Costo', 0) > 0), None)
+    if not target_p:
+        target_p = next((p for p in owner_pls if p['Giocatore'].strip() == p_clean), None)
+    if not target_p:
+        return False, f"Calciatore '{p_clean}' non trovato nella rosa di '{o_team}'."
+
+    # Check if already present in borrower_team
+    if any(p['Giocatore'].strip() == p_clean and not p.get('InPrestito', False) for p in rosters[b_team]):
+        return False, f"'{p_clean}' è già presente come giocatore di proprietà nella rosa di '{b_team}'."
+
+    # Remove any existing loan entry of same player in borrower_team before re-adding
+    rosters[b_team] = [p for p in rosters[b_team] if p['Giocatore'].strip() != p_clean]
+
+    loan_entry = copy.deepcopy(target_p)
+    loan_entry['Costo'] = int(loan_fee)
+    loan_entry['InPrestito'] = True
+    rosters[b_team].append(loan_entry)
+
+    # Update loans_registry
+    registry = load_loans_registry(lid)
+    registry['terminated_loans'] = [
+        t for t in registry.get('terminated_loans', [])
+        if not (t.get('player_name', '').strip() == p_clean and t.get('borrower_team', '').strip() == b_team)
+    ]
+    registry['loans'] = [
+        l for l in registry.get('loans', [])
+        if not (l.get('player_name', '').strip() == p_clean and l.get('borrower_team', '').strip() == b_team)
+    ]
+    registry['loans'].append({
+        'player_name': p_clean,
+        'owner_team': o_team,
+        'borrower_team': b_team,
+        'cost': int(target_p.get('Costo', 1)),
+        'loan_fee': int(loan_fee),
+        'status': 'active',
+        'notes': 'Prestito registrato',
+        'updated_at': datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    })
+    save_loans_registry(registry, lid)
+
+    save_league_rosters(rosters, lid)
+    save_league_metadata(source=f"Nuovo prestito: {p_clean} ({o_team} -> {b_team})", league_id=lid)
+
+    active_team = get_active_my_team()
+    if active_team in [o_team, b_team]:
+        sync_user_roster_from_league(rosters, team_name=active_team, league_id=lid)
+
+    try:
+        import streamlit as st
+        st.cache_data.clear()
+    except Exception:
+        pass
+
+    return True, f"Prestito di {p_clean} da {o_team} a {b_team} registrato con successo!"
 
 
 def sync_user_roster_from_league(league_data=None, team_name='Bluelock', league_id=None, update_active_team=False):
@@ -1454,74 +1616,159 @@ def sync_user_roster_from_league(league_data=None, team_name='Bluelock', league_
     return []
 
 
-def build_loan_registry(league_data=None):
+def build_loan_registry(league_data=None, league_id=None):
     """
-    Identifies all loans across the league:
-    Where player has Costo == 0 in team A and Costo > 0 in team B.
+    Builds the active loan registry for the given league:
+    1. Loads persistent loans_registry.json.
+    2. Scrubs any ghost appearances of terminated loans from borrower teams.
+    3. Auto-discovers any new duplicate player appearances across teams.
+    4. Produces loan_map:
+       - (borrower, player) -> Stato_Prestito: 'Prestito IN', Badge_Prestito: '🟢 PRESTITO IN (da X)', Schierabile: True
+       - (owner, player) -> Stato_Prestito: 'Prestito OUT', Badge_Prestito: '🔴 PRESTITO OUT (a Y)', Schierabile: False
+    5. Returns (loan_map, df_loans).
     """
+    lid = league_id or get_active_league_id()
     if league_data is None:
-        league_data = load_league_rosters()
+        league_data = load_league_rosters(lid)
 
+    registry = load_loans_registry(lid)
+    loans_list = registry.get('loans', [])
+    term_list = registry.get('terminated_loans', [])
+    term_set = {(str(t.get('player_name', '')).strip(), str(t.get('borrower_team', '')).strip()) for t in term_list}
+
+    # Scrub ghost appearances in borrower teams for terminated loans
+    roster_modified = False
+    for (p_name, b_team) in term_set:
+        if b_team in league_data:
+            orig_len = len(league_data[b_team])
+            league_data[b_team] = [
+                p for p in league_data[b_team]
+                if not (p.get('Giocatore', '').strip() == p_name and (p.get('Costo', 0) == 0 or p.get('InPrestito', False)))
+            ]
+            if len(league_data[b_team]) < orig_len:
+                roster_modified = True
+
+    # Scan for all player appearances
     all_player_appearances = {}
     for team, players in league_data.items():
         for p in players:
-            name = p['Giocatore']
+            name = str(p.get('Giocatore', '')).strip()
+            if not name:
+                continue
             if name not in all_player_appearances:
                 all_player_appearances[name] = []
             all_player_appearances[name].append({
                 'team': team,
-                'cost': p['Costo'],
-                'fuori_serie_a': p.get('FuoriSerieA', False),
+                'cost': int(p.get('Costo', 0)),
+                'in_prestito': bool(p.get('InPrestito', False)),
+                'fuori_serie_a': bool(p.get('FuoriSerieA', False)),
                 'ruolo_mantra': p.get('RuoloMantra', 'C'),
+                'ruolo_classic': p.get('RuoloClassic', 'C'),
                 'squadra_serie_a': p.get('Squadra', '')
             })
+
+    # Reconcile existing registered loans & discover new ones
+    known_loans_pairs = {(str(l.get('player_name', '')).strip(), str(l.get('borrower_team', '')).strip()) for l in loans_list}
+    registry_modified = False
+
+    for name, appearances in all_player_appearances.items():
+        if len(appearances) > 1:
+            owner_entry = next((a for a in appearances if a['cost'] > 0 and not a['in_prestito']), None)
+            if not owner_entry:
+                owner_entry = appearances[0]
+
+            borrower_entries = [a for a in appearances if a['team'] != owner_entry['team']]
+            for b in borrower_entries:
+                b_team = b['team']
+                if (name, b_team) in term_set:
+                    if b_team in league_data:
+                        league_data[b_team] = [
+                            p for p in league_data[b_team]
+                            if not (p.get('Giocatore', '').strip() == name and (p.get('Costo', 0) == 0 or p.get('InPrestito', False)))
+                        ]
+                        roster_modified = True
+                    continue
+
+                if (name, b_team) not in known_loans_pairs:
+                    new_l = {
+                        'player_name': name,
+                        'owner_team': owner_entry['team'],
+                        'borrower_team': b_team,
+                        'cost': owner_entry['cost'],
+                        'loan_fee': b['cost'],
+                        'status': 'active',
+                        'notes': 'Auto-rilevato da rose di lega',
+                        'updated_at': datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    }
+                    loans_list.append(new_l)
+                    known_loans_pairs.add((name, b_team))
+                    registry_modified = True
+
+    if registry_modified:
+        registry['loans'] = loans_list
+        save_loans_registry(registry, lid)
+
+    if roster_modified:
+        save_league_rosters(league_data, lid)
 
     loan_map = {}
     loan_summary_list = []
 
-    for name, appearances in all_player_appearances.items():
-        if len(appearances) > 1:
-            owner_entry = next((a for a in appearances if a['cost'] > 0), appearances[0])
-            borrower_entries = [a for a in appearances if a['cost'] == 0]
+    for l in loans_list:
+        p_name = l['player_name']
+        o_team = l['owner_team']
+        b_team = l['borrower_team']
+        o_cost = l.get('cost', 1)
+        fee = l.get('loan_fee', 0)
 
-            for b in borrower_entries:
-                borrower_team = b['team']
-                owner_team = owner_entry['team']
+        p_apps = all_player_appearances.get(p_name, [])
+        r_mantra = next((a['ruolo_mantra'] for a in p_apps if a['team'] == o_team), 'C')
+        r_classic = next((a['ruolo_classic'] for a in p_apps if a['team'] == o_team), 'C')
+        sq_sa = next((a['squadra_serie_a'] for a in p_apps if a['team'] == o_team), '')
+        is_out = any(a.get('fuori_serie_a', False) for a in p_apps)
 
-                loan_summary_list.append({
-                    'Calciatore': name,
-                    'Ruolo': owner_entry['ruolo_mantra'],
-                    'Squadra': owner_entry['squadra_serie_a'],
-                    'Proprietario': owner_team,
-                    'In_Prestito_A': borrower_team,
-                    'Costo_Asta': owner_entry['cost'],
-                    'Tipo': 'Prestito Gratuito (Costo 0)'
-                })
+        loan_summary_list.append({
+            'Calciatore': p_name,
+            'Ruolo': r_mantra,
+            'RuoloClassic': r_classic,
+            'Squadra': sq_sa,
+            'Proprietario': o_team,
+            'In_Prestito_A': b_team,
+            'Costo_Asta': o_cost,
+            'Costo_Prestito': fee,
+            'Tipo': 'Prestito Gratuito' if fee == 0 else f'Prestito Oneroso ({fee} cr.)'
+        })
 
-                # Mapping for borrower
-                loan_map[(borrower_team, name)] = {
-                    'Stato_Prestito': 'Prestito IN',
-                    'Badge_Prestito': f"🟢 IN PRESTITO (da {owner_team})",
-                    'Dettaglio_Prestito': f"In prestito temporaneo da {owner_team} (costo d'asta originale: {owner_entry['cost']} cr.)",
-                    'Controparte': owner_team,
-                    'Schierabile': True,
-                    'Da_Svincolare': b['fuori_serie_a']
-                }
+        # Mapping for borrower
+        loan_map[(b_team, p_name)] = {
+            'Stato_Prestito': 'Prestito IN',
+            'Badge_Prestito': f"🟢 PRESTITO IN (da {o_team})",
+            'Dettaglio_Prestito': f"In prestito temporaneo da {o_team} (costo asta: {o_cost} cr.)",
+            'Controparte': o_team,
+            'Controparte_Prestito': o_team,
+            'Schierabile': True,
+            'InPrestito': True,
+            'Prestito_OUT': False,
+            'Da_Svincolare': is_out
+        }
 
-                # Mapping for owner
-                loan_map[(owner_team, name)] = {
-                    'Stato_Prestito': 'Prestito OUT',
-                    'Badge_Prestito': f"🔴 PRESTITO CEDUTO (a {borrower_team})",
-                    'Dettaglio_Prestito': f"Cartellino di proprietà prestato gratuitamente a {borrower_team}",
-                    'Controparte': borrower_team,
-                    'Schierabile': False,
-                    'Da_Svincolare': owner_entry['fuori_serie_a']
-                }
+        # Mapping for owner
+        loan_map[(o_team, p_name)] = {
+            'Stato_Prestito': 'Prestito OUT',
+            'Badge_Prestito': f"🔴 PRESTITO OUT (a {b_team})",
+            'Dettaglio_Prestito': f"Cartellino di proprietà ceduto in prestito a {b_team}",
+            'Controparte': b_team,
+            'Controparte_Prestito': b_team,
+            'Schierabile': False,
+            'InPrestito': False,
+            'Prestito_OUT': True,
+            'Da_Svincolare': is_out
+        }
 
     if loan_summary_list:
         df_loans = pd.DataFrame(loan_summary_list)
     else:
-        df_loans = pd.DataFrame(columns=['Calciatore', 'Ruolo', 'Squadra', 'Proprietario', 'In_Prestito_A', 'Costo_Asta', 'Tipo'])
+        df_loans = pd.DataFrame(columns=['Calciatore', 'Ruolo', 'RuoloClassic', 'Squadra', 'Proprietario', 'In_Prestito_A', 'Costo_Asta', 'Costo_Prestito', 'Tipo'])
 
     return loan_map, df_loans
 
@@ -1695,6 +1942,10 @@ def get_team_roster_df(team_name, league_data_or_master=None, df_master=None):
             'RuoloMantra': m_info.get('RuoloMantra', p.get('RuoloMantra', 'C')),
             'Costo': cost,
             'Stato_Prestito': stato_prestito,
+            'InPrestito': bool(loan_info.get('InPrestito', False)) if loan_info else False,
+            'Prestito_OUT': bool(loan_info.get('Prestito_OUT', False)) if loan_info else False,
+            'Controparte': loan_info.get('Controparte', '-') if loan_info else '-',
+            'Controparte_Prestito': loan_info.get('Controparte_Prestito', '-') if loan_info else '-',
             'Badge_Prestito': badge_prestito,
             'Dettaglio_Prestito': dettaglio_prestito,
             'Stato_Disponibilita': disp_status,

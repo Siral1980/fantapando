@@ -638,6 +638,12 @@ with tab_formazione:
                     st.rerun()
 
         eligible_roster = df_my_roster.copy()
+        # Always exclude players loaned out or out of Serie A from matchday squad
+        if 'Stato_Prestito' in eligible_roster.columns:
+            eligible_roster = eligible_roster[eligible_roster['Stato_Prestito'] != 'Prestito OUT']
+        if 'Da_Svincolare' in eligible_roster.columns:
+            eligible_roster = eligible_roster[eligible_roster['Da_Svincolare'] != True]
+
         if exclude_uneligible and 'Schierabile' in eligible_roster.columns:
             uneligible_rows = eligible_roster[eligible_roster['Schierabile'] == False]
             if not uneligible_rows.empty:
@@ -651,7 +657,7 @@ with tab_formazione:
                     elif r.get('Stato_Prestito') == 'Prestito OUT':
                         motivo = " prestito OUT"
                     else:
-                        motivo = " fuori Serie A"
+                        motivo = " non disponibile"
                     desc_items.append(f"**{r['Giocatore']}** ({motivo})")
                 st.caption(f" **Esclusi automaticamente ({len(uneligible_rows)}):** {' · '.join(desc_items)}")
             eligible_roster = eligible_roster[eligible_roster['Schierabile'] == True]
@@ -1536,40 +1542,84 @@ with tab_rosa:
 
     # 2. Compact Collapsible Loan Management
     cur_team_name = get_active_my_team()
-    if not loans_in.empty or not loans_out.empty:
-        with st.expander(f" Accordi di Prestito Attivi ({len(loans_in)} in entrata, {len(loans_out)} in uscita) — Gestisci / Risolvi", expanded=False):
-            col_l1, col_l2 = st.columns(2)
-            with col_l1:
-                st.markdown("** Prestiti in Entrata (IN - Schierabili):**")
-                if not loans_in.empty:
-                    for _, r in loans_in.iterrows():
-                        p_name_t = r['Giocatore']
-                        st.markdown(f"-  **{p_name_t}** ({r['RuoloClassic'] if is_classic else r['RuoloMantra']}): *{r['Dettaglio_Prestito']}*")
-                        if st.button(f"🔴 Risolvi prestito di {p_name_t}", key=f"t1_term_in_{p_name_t}"):
-                            ok, msg = terminate_loan(p_name_t, cur_team_name)
-                            if ok:
-                                st.success(msg)
-                                st.rerun()
-                            else:
-                                st.error(msg)
-                else:
-                    st.caption("Nessun prestito in entrata.")
-            with col_l2:
-                st.markdown("** Prestiti in Uscita (OUT - Non schierabili):**")
-                if not loans_out.empty:
-                    for _, r in loans_out.iterrows():
-                        p_name_t = r['Giocatore']
-                        borrower_t = r.get('Controparte', '')
-                        st.markdown(f"-  **{p_name_t}** ({r['RuoloClassic'] if is_classic else r['RuoloMantra']}): *{r['Dettaglio_Prestito']}* (asta: {r['Costo']} cr)")
-                        if st.button(f"🟢 Richiama alla base {p_name_t}", key=f"t1_term_out_{p_name_t}"):
-                            ok, msg = terminate_loan(p_name_t, borrower_t)
-                            if ok:
-                                st.success(msg)
-                                st.rerun()
-                            else:
-                                st.error(msg)
-                else:
-                    st.caption("Nessun prestito in uscita.")
+    with st.expander(f" Accordi di Prestito della Tua Rosa ({len(loans_in)} IN, {len(loans_out)} OUT) — Gestisci / Registra", expanded=(not loans_in.empty or not loans_out.empty)):
+        col_l1, col_l2 = st.columns(2)
+        with col_l1:
+            st.markdown("**🟢 Prestiti in Entrata (IN - Schierabili nella tua formazione):**")
+            if not loans_in.empty:
+                for _, r in loans_in.iterrows():
+                    p_name_t = r['Giocatore']
+                    owner_src = r.get('Controparte_Prestito') or r.get('Controparte') or 'Proprietario'
+                    st.markdown(f"- **{p_name_t}** ({r['RuoloClassic'] if is_classic else r['RuoloMantra']}): *{r['Dettaglio_Prestito']}*")
+                    if st.button(f"🔴 Risolvi prestito di {p_name_t}", key=f"t1_term_in_{p_name_t}", width='stretch'):
+                        ok, msg = terminate_loan(p_name_t, cur_team_name, owner_team=owner_src)
+                        if ok:
+                            st.cache_data.clear()
+                            st.success(msg)
+                            st.rerun()
+                        else:
+                            st.error(msg)
+            else:
+                st.caption("Nessun calciatore in prestito in entrata.")
+        with col_l2:
+            st.markdown("**🔴 Prestiti in Uscita (OUT - Ceduti temporaneamente, non schierabili):**")
+            if not loans_out.empty:
+                for _, r in loans_out.iterrows():
+                    p_name_t = r['Giocatore']
+                    borrower_t = r.get('Controparte_Prestito') or r.get('Controparte') or ''
+                    st.markdown(f"- **{p_name_t}** ({r['RuoloClassic'] if is_classic else r['RuoloMantra']}): *{r['Dettaglio_Prestito']}* (asta: {r['Costo']} cr)")
+                    if st.button(f"🟢 Richiama alla base {p_name_t}", key=f"t1_term_out_{p_name_t}", width='stretch'):
+                        ok, msg = terminate_loan(p_name_t, borrower_t, owner_team=cur_team_name)
+                        if ok:
+                            st.cache_data.clear()
+                            st.success(msg)
+                            st.rerun()
+                        else:
+                            st.error(msg)
+            else:
+                st.caption("Nessun calciatore ceduto in prestito.")
+
+        # Quick inline loan registration
+        st.markdown("---")
+        st.markdown("**➕ Registra Nuovo Prestito Rapido per la Tua Squadra:**")
+        q_l_type = st.radio("Tipo di operazione:", options=["🔴 Concedi tuo calciatore in prestito (Prestito OUT)", "🟢 Prendi calciatore in prestito da altra squadra (Prestito IN)"], horizontal=True, key="quick_loan_type_t2")
+        q_c1, q_c2, q_c3 = st.columns([1.5, 1.5, 1])
+        all_l_teams = [t for t in league_teams if t != cur_team_name]
+        all_rosters_dict = load_league_rosters()
+        if "Concedi" in q_l_type:
+            with q_c1:
+                my_avail_out = sorted([p['Giocatore'] for p in all_rosters_dict.get(cur_team_name, []) if p.get('Costo', 0) > 0 and not loans_out['Giocatore'].isin([p['Giocatore']]).any()])
+                sel_p_loan = st.selectbox("Tuo calciatore da prestare:", options=my_avail_out if my_avail_out else ["Nessun giocatore disponibile"], key="quick_loan_out_p")
+            with q_c2:
+                sel_target_team = st.selectbox("Squadra ricevente:", options=all_l_teams if all_l_teams else ["Nessuna squadra"], key="quick_loan_out_team")
+            with q_c3:
+                q_fee = st.number_input("Costo prestito (cr):", min_value=0, max_value=500, value=0, step=1, key="quick_loan_out_fee")
+                if st.button("Concedi Prestito", type="primary", key="btn_quick_loan_out", width='stretch'):
+                    if sel_p_loan and sel_p_loan != "Nessun giocatore disponibile" and sel_target_team != "Nessuna squadra":
+                        ok, msg = add_or_update_loan(sel_p_loan, cur_team_name, sel_target_team, loan_fee=q_fee)
+                        if ok:
+                            st.cache_data.clear()
+                            st.success(msg)
+                            st.rerun()
+                        else:
+                            st.error(msg)
+        else:
+            with q_c1:
+                sel_source_team = st.selectbox("Squadra proprietaria:", options=all_l_teams if all_l_teams else ["Nessuna squadra"], key="quick_loan_in_team")
+            with q_c2:
+                src_pls = sorted([p['Giocatore'] for p in all_rosters_dict.get(sel_source_team, []) if p.get('Costo', 0) > 0 and not loans_in['Giocatore'].isin([p['Giocatore']]).any()])
+                sel_p_loan = st.selectbox("Calciatore da prendere in prestito:", options=src_pls if src_pls else ["Nessun giocatore disponibile"], key="quick_loan_in_p")
+            with q_c3:
+                q_fee = st.number_input("Costo prestito (cr):", min_value=0, max_value=500, value=0, step=1, key="quick_loan_in_fee")
+                if st.button("Ricevi Prestito", type="primary", key="btn_quick_loan_in", width='stretch'):
+                    if sel_p_loan and sel_p_loan != "Nessun giocatore disponibile" and sel_source_team != "Nessuna squadra":
+                        ok, msg = add_or_update_loan(sel_p_loan, sel_source_team, cur_team_name, loan_fee=q_fee)
+                        if ok:
+                            st.cache_data.clear()
+                            st.success(msg)
+                            st.rerun()
+                        else:
+                            st.error(msg)
 
     st.markdown("---")
 
@@ -2123,6 +2173,10 @@ with tab_scambi:
             mask_opp = pd.Series(True, index=opp_roster_df.index)
             if 'InPrestito' in opp_roster_df.columns:
                 mask_opp &= ~opp_roster_df['InPrestito'].astype(bool)
+            if 'Prestito_OUT' in opp_roster_df.columns:
+                mask_opp &= ~opp_roster_df['Prestito_OUT'].astype(bool)
+            if 'Stato_Prestito' in opp_roster_df.columns:
+                mask_opp &= (opp_roster_df['Stato_Prestito'] == 'Proprietà')
             if 'Da_Svincolare' in opp_roster_df.columns:
                 mask_opp &= ~opp_roster_df['Da_Svincolare'].astype(bool)
             if 'FuoriSerieA' in opp_roster_df.columns:
@@ -2409,10 +2463,14 @@ with tab_scambi:
         if trade_mode == " Trattativa di Lega (Inter-Squadra)" and league_teams and selected_opp:
             with col_sc1:
                 my_team_df = get_team_roster_df(my_team, df_master)
-                # Exclude borrowed players and players to release from tradeable give list
+                # Exclude borrowed players and players on loan OUT or to release from tradeable give list
                 my_mask = pd.Series(True, index=my_team_df.index)
                 if 'InPrestito' in my_team_df.columns:
                     my_mask &= ~my_team_df['InPrestito'].astype(bool)
+                if 'Prestito_OUT' in my_team_df.columns:
+                    my_mask &= ~my_team_df['Prestito_OUT'].astype(bool)
+                if 'Stato_Prestito' in my_team_df.columns:
+                    my_mask &= (my_team_df['Stato_Prestito'] == 'Proprietà')
                 if 'Da_Svincolare' in my_team_df.columns:
                     my_mask &= ~my_team_df['Da_Svincolare'].astype(bool)
                 if 'FuoriSerieA' in my_team_df.columns:
@@ -2431,10 +2489,14 @@ with tab_scambi:
                 )
             with col_sc2:
                 opp_team_df = get_team_roster_df(selected_opp, df_master)
-                # Exclude borrowed players and players to release from opponent receive list
+                # Exclude borrowed players and players on loan OUT or to release from opponent receive list
                 opp_mask = pd.Series(True, index=opp_team_df.index)
                 if 'InPrestito' in opp_team_df.columns:
                     opp_mask &= ~opp_team_df['InPrestito'].astype(bool)
+                if 'Prestito_OUT' in opp_team_df.columns:
+                    opp_mask &= ~opp_team_df['Prestito_OUT'].astype(bool)
+                if 'Stato_Prestito' in opp_team_df.columns:
+                    opp_mask &= (opp_team_df['Stato_Prestito'] == 'Proprietà')
                 if 'Da_Svincolare' in opp_team_df.columns:
                     opp_mask &= ~opp_team_df['Da_Svincolare'].astype(bool)
                 if 'FuoriSerieA' in opp_team_df.columns:
@@ -3315,42 +3377,54 @@ with tab_esplora:
                 st.dataframe(df_league_summary, width='stretch', hide_index=True)
 
         loan_map_all, df_all_loans = build_loan_registry()
-        if not df_all_loans.empty:
-            with st.expander(f" Registro Prestiti di Lega ({len(df_all_loans)} attivi) & Gestione Accordi", expanded=False):
+        with st.expander(f" Registro Prestiti di Lega ({len(df_all_loans)} attivi) & Gestione Accordi", expanded=(len(df_all_loans) > 0)):
+            if not df_all_loans.empty:
                 st.dataframe(
                     df_all_loans[['Calciatore', 'Ruolo', 'Squadra', 'Proprietario', 'In_Prestito_A', 'Costo_Asta', 'Tipo']],
                     width='stretch',
                     hide_index=True
                 )
-                m_col1, m_col2 = st.columns(2)
-                with m_col1:
-                    st.markdown("#####  Termina un Prestito Esistente")
-                    loan_options = [f"{r['Calciatore']} ({r['Proprietario']}  {r['In_Prestito_A']})" for _, r in df_all_loans.iterrows()]
+            else:
+                st.info("🟢 Nessun prestito attualmente attivo nella lega.")
+
+            m_col1, m_col2 = st.columns(2)
+            with m_col1:
+                st.markdown("##### Risolvi un Prestito Esistente")
+                if not df_all_loans.empty:
+                    loan_options = [f"{r['Calciatore']} ({r['Proprietario']} -> {r['In_Prestito_A']})" for _, r in df_all_loans.iterrows()]
                     selected_loan_to_term = st.selectbox("Seleziona il prestito da risolvere:", options=loan_options, key=f"select_loan_term_{active_league}")
                     if st.button("Termina Prestito Selezionato", type="secondary", key="btn_term_loan_tab4", width='stretch'):
                         sel_idx = loan_options.index(selected_loan_to_term)
                         row_sel = df_all_loans.iloc[sel_idx]
-                        ok, msg = terminate_loan(row_sel['Calciatore'], row_sel['In_Prestito_A'])
+                        ok, msg = terminate_loan(row_sel['Calciatore'], row_sel['In_Prestito_A'], owner_team=row_sel['Proprietario'])
                         if ok:
+                            st.cache_data.clear()
                             st.success(msg)
                             st.rerun()
                         else:
                             st.error(msg)
-                with m_col2:
-                    st.markdown("#####  Registra Nuovo Prestito Manuale")
-                    owner_team_new = st.selectbox("Squadra Proprietaria:", options=league_teams, key="new_loan_owner_tab4")
-                    all_rosters_dict = load_league_rosters()
-                    avail_owner_players = sorted([p['Giocatore'] for p in all_rosters_dict.get(owner_team_new, []) if p.get('Costo', 0) > 0])
-                    player_to_loan_new = st.selectbox("Calciatore da prestare:", options=avail_owner_players if avail_owner_players else ["Nessun giocatore"], key="new_loan_p_tab4")
-                    borrower_team_new = st.selectbox("Squadra Ricevente:", options=[t for t in league_teams if t != owner_team_new], key="new_loan_borrower_tab4")
-                    if st.button("Registra Prestito", type="primary", key="btn_add_loan_tab4", width='stretch'):
-                        if player_to_loan_new and player_to_loan_new != "Nessun giocatore":
-                            ok, msg = add_or_update_loan(player_to_loan_new, owner_team_new, borrower_team_new)
-                            if ok:
-                                st.success(msg)
-                                st.rerun()
-                            else:
-                                st.error(msg)
+                else:
+                    st.caption("Nessun prestito da risolvere.")
+            with m_col2:
+                st.markdown("##### Registra Nuovo Prestito Manuale")
+                owner_team_new = st.selectbox("Squadra Proprietaria:", options=league_teams, key="new_loan_owner_tab4")
+                all_rosters_dict = load_league_rosters()
+                avail_owner_players = sorted([
+                    p['Giocatore'] for p in all_rosters_dict.get(owner_team_new, []) 
+                    if p.get('Costo', 0) > 0 and loan_map_all.get((owner_team_new, p['Giocatore']), {}).get('Stato_Prestito') != 'Prestito OUT'
+                ])
+                player_to_loan_new = st.selectbox("Calciatore da prestare:", options=avail_owner_players if avail_owner_players else ["Nessun giocatore"], key="new_loan_p_tab4")
+                borrower_team_new = st.selectbox("Squadra Ricevente:", options=[t for t in league_teams if t != owner_team_new], key="new_loan_borrower_tab4")
+                fee_tab4 = st.number_input("Costo del prestito (crediti, 0 = gratuito):", min_value=0, max_value=500, value=0, step=1, key="new_loan_fee_tab4")
+                if st.button("Registra Prestito", type="primary", key="btn_add_loan_tab4", width='stretch'):
+                    if player_to_loan_new and player_to_loan_new != "Nessun giocatore":
+                        ok, msg = add_or_update_loan(player_to_loan_new, owner_team_new, borrower_team_new, loan_fee=fee_tab4)
+                        if ok:
+                            st.cache_data.clear()
+                            st.success(msg)
+                            st.rerun()
+                        else:
+                            st.error(msg)
 
         df_out_league = get_out_of_serie_a_summary()
         if not df_out_league.empty:

@@ -743,6 +743,21 @@ def is_player_to_release(p, release_names=None):
     if release_names and (g in release_names or raw in release_names):
         return True
     return False
+def is_tradable_asset(p, team_name, release_names, loan_map=None):
+    """Returns True if player is 100% owned by the team and eligible for market trades (not on loan IN or OUT)."""
+    if not isinstance(p, dict):
+        return False
+    if p.get('InPrestito', False) or p.get('Prestito_OUT', False):
+        return False
+    pname = p.get('Giocatore', '')
+    if is_player_to_release(p, release_names) or is_player_to_release(pname, release_names):
+        return False
+    if loan_map is not None:
+        st = loan_map.get((team_name, pname), {}).get('Stato_Prestito')
+        if st in ['Prestito IN', 'Prestito OUT']:
+            return False
+    return safe_int(p.get('Costo', 1)) > 0
+
 
 
 def analyze_squad_weaknesses(team_name, league_data, df_master, matchday=8, df_all_proj=None, league_type=None):
@@ -759,9 +774,14 @@ def analyze_squad_weaknesses(team_name, league_data, df_master, matchday=8, df_a
     team_players_all = league_data[team_name]
     # For market/trade analysis, only consider owned assets (Costo > 0, not temporary loans from other clubs)
     # and exclude players marked as out of Serie A / to be released
+    try:
+        from engine.league_manager import build_loan_registry
+        loan_map, _ = build_loan_registry(league_data)
+    except Exception:
+        loan_map = {}
     team_players = [
         p for p in team_players_all 
-        if not p.get('InPrestito', False) and p.get('Costo', 1) > 0 and not is_player_to_release(p, release_names)
+        if is_tradable_asset(p, team_name, release_names, loan_map)
     ]
     player_names = [p['Giocatore'] for p in team_players]
     
@@ -1599,9 +1619,14 @@ def find_win_win_trades(
         p_data['Starter_Status'] = compute_real_starter_status(p_data, tot_matchdays=None)
 
     # Diagnose My Team optimal lineup & offerable players
+    try:
+        from engine.league_manager import build_loan_registry
+        loan_map, _ = build_loan_registry(league_data)
+    except Exception:
+        loan_map = {}
     my_owned = [
         p for p in league_data.get(my_team_name, [])
-        if not p.get('InPrestito', False) and safe_int(p.get('Costo', 1)) > 0 and not is_player_to_release(p, release_names)
+        if is_tradable_asset(p, my_team_name, release_names, loan_map)
     ]
     my_pnames = [p['Giocatore'] for p in my_owned]
     my_proj_list = [proj_map[n] for n in my_pnames if n in proj_map]
@@ -1669,7 +1694,7 @@ def find_win_win_trades(
 
         opp_players_owned = [
             p for p in opp_players 
-            if not p.get('InPrestito', False) and safe_int(p.get('Costo', 1)) > 0 and not is_player_to_release(p, release_names)
+            if is_tradable_asset(p, opp_team, release_names, loan_map)
         ]
         opp_pnames = [p['Giocatore'] for p in opp_players_owned]
         opp_proj_list = []
@@ -2462,9 +2487,14 @@ def find_trades_for_target_players(
         return []
 
     # My squad players (owned assets only, excluding to-be-released)
+    try:
+        from engine.league_manager import build_loan_registry
+        loan_map, _ = build_loan_registry(league_data)
+    except Exception:
+        loan_map = {}
     my_owned = [
         p for p in league_data[my_team_name] 
-        if not p.get('InPrestito', False) and p.get('Costo', 1) > 0 and not is_player_to_release(p, release_names)
+        if is_tradable_asset(p, my_team_name, release_names, loan_map)
     ]
     my_pnames = [p['Giocatore'] for p in my_owned]
     my_proj_list = [proj_map[n] for n in my_pnames if n in proj_map]
@@ -2482,7 +2512,7 @@ def find_trades_for_target_players(
     # Opponent target players and baseline lineup (owned assets only, excluding to-be-released)
     opp_owned = [
         p for p in league_data[opp_team_name] 
-        if not p.get('InPrestito', False) and p.get('Costo', 1) > 0 and not is_player_to_release(p, release_names)
+        if is_tradable_asset(p, opp_team_name, release_names, loan_map)
     ]
     opp_pnames = set(p['Giocatore'] for p in opp_owned)
     opp_proj_list = [proj_map[n] for n in opp_pnames if n in proj_map]

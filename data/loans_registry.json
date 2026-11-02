@@ -1,0 +1,90 @@
+{
+  "loans": [
+    {
+      "player_name": "Mrozek",
+      "owner_team": "Bluelock",
+      "borrower_team": "BORTETA FC",
+      "cost": 1,
+      "loan_fee": 0,
+      "status": "active"
+    },
+    {
+      "player_name": "Corvi",
+      "owner_team": "BORTETA FC",
+      "borrower_team": "Bluelock",
+      "cost": 1,
+      "loan_fee": 0,
+      "status": "active"
+    },
+    {
+      "player_name": "Theate",
+      "owner_team": "Bluelock",
+      "borrower_team": "BORTETA FC",
+      "cost": 75,
+      "loan_fee": 0,
+      "status": "active"
+    },
+    {
+      "player_name": "Baldanzi",
+      "owner_team": "MAULUX FC",
+      "borrower_team": "Lestofanti FC",
+      "cost": 27,
+      "loan_fee": 0,
+      "status": "active"
+    },
+    {
+      "player_name": "Thiam",
+      "owner_team": "MAULUX FC",
+      "borrower_team": "AMIT Partizan Folagra",
+      "cost": 12,
+      "loan_fee": 0,
+      "status": "active"
+    },
+    {
+      "player_name": "Lucchesi",
+      "owner_team": "AMIT Partizan Folagra",
+      "borrower_team": "MAULUX FC",
+      "cost": 1,
+      "loan_fee": 0,
+      "status": "active"
+    },
+    {
+      "player_name": "Kaiki",
+      "owner_team": "Enel Energia",
+      "borrower_team": "Tonny Rio Malen by Pedony",
+      "cost": 23,
+      "loan_fee": 0,
+      "status": "active"
+    },
+    {
+      "player_name": "Milla",
+      "owner_team": "Tonny Rio Malen by Pedony",
+      "borrower_team": "Enel Energia",
+      "cost": 16,
+      "loan_fee": 0,
+      "status": "active"
+    }
+  ],
+  "terminated_loans": [
+    {
+      "player_name": "Marin R.",
+      "owner_team": "Lestofanti FC",
+      "borrower_team": "BORTETA FC"
+    },
+    {
+      "player_name": "Liteta",
+      "owner_team": "BORTETA FC",
+      "borrower_team": "Lestofanti FC"
+    },
+    {
+      "player_name": "Piotrowski",
+      "owner_team": "Tonny Rio Malen by Pedony",
+      "borrower_team": "BORTETA FC"
+    },
+    {
+      "player_name": "Zalewski",
+      "owner_team": "Lestofanti FC",
+      "borrower_team": "BORTETA FC"
+    }
+  ]
+}

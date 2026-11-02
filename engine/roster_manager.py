@@ -279,6 +279,9 @@ def get_roster_dataframe(df_master, player_names=None):
         df_squad['Badge_Prestito'] = [loan_map.get((my_team, g), {}).get('Badge_Prestito', 'PROPRIETÀ') for g in df_squad['Giocatore']]
         df_squad['Dettaglio_Prestito'] = [loan_map.get((my_team, g), {}).get('Dettaglio_Prestito', 'Cartellino di proprietà') for g in df_squad['Giocatore']]
         df_squad['Controparte_Prestito'] = [loan_map.get((my_team, g), {}).get('Controparte', '-') for g in df_squad['Giocatore']]
+        df_squad['Controparte'] = df_squad['Controparte_Prestito']
+        df_squad['InPrestito'] = [bool(loan_map.get((my_team, g), {}).get('Stato_Prestito') == 'Prestito IN') for g in df_squad['Giocatore']]
+        df_squad['Prestito_OUT'] = [bool(loan_map.get((my_team, g), {}).get('Stato_Prestito') == 'Prestito OUT') for g in df_squad['Giocatore']]
 
         da_svincolare_list = [
             bool(stars.get(g, False) or loan_map.get((my_team, g), {}).get('Da_Svincolare', False))
@@ -298,6 +301,9 @@ def get_roster_dataframe(df_master, player_names=None):
         df_squad['Badge_Prestito'] = 'PROPRIETÀ'
         df_squad['Dettaglio_Prestito'] = 'Cartellino di proprietà'
         df_squad['Controparte_Prestito'] = '-'
+        df_squad['Controparte'] = '-'
+        df_squad['InPrestito'] = False
+        df_squad['Prestito_OUT'] = False
         df_squad['Schierabile'] = True
         df_squad['Da_Svincolare'] = False
 
