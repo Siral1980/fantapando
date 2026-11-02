@@ -1448,3 +1448,1528 @@ Giornata,Squadra,Giocatore,Ruolo,Voto,FantaVoto,GolSubiti
 5,Venezia,Yeboah J.,A,4.5,1.5,0
 5,Venezia,Rrahmani Al.,A,5.5,5.5,0
 5,Venezia,Adams A.,A,5.0,5.0,0
+6,Atalanta,Carnesecchi,P,6.0,5.0,1
+6,Atalanta,Zappacosta,D,5.5,5.5,0
+6,Atalanta,Kolasinac,D,6.0,6.0,0
+6,Atalanta,Bellanova,D,7.0,7.0,0
+6,Atalanta,Scalvini,D,6.0,6.0,0
+6,Atalanta,Kristensen T.,D,6.0,6.0,0
+6,Atalanta,Bernasconi,D,6.0,6.0,0
+6,Atalanta,Kessi&#xE8;,,7.0,10.0,0
+6,Atalanta,Gaetano,C,55.0,55.0,0
+6,Atalanta,Elmas,C,5.5,5.5,0
+6,Atalanta,Samardzic,C,6.0,6.0,0
+6,Atalanta,Zalewski,C,55.0,55.0,0
+6,Atalanta,Ederson D.S.,C,6.0,6.0,0
+6,Atalanta,Rowe,C,6.0,6.0,0
+6,Atalanta,De Ketelaere,A,6.0,6.0,0
+6,Atalanta,Krstovic,A,8.0,15.0,0
+6,Bologna,Pessina Mas.,P,5.0,4.0,1
+6,Bologna,Darmian,D,6.0,6.0,0
+6,Bologna,Zortea,D,6.0,6.0,0
+6,Bologna,Miranda J.,D,6.5,6.5,0
+6,Bologna,Casale,D,6.5,6.5,0
+6,Bologna,Heggem,D,6.0,5.5,0
+6,Bologna,Helland,D,6.0,6.0,0
+6,Bologna,Alhassane,D,55.0,55.0,0
+6,Bologna,Bernardeschi,C,55.0,55.0,0
+6,Bologna,Orsolini,C,7.5,10.5,0
+6,Bologna,Cambiaghi,C,7.0,9.0,0
+6,Bologna,Pobega,C,6.5,6.5,0
+6,Bologna,Ferguson,C,6.5,6.5,0
+6,Bologna,El Azzouzi O.,C,6.0,5.5,0
+6,Bologna,Piccoli,A,6.5,6.5,0
+6,Bologna,Enem,A,7.0,10.0,0
+6,Cagliari,Caprile,P,7.0,6.0,1
+6,Cagliari,Mina,D,6.5,6.5,0
+6,Cagliari,Obert,D,5.5,5.5,0
+6,Cagliari,Rodriguez Ju.,D,6.0,5.5,0
+6,Cagliari,Z&#xE8; Pedro,,6.0,6.0,0
+6,Cagliari,Sugawara,D,6.0,6.0,0
+6,Cagliari,Deiola,C,6.0,5.5,0
+6,Cagliari,Winks,C,6.5,6.5,0
+6,Cagliari,Adopo,C,6.0,6.0,0
+6,Cagliari,Fazzini,C,55.0,55.0,0
+6,Cagliari,Fadera,C,6.0,6.0,0
+6,Cagliari,Romano,C,6.5,6.5,0
+6,Cagliari,Massolin,C,6.0,6.0,0
+6,Cagliari,Maldini,A,7.0,10.0,0
+6,Cagliari,Nzola,A,6.0,6.0,0
+6,Cagliari,Mendy P.,A,7.0,8.0,0
+6,Como,Butez,P,6.0,6.0,0
+6,Como,Chalobah T.,D,6.5,6.5,0
+6,Como,Couto,D,6.0,6.0,0
+6,Como,Ramon,D,7.0,7.0,0
+6,Como,Kempf,D,55.0,55.0,0
+6,Como,Kaiki,D,6.5,6.5,0
+6,Como,Caqueret,C,6.0,6.0,0
+6,Como,Da Cunha,C,6.5,6.5,0
+6,Como,Perrone,C,5.5,5.5,0
+6,Como,Paz N.,C,6.0,6.0,0
+6,Como,Baturina,C,5.5,5.0,0
+6,Como,Addai,C,55.0,55.0,0
+6,Como,Rodriguez Je.,C,6.0,6.0,0
+6,Como,Milla,C,55.0,55.0,0
+6,Como,Diao,A,6.0,5.5,0
+6,Como,Douvikas,A,5.5,5.5,0
+6,Fiorentina,De Gea,P,5.5,3.5,2
+6,Fiorentina,Ranieri L.,D,5.0,4.5,0
+6,Fiorentina,Dragusin,D,5.0,5.0,0
+6,Fiorentina,Dod&#xF2;,,55.0,55.0,0
+6,Fiorentina,Jimenez A.,D,6.0,6.0,0
+6,Fiorentina,Valdepenas,D,5.5,5.5,0
+6,Fiorentina,Viery,D,5.5,5.0,0
+6,Fiorentina,Fagioli,C,5.5,5.5,0
+6,Fiorentina,Ndour,C,5.5,5.5,0
+6,Fiorentina,Njie,C,5.5,5.5,0
+6,Fiorentina,Mastantuono,C,6.0,6.0,0
+6,Fiorentina,Oulai,C,5.5,5.0,0
+6,Fiorentina,Goncalves P.,C,55.0,55.0,0
+6,Fiorentina,Beto,A,5.5,5.5,0
+6,Fiorentina,Pellegrino M.,A,6.0,6.0,0
+6,Fiorentina,Gnonto,A,5.5,5.5,0
+6,Frosinone,Palmisani,P,6.0,3.0,3
+6,Frosinone,Terzic,D,6.0,6.0,0
+6,Frosinone,Cittadini,D,5.5,5.5,0
+6,Frosinone,Oyono A.,D,6.0,6.0,0
+6,Frosinone,Calvani,D,5.5,5.5,0
+6,Frosinone,Bracaglia,D,6.0,6.0,0
+6,Frosinone,Zerbin,C,55.0,55.0,0
+6,Frosinone,Fini,C,6.0,6.0,0
+6,Frosinone,Masini,C,5.5,5.5,0
+6,Frosinone,Cal&#xF2;,,6.0,6.0,0
+6,Frosinone,Cichella,C,55.0,55.0,0
+6,Frosinone,Schmid,C,6.0,6.0,0
+6,Frosinone,Raimondo,A,5.5,5.5,0
+6,Frosinone,Kvernadze,A,6.0,6.0,0
+6,Frosinone,Ghedjemis,A,5.5,5.5,0
+6,Frosinone,Bobcek,A,5.5,5.5,0
+6,Genoa,Bijlow,P,6.0,5.0,1
+6,Genoa,Sabelli,D,55.0,55.0,0
+6,Genoa,Vasquez,D,5.5,3.0,0
+6,Genoa,Ostigard,D,6.5,6.5,0
+6,Genoa,Ehizibue,D,6.0,6.0,0
+6,Genoa,Marcandalli,D,6.0,6.0,0
+6,Genoa,Otoa,D,6.0,6.0,0
+6,Genoa,Puczka,D,55.0,55.0,0
+6,Genoa,El Shaarawy,C,7.0,7.0,0
+6,Genoa,Traor&#xE8; Hj.,,6.5,6.0,0
+6,Genoa,Messias,C,7.0,10.0,0
+6,Genoa,Frendrup,C,6.5,6.5,0
+6,Genoa,Ellertsson,C,6.5,6.5,0
+6,Genoa,Wiafe,C,6.0,5.5,0
+6,Genoa,Vitinha O.,A,5.5,5.0,0
+6,Genoa,Osmajic,A,7.5,11.5,0
+6,Inter,Martinez Jo.,P,6.0,6.0,0
+6,Inter,Dimarco,D,6.5,6.5,0
+6,Inter,Pavard,D,6.0,6.0,0
+6,Inter,Carlos Augusto,D,6.5,6.5,0
+6,Inter,Spence,D,6.0,6.0,0
+6,Inter,Bisseck,D,6.0,6.0,0
+6,Inter,Calhanoglu,C,7.0,10.0,0
+6,Inter,Mkhitaryan,C,6.5,7.5,0
+6,Inter,Luis Henrique,C,6.0,6.0,0
+6,Inter,Diouf,C,6.0,6.0,0
+6,Inter,Stankovic A.,C,6.0,6.0,0
+6,Inter,Sucic P.,C,7.0,10.0,0
+6,Inter,Martinez L.,A,6.0,6.0,0
+6,Inter,Thuram,A,7.0,10.0,0
+6,Inter,Bonny,A,6.0,6.0,0
+6,Inter,Esposito F.P.,A,7.0,7.0,0
+6,Juventus,Vicario,P,6.0,5.0,1
+6,Juventus,Bremer,D,6.0,6.0,0
+6,Juventus,Celik,D,6.0,6.0,0
+6,Juventus,Kalulu,D,6.0,6.0,0
+6,Juventus,Cambiaso,D,5.5,5.5,0
+6,Juventus,Lucum&#xEC;,,5.5,5.5,0
+6,Juventus,Gonzalez N.,C,5.5,5.5,0
+6,Juventus,Douglas Luiz,C,6.0,6.0,0
+6,Juventus,McKennie,C,5.5,5.0,0
+6,Juventus,Sarr P.,C,6.0,6.0,0
+6,Juventus,Koopmeiners,C,55.0,55.0,0
+6,Juventus,Zhegrova,C,6.0,6.0,0
+6,Juventus,Conceicao,C,5.5,5.5,0
+6,Juventus,Alajbegovic,C,6.5,7.5,0
+6,Juventus,Kolo Muani,A,6.0,9.0,0
+6,Juventus,Woltemade,A,5.5,5.5,0
+6,Lazio,Mandas,P,6.5,5.5,1
+6,Lazio,Pedraza,D,6.5,7.5,0
+6,Lazio,Tavares N.,D,7.0,10.0,0
+6,Lazio,Leite,D,6.0,5.5,0
+6,Lazio,Doekhi,D,6.0,5.5,0
+6,Lazio,Provstgaard,D,6.0,5.5,0
+6,Lazio,Floriani Mussolini,D,6.0,6.0,0
+6,Lazio,Sutalo J.,D,6.0,6.0,0
+6,Lazio,Zaccagni,C,6.0,6.0,0
+6,Lazio,Frattesi,C,6.0,6.0,0
+6,Lazio,Belahyane,C,6.0,6.0,0
+6,Lazio,Isaksen,C,7.0,10.0,0
+6,Lazio,Dele-Bashiru,C,6.0,6.0,0
+6,Lazio,Taylor K.,C,6.5,6.5,0
+6,Lazio,Pinamonti,A,7.0,10.0,0
+6,Lazio,Noslin,A,7.5,9.5,0
+6,Lecce,Falcone,P,5.5,3.5,2
+6,Lecce,Gallo,D,5.5,5.5,0
+6,Lecce,Tiago Gabriel,D,5.5,5.5,0
+6,Lecce,Veiga D.,D,6.0,7.0,0
+6,Lecce,Siebert,D,6.0,6.0,0
+6,Lecce,Ilic,C,6.0,5.5,0
+6,Lecce,Maleh,C,6.0,5.5,0
+6,Lecce,Coulibaly L.,C,6.0,6.0,0
+6,Lecce,Pierotti,C,5.5,5.5,0
+6,Lecce,Gandelman,C,55.0,55.0,0
+6,Lecce,Ngom,C,5.5,5.5,0
+6,Lecce,Monteiro J.,C,55.0,55.0,0
+6,Lecce,Geubbels,A,5.5,5.5,0
+6,Lecce,N&#x27;Dri,,6.0,6.0,0
+6,Lecce,Fatah,A,7.0,10.0,0
+6,Lecce,Esteban,A,5.5,5.0,0
+6,Milan,Maignan,P,6.5,5.5,1
+6,Milan,Gabbia,D,5.5,5.5,0
+6,Milan,Pavlovic,D,6.0,5.5,0
+6,Milan,Estupinan,D,5.5,5.0,0
+6,Milan,De Winter,D,6.0,5.5,0
+6,Milan,Gila,D,6.5,6.5,0
+6,Milan,Rabiot,C,7.0,10.0,0
+6,Milan,Pulisic,C,5.5,5.5,0
+6,Milan,Modric,C,6.5,7.5,0
+6,Milan,Chukwueze,C,5.5,5.5,0
+6,Milan,Musah,C,5.5,5.5,0
+6,Milan,Moreira,C,6.5,6.5,0
+6,Milan,Ciss&#xE8; A.,,55.0,55.0,0
+6,Milan,Jashari,C,55.0,55.0,0
+6,Milan,Hutchinson,C,55.0,55.0,0
+6,Milan,Ramos G.,A,6.0,5.5,0
+6,Monza,Tornqvist,P,6.0,3.0,3
+6,Monza,Carboni A.,D,5.5,5.0,0
+6,Monza,Birindelli,D,5.0,5.0,0
+6,Monza,Goglichidze,D,6.5,9.5,0
+6,Monza,Lucchesi,D,4.5,3.5,0
+6,Monza,Kouadio,D,5.5,5.5,0
+6,Monza,Bakoune,D,5.5,5.5,0
+6,Monza,Mangas,D,6.5,6.5,0
+6,Monza,Maye,D,6.0,6.0,0
+6,Monza,Folorunsho,C,5.5,5.5,0
+6,Monza,Akinsanmiro,C,5.5,5.5,0
+6,Monza,Foe Ondoa,C,5.5,5.5,0
+6,Monza,Mota,A,7.0,8.0,0
+6,Monza,Ngonge,A,5.5,5.5,0
+6,Monza,Varela G.,A,6.0,6.0,0
+6,Monza,Zeballos,A,5.5,5.5,0
+6,Napoli,Meret,P,6.0,6.0,0
+6,Napoli,Spinazzola,D,6.0,6.0,0
+6,Napoli,Di Lorenzo,D,6.5,6.5,0
+6,Napoli,Rrahmani,D,6.5,6.0,0
+6,Napoli,Badiashile,D,6.0,5.5,0
+6,Napoli,Marin R.,D,6.5,6.5,0
+6,Napoli,Politano,C,55.0,55.0,0
+6,Napoli,De Bruyne,C,7.5,13.5,0
+6,Napoli,Lobotka,C,6.0,6.0,0
+6,Napoli,McTominay,C,6.0,6.0,0
+6,Napoli,Gilmour,C,6.0,6.0,0
+6,Napoli,Hojlund,A,6.5,6.5,0
+6,Napoli,Lucca,A,5.5,5.5,0
+6,Napoli,Neres,A,6.0,6.0,0
+6,Napoli,Lang,A,7.0,10.0,0
+6,Napoli,Giovane,A,6.5,7.5,0
+6,Parma,Corvi,P,5.5,2.5,3
+6,Parma,Diego Carlos,D,4.5,4.5,0
+6,Parma,Valeri,D,5.0,5.0,0
+6,Parma,Carboni F.,D,5.0,5.0,0
+6,Parma,Delprato,D,5.5,5.5,0
+6,Parma,Troilo,D,5.0,5.0,0
+6,Parma,Britschgi,D,55.0,55.0,0
+6,Parma,Fabbian,C,5.0,5.0,0
+6,Parma,Bernab&#xE8;,,5.5,5.5,0
+6,Parma,Keita M.,C,5.0,5.0,0
+6,Parma,Sierro,C,5.0,5.0,0
+6,Parma,Tour&#xE8; E.,,5.5,5.5,0
+6,Parma,Frigan,A,55.0,55.0,0
+6,Parma,Elphege,A,5.5,5.5,0
+6,Parma,Romero D.,A,6.0,6.0,0
+6,Parma,Lontani,A,5.5,5.5,0
+6,Roma,Gollini,P,6.5,6.5,0
+6,Roma,Mancini,D,6.5,6.5,0
+6,Roma,N&#x27;Dicka,,6.0,6.0,0
+6,Roma,Balerdi,D,6.0,6.0,0
+6,Roma,Hermoso,D,6.0,6.0,0
+6,Roma,Molina N.,D,6.0,6.0,0
+6,Roma,Rensch,D,6.0,6.0,0
+6,Roma,Wesley,D,6.0,6.0,0
+6,Roma,Lulli,D,55.0,55.0,0
+6,Roma,De Roon,C,6.5,6.0,0
+6,Roma,Pellegrini Lo.,C,6.0,6.0,0
+6,Roma,Kon&#xE8; M.,,6.0,5.5,0
+6,Roma,Pisilli,C,55.0,55.0,0
+6,Roma,Dybala,A,6.0,6.0,0
+6,Roma,Malen,A,4.5,3.5,0
+6,Roma,Soul&#xE8;,,5.5,5.0,0
+6,Sassuolo,Muric,P,6.0,5.0,1
+6,Sassuolo,Caleta-Car,D,5.5,5.5,0
+6,Sassuolo,Doig,D,6.0,6.0,0
+6,Sassuolo,Van Der Brempt,D,5.5,5.5,0
+6,Sassuolo,Odenthal,D,7.0,10.0,0
+6,Sassuolo,Leysen F.,D,6.0,6.0,0
+6,Sassuolo,Cinquegrano,D,55.0,55.0,0
+6,Sassuolo,Matic,C,6.0,6.0,0
+6,Sassuolo,Thorstvedt,C,5.5,5.0,0
+6,Sassuolo,Lipani,C,55.0,55.0,0
+6,Sassuolo,Adzic,C,6.0,6.0,0
+6,Sassuolo,Bakola,C,6.5,6.5,0
+6,Sassuolo,Berardi,A,5.5,5.0,0
+6,Sassuolo,Esposito Se.,A,6.5,6.5,0
+6,Sassuolo,Laurient&#xE8;,,6.5,6.5,0
+6,Sassuolo,Bowie,A,6.0,6.0,0
+6,Torino,Perri,P,6.0,5.0,1
+6,Torino,Rodriguez R.,D,6.0,6.0,0
+6,Torino,Ismajli,D,6.0,6.0,0
+6,Torino,Comuzzo,D,5.5,5.5,0
+6,Torino,Coco,D,6.5,6.5,0
+6,Torino,Belghali,D,5.5,5.5,0
+6,Torino,Mandragora,C,6.0,6.0,0
+6,Torino,Vlasic,C,6.0,6.0,0
+6,Torino,Ilkhan,C,6.0,6.0,0
+6,Torino,Gineitis,C,55.0,55.0,0
+6,Torino,Oristanio,C,5.5,5.5,0
+6,Torino,Cacciamani,C,6.0,6.0,0
+6,Torino,Braganca,C,7.0,10.0,0
+6,Torino,Simeone,A,6.0,6.0,0
+6,Torino,Adams C.,A,6.0,6.0,0
+6,Torino,Kulenovic,A,6.5,9.5,0
+6,Udinese,Okoye,P,4.5,2.5,2
+6,Udinese,Alaba,D,6.0,6.0,0
+6,Udinese,Vojvoda,D,5.5,5.5,0
+6,Udinese,Kamara H.,D,6.0,6.0,0
+6,Udinese,Bertola,D,6.0,5.5,0
+6,Udinese,Ebosse,D,6.0,6.0,0
+6,Udinese,Abankwah,D,5.5,5.5,0
+6,Udinese,Solet,D,6.0,6.0,0
+6,Udinese,Arizala,D,55.0,55.0,0
+6,Udinese,Zarraga,C,6.0,6.0,0
+6,Udinese,Karlstrom,C,5.5,5.5,0
+6,Udinese,Ekkelenkamp,C,7.0,10.0,0
+6,Udinese,Unai Gomez,C,5.5,5.5,0
+6,Udinese,Jovanovic,C,5.5,5.5,0
+6,Udinese,Chakvetadze,C,5.5,5.5,0
+6,Udinese,Davis K.,A,6.0,6.0,0
+6,Venezia,Stankovic F.,P,6.5,3.5,3
+6,Venezia,Juan Jesus,D,4.5,4.0,0
+6,Venezia,Correia T.,D,55.0,55.0,0
+6,Venezia,Sagrado,D,6.5,7.5,0
+6,Venezia,Hainaut,D,6.5,9.5,0
+6,Venezia,Moreno M.,D,4.5,4.0,0
+6,Venezia,Schingtienne,D,55.0,55.0,0
+6,Venezia,Halhal,D,5.0,5.0,0
+6,Venezia,Sohm,C,5.5,5.5,0
+6,Venezia,Basic,C,6.0,6.0,0
+6,Venezia,Helgason,C,55.0,55.0,0
+6,Venezia,Perez K.,C,5.5,5.5,0
+6,Venezia,Yeboah J.,A,6.0,6.0,0
+6,Venezia,Rrahmani Al.,A,55.0,55.0,0
+6,Venezia,Lauberbach,A,55.0,55.0,0
+6,Venezia,Adams A.,A,5.5,5.5,0
+7,Atalanta,Carnesecchi,P,6.5,6.5,0
+7,Atalanta,Zappacosta,D,5.5,5.5,0
+7,Atalanta,Kolasinac,D,6.0,6.0,0
+7,Atalanta,Bellanova,D,6.0,7.0,0
+7,Atalanta,Kristensen T.,D,4.5,4.5,0
+7,Atalanta,Bernasconi,D,5.0,5.0,0
+7,Atalanta,Obric,D,4.5,4.0,0
+7,Atalanta,Pasalic,C,5.5,5.5,0
+7,Atalanta,Gaetano,C,7.0,10.0,0
+7,Atalanta,Samardzic,C,5.5,5.5,0
+7,Atalanta,Zalewski,C,6.5,7.5,0
+7,Atalanta,Ederson D.S.,C,5.0,4.5,0
+7,Atalanta,Rowe,C,5.0,5.0,0
+7,Atalanta,Scamacca,A,6.0,6.0,0
+7,Atalanta,De Ketelaere,A,5.0,5.0,0
+7,Atalanta,Krstovic,A,6.5,9.5,0
+7,Bologna,Skorupski,P,6.0,3.0,3
+7,Bologna,Darmian,D,6.0,6.0,0
+7,Bologna,Zortea,D,5.5,5.5,0
+7,Bologna,Miranda J.,D,6.5,7.0,0
+7,Bologna,Casale,D,5.5,5.5,0
+7,Bologna,Theate,D,6.0,5.5,0
+7,Bologna,Helland,D,5.5,5.5,0
+7,Bologna,Bernardeschi,C,6.0,5.5,0
+7,Bologna,Cambiaghi,C,6.0,6.0,0
+7,Bologna,Pobega,C,7.0,9.5,0
+7,Bologna,Ferguson,C,5.5,5.5,0
+7,Bologna,Moro N.,C,5.5,5.5,0
+7,Bologna,Piccoli,A,6.0,6.0,0
+7,Bologna,Dovbyk,A,5.5,5.5,0
+7,Bologna,Enem,A,5.5,5.5,0
+7,Cagliari,Caprile,P,5.5,1.5,4
+7,Cagliari,Mina,D,4.0,4.0,0
+7,Cagliari,Obert,D,4.0,4.0,0
+7,Cagliari,Rodriguez Ju.,D,4.5,4.5,0
+7,Cagliari,Z&#xE8; Pedro,,4.5,4.5,0
+7,Cagliari,Sugawara,D,5.5,5.5,0
+7,Cagliari,Deiola,C,55.0,55.0,0
+7,Cagliari,Winks,C,5.0,4.5,0
+7,Cagliari,Adopo,C,4.0,4.0,0
+7,Cagliari,Fadera,C,5.5,5.0,0
+7,Cagliari,Liteta,C,55.0,55.0,0
+7,Cagliari,Romano,C,4.5,4.5,0
+7,Cagliari,Maldini,A,5.0,5.0,0
+7,Cagliari,Nzola,A,5.0,5.0,0
+7,Cagliari,Mendy P.,A,5.5,5.5,0
+7,Cagliari,Kevin Carlos,A,5.5,5.5,0
+7,Como,Butez,P,6.5,5.5,1
+7,Como,Chalobah T.,D,55.0,55.0,0
+7,Como,Kambwala,D,55.0,55.0,0
+7,Como,Valle,D,6.5,7.0,0
+7,Como,Ramon,D,7.0,6.5,0
+7,Como,Kempf,D,6.5,6.5,0
+7,Como,Smolcic I.,D,6.0,6.0,0
+7,Como,Kaiki,D,6.0,6.0,0
+7,Como,Caqueret,C,6.5,7.5,0
+7,Como,Ricci S.,C,55.0,55.0,0
+7,Como,Da Cunha,C,6.0,6.0,0
+7,Como,Perrone,C,6.0,6.0,0
+7,Como,Liberali,C,7.0,10.0,0
+7,Como,Paz N.,C,7.5,11.0,0
+7,Como,Milla,C,6.5,6.5,0
+7,Como,Douvikas,A,7.0,10.0,0
+7,Fiorentina,De Gea,P,5.5,2.5,3
+7,Fiorentina,Dragusin,D,5.0,5.0,0
+7,Fiorentina,Pongracic,D,6.0,9.0,0
+7,Fiorentina,Dod&#xF2;,,6.0,6.0,0
+7,Fiorentina,Jimenez A.,D,5.5,5.5,0
+7,Fiorentina,Valdepenas,D,5.5,5.5,0
+7,Fiorentina,Viery,D,5.0,5.0,0
+7,Fiorentina,Fagioli,C,6.0,6.0,0
+7,Fiorentina,Brescianini,C,6.0,6.0,0
+7,Fiorentina,Ndour,C,5.5,5.0,0
+7,Fiorentina,Njie,C,5.0,5.0,0
+7,Fiorentina,Mastantuono,C,6.0,5.5,0
+7,Fiorentina,Goncalves P.,C,5.0,5.0,0
+7,Fiorentina,Beto,A,55.0,55.0,0
+7,Fiorentina,Pellegrino M.,A,5.0,5.0,0
+7,Fiorentina,Gnonto,A,5.5,5.5,0
+7,Frosinone,Palmisani,P,6.0,4.0,2
+7,Frosinone,Monterisi,D,5.5,5.5,0
+7,Frosinone,Amey,D,55.0,55.0,0
+7,Frosinone,Cittadini,D,6.5,6.5,0
+7,Frosinone,Oyono A.,D,6.5,6.5,0
+7,Frosinone,Bracaglia,D,6.0,6.0,0
+7,Frosinone,Omar Fayed,D,6.0,6.0,0
+7,Frosinone,Zerbin,C,6.0,6.0,0
+7,Frosinone,Masini,C,7.0,7.0,0
+7,Frosinone,Cal&#xF2;,,7.5,11.5,0
+7,Frosinone,Cichella,C,55.0,55.0,0
+7,Frosinone,Schmid,C,6.5,6.5,0
+7,Frosinone,Raimondo,A,8.5,17.5,0
+7,Frosinone,Kvernadze,A,7.0,7.0,0
+7,Frosinone,Ghedjemis,A,6.5,6.5,0
+7,Frosinone,Birligea,A,55.0,55.0,0
+7,Genoa,Bijlow,P,6.0,4.0,2
+7,Genoa,Vasquez,D,5.5,5.0,0
+7,Genoa,Ostigard,D,5.5,5.0,0
+7,Genoa,Marcandalli,D,5.5,5.5,0
+7,Genoa,Puczka,D,5.0,5.0,0
+7,Genoa,El Shaarawy,C,6.0,6.0,0
+7,Genoa,Messias,C,5.5,5.5,0
+7,Genoa,Frendrup,C,5.5,5.5,0
+7,Genoa,Ellertsson,C,5.5,5.0,0
+7,Genoa,Amorim,C,55.0,55.0,0
+7,Genoa,Wiafe,C,5.5,5.5,0
+7,Genoa,Vitinha O.,A,5.5,5.5,0
+7,Genoa,Osmajic,A,5.5,5.5,0
+7,Genoa,Robinho Junior,A,55.0,55.0,0
+7,Inter,Martinez Jo.,P,6.0,5.0,1
+7,Inter,Dimarco,D,6.0,6.0,0
+7,Inter,Bastoni,D,6.0,6.0,0
+7,Inter,Akanji,D,6.0,6.0,0
+7,Inter,Carlos Augusto,D,7.5,11.0,0
+7,Inter,Bisseck,D,6.0,6.0,0
+7,Inter,Zielinski,C,6.5,7.5,0
+7,Inter,Barella,C,6.5,7.5,0
+7,Inter,Calhanoglu,C,6.0,6.0,0
+7,Inter,Mkhitaryan,C,6.5,6.5,0
+7,Inter,Luis Henrique,C,5.0,5.0,0
+7,Inter,Diouf,C,6.5,6.5,0
+7,Inter,Sucic P.,C,5.5,5.5,0
+7,Inter,Thuram,A,7.0,9.5,0
+7,Inter,Bonny,A,7.0,10.0,0
+7,Inter,Esposito F.P.,A,5.5,5.0,0
+7,Juventus,Vicario,P,6.0,3.0,3
+7,Juventus,Bremer,D,4.5,4.5,0
+7,Juventus,Celik,D,5.0,5.0,0
+7,Juventus,Kalulu,D,5.5,5.5,0
+7,Juventus,Cambiaso,D,6.0,6.0,0
+7,Juventus,Lucum&#xEC;,,5.0,5.0,0
+7,Juventus,Gonzalez N.,C,5.0,5.0,0
+7,Juventus,Douglas Luiz,C,5.5,5.5,0
+7,Juventus,McKennie,C,5.5,5.5,0
+7,Juventus,Sarr P.,C,5.0,5.0,0
+7,Juventus,Zhegrova,C,5.5,5.5,0
+7,Juventus,Conceicao,C,5.5,5.5,0
+7,Juventus,Alajbegovic,C,6.0,6.0,0
+7,Juventus,Boga,A,55.0,55.0,0
+7,Juventus,Kolo Muani,A,5.0,5.0,0
+7,Juventus,Woltemade,A,5.5,5.5,0
+7,Lazio,Mandas,P,6.0,6.0,0
+7,Lazio,Lazzari,D,55.0,55.0,0
+7,Lazio,Pedraza,D,55.0,55.0,0
+7,Lazio,Tavares N.,D,7.0,8.0,0
+7,Lazio,Provstgaard,D,7.0,10.0,0
+7,Lazio,Floriani Mussolini,D,6.5,6.5,0
+7,Lazio,Sutalo J.,D,6.5,6.5,0
+7,Lazio,Zaccagni,C,6.5,7.0,0
+7,Lazio,Frattesi,C,6.0,6.0,0
+7,Lazio,Belahyane,C,7.0,7.0,0
+7,Lazio,Isaksen,C,7.0,10.0,0
+7,Lazio,Dele-Bashiru,C,7.0,10.0,0
+7,Lazio,Taylor K.,C,6.5,6.0,0
+7,Lazio,Pinamonti,A,6.0,7.0,0
+7,Lazio,Noslin,A,5.5,5.5,0
+7,Lecce,Falcone,P,6.0,6.0,0
+7,Lecce,Gallo,D,7.0,8.0,0
+7,Lecce,Gaspar K.,D,7.5,10.5,0
+7,Lecce,Tiago Gabriel,D,7.0,7.0,0
+7,Lecce,Veiga D.,D,6.5,6.5,0
+7,Lecce,Siebert,D,7.0,10.0,0
+7,Lecce,Maleh,C,6.0,6.0,0
+7,Lecce,Coulibaly L.,C,6.0,6.0,0
+7,Lecce,Kaba,C,6.0,6.0,0
+7,Lecce,Pierotti,C,6.0,6.0,0
+7,Lecce,Ngom,C,6.0,6.0,0
+7,Lecce,Monteiro J.,C,55.0,55.0,0
+7,Lecce,Geubbels,A,5.0,5.0,0
+7,Lecce,N&#x27;Dri,,7.5,10.5,0
+7,Lecce,Fatah,A,5.5,5.5,0
+7,Lecce,Esteban,A,6.0,6.0,0
+7,Milan,Maignan,P,6.5,4.5,2
+7,Milan,Tomori,D,55.0,55.0,0
+7,Milan,Pavlovic,D,6.0,6.0,0
+7,Milan,Estupinan,D,5.5,5.5,0
+7,Milan,De Winter,D,5.5,5.5,0
+7,Milan,Gila,D,7.0,10.0,0
+7,Milan,Rabiot,C,7.5,11.0,0
+7,Milan,Pulisic,C,6.5,6.5,0
+7,Milan,Modric,C,6.5,6.5,0
+7,Milan,Loftus-Cheek,C,6.0,6.0,0
+7,Milan,Chukwueze,C,6.0,6.0,0
+7,Milan,Musah,C,6.0,6.0,0
+7,Milan,Moreira,C,7.0,8.0,0
+7,Milan,Jashari,C,6.0,6.0,0
+7,Milan,Hutchinson,C,5.5,5.5,0
+7,Milan,Ramos G.,A,6.5,6.5,0
+7,Monza,Tornqvist,P,7.0,7.0,0
+7,Monza,Carboni A.,D,7.0,7.0,0
+7,Monza,Birindelli,D,6.5,6.0,0
+7,Monza,Goglichidze,D,7.0,7.0,0
+7,Monza,Kouadio,D,7.5,10.5,0
+7,Monza,Bakoune,D,55.0,55.0,0
+7,Monza,Mangas,D,6.5,6.5,0
+7,Monza,Colpani,C,6.5,6.5,0
+7,Monza,Folorunsho,C,55.0,55.0,0
+7,Monza,Forson O.,C,55.0,55.0,0
+7,Monza,Akinsanmiro,C,7.0,7.0,0
+7,Monza,Foe Ondoa,C,7.0,8.0,0
+7,Monza,Cutrone,A,55.0,55.0,0
+7,Monza,Mota,A,6.5,7.5,0
+7,Monza,Varela G.,A,8.5,15.5,0
+7,Monza,Robinson J.,A,7.5,10.5,0
+7,Napoli,Meret,P,6.0,5.0,1
+7,Napoli,Spinazzola,D,5.5,5.5,0
+7,Napoli,Di Lorenzo,D,5.5,5.5,0
+7,Napoli,Rrahmani,D,5.0,5.0,0
+7,Napoli,Badiashile,D,5.5,5.5,0
+7,Napoli,Olivera,D,55.0,55.0,0
+7,Napoli,Beukema,D,6.0,6.0,0
+7,Napoli,Politano,C,6.0,6.0,0
+7,Napoli,De Bruyne,C,5.0,2.0,0
+7,Napoli,Lobotka,C,6.0,6.0,0
+7,Napoli,McTominay,C,5.5,5.5,0
+7,Napoli,Gilmour,C,6.0,6.0,0
+7,Napoli,Hojlund,A,6.5,6.5,0
+7,Napoli,Lucca,A,5.0,5.0,0
+7,Napoli,Giovane,A,5.5,5.5,0
+7,Napoli,Santos A.,A,6.5,6.5,0
+7,Parma,Corvi,P,6.0,3.0,3
+7,Parma,Diego Carlos,D,5.0,4.5,0
+7,Parma,Valeri,D,5.5,5.5,0
+7,Parma,Delprato,D,5.0,5.0,0
+7,Parma,Troilo,D,5.0,4.5,0
+7,Parma,Britschgi,D,5.0,4.5,0
+7,Parma,Drobnic,D,5.5,5.5,0
+7,Parma,Fabbian,C,5.5,5.5,0
+7,Parma,Bernab&#xE8;,,6.0,6.0,0
+7,Parma,Keita M.,C,5.5,5.5,0
+7,Parma,Ordonez C.,C,55.0,55.0,0
+7,Parma,Diallo O.,C,6.0,6.0,0
+7,Parma,Tour&#xE8; E.,,5.5,5.5,0
+7,Parma,Frigan,A,6.0,6.0,0
+7,Parma,Romero D.,A,6.0,6.0,0
+7,Parma,Lontani,A,5.5,5.5,0
+7,Roma,Gollini,P,6.0,6.0,0
+7,Roma,N&#x27;Dicka,,6.0,6.0,0
+7,Roma,Balerdi,D,6.5,6.5,0
+7,Roma,Hermoso,D,6.0,6.0,0
+7,Roma,Ghilardi,D,55.0,55.0,0
+7,Roma,Rensch,D,5.5,5.5,0
+7,Roma,Wesley,D,55.0,55.0,0
+7,Roma,Koulierakis,D,6.0,6.0,0
+7,Roma,Lulli,D,7.0,10.0,0
+7,Roma,De Roon,C,6.0,6.0,0
+7,Roma,Pellegrini Lo.,C,6.0,6.0,0
+7,Roma,Pisilli,C,6.5,6.0,0
+7,Roma,Mora,C,6.0,6.0,0
+7,Roma,Di Nunzio,,55.0,55.0,0
+7,Roma,Soul&#xE8;,,7.0,6.5,0
+7,Roma,Castro S.,A,7.0,10.0,0
+7,Sassuolo,Muric,P,4.0,0.0,4
+7,Sassuolo,Caleta-Car,D,4.5,4.5,0
+7,Sassuolo,Doig,D,5.0,5.0,0
+7,Sassuolo,Van Der Brempt,D,5.0,5.0,0
+7,Sassuolo,Odenthal,D,5.0,5.0,0
+7,Sassuolo,Obrador,D,6.0,6.0,0
+7,Sassuolo,Matic,C,5.5,5.5,0
+7,Sassuolo,Volpato,C,55.0,55.0,0
+7,Sassuolo,Thorstvedt,C,6.5,9.5,0
+7,Sassuolo,Lipani,C,6.0,6.0,0
+7,Sassuolo,Dominguez B.,C,6.0,6.0,0
+7,Sassuolo,Bakola,C,5.5,6.5,0
+7,Sassuolo,Berardi,A,7.0,10.0,0
+7,Sassuolo,Esposito Se.,A,6.5,7.5,0
+7,Sassuolo,Laurient&#xE8;,,5.5,5.5,0
+7,Sassuolo,Bowie,A,5.5,5.0,0
+7,Torino,Perri,P,6.5,6.5,0
+7,Torino,Ismajli,D,6.0,5.5,0
+7,Torino,Comuzzo,D,6.5,6.0,0
+7,Torino,Coco,D,6.5,6.5,0
+7,Torino,Belghali,D,7.0,9.0,0
+7,Torino,Mandragora,C,6.0,6.0,0
+7,Torino,Vlasic,C,6.5,6.5,0
+7,Torino,Casadei,C,6.0,6.0,0
+7,Torino,Gineitis,C,5.5,5.5,0
+7,Torino,Cacciamani,C,6.0,6.0,0
+7,Torino,Aboukhlal,C,6.0,6.0,0
+7,Torino,Braganca,C,6.5,6.5,0
+7,Torino,Zapata D.,A,55.0,55.0,0
+7,Torino,Simeone,A,8.0,14.0,0
+7,Torino,Adams C.,A,7.0,10.0,0
+7,Torino,Kulenovic,A,6.0,6.0,0
+7,Udinese,Okoye,P,6.5,3.5,3
+7,Udinese,Alaba,D,5.5,5.5,0
+7,Udinese,Vojvoda,D,5.0,5.0,0
+7,Udinese,Zanoli,D,5.5,5.5,0
+7,Udinese,Kamara H.,D,5.5,5.0,0
+7,Udinese,Ebosse,D,5.0,5.0,0
+7,Udinese,Palma,D,5.5,5.5,0
+7,Udinese,Solet,D,4.5,4.5,0
+7,Udinese,Arizala,D,5.0,5.0,0
+7,Udinese,Zarraga,C,5.5,5.5,0
+7,Udinese,Karlstrom,C,4.5,4.5,0
+7,Udinese,Ekkelenkamp,C,4.5,4.5,0
+7,Udinese,Unai Gomez,C,5.5,5.5,0
+7,Udinese,Piotrowski,C,5.5,5.5,0
+7,Udinese,Chakvetadze,C,5.5,5.5,0
+7,Udinese,Davis K.,A,5.0,5.0,0
+7,Venezia,Stankovic F.,P,8.0,11.0,0
+7,Venezia,Juan Jesus,D,7.0,7.0,0
+7,Venezia,Mazzocchi,D,6.0,6.0,0
+7,Venezia,Haps,D,6.5,6.5,0
+7,Venezia,Hainaut,D,6.0,6.0,0
+7,Venezia,Moreno M.,D,5.5,5.5,0
+7,Venezia,Schingtienne,D,6.0,6.0,0
+7,Venezia,Halhal,D,6.5,6.5,0
+7,Venezia,Sohm,C,6.5,7.5,0
+7,Venezia,Basic,C,6.0,5.5,0
+7,Venezia,Helgason,C,6.0,6.0,0
+7,Venezia,Perez K.,C,6.5,6.0,0
+7,Venezia,Fanne,C,55.0,55.0,0
+7,Venezia,Yeboah J.,A,6.0,6.0,0
+7,Venezia,Rrahmani Al.,A,6.0,6.0,0
+7,Venezia,Adams A.,A,7.0,10.0,0
+8,Atalanta,Carnesecchi,P,6.0,2.0,4
+8,Atalanta,Zappacosta,D,6.0,7.0,0
+8,Atalanta,Bellanova,D,5.5,5.5,0
+8,Atalanta,Kristensen T.,D,5.0,5.0,0
+8,Atalanta,Bernasconi,D,5.0,5.0,0
+8,Atalanta,Obric,D,5.0,5.0,0
+8,Atalanta,Pasalic,C,5.5,5.5,0
+8,Atalanta,Gaetano,C,5.5,5.5,0
+8,Atalanta,Elmas,C,7.0,10.0,0
+8,Atalanta,Samardzic,C,5.5,5.5,0
+8,Atalanta,Zalewski,C,6.0,6.0,0
+8,Atalanta,Ederson D.S.,C,5.5,8.0,0
+8,Atalanta,Rowe,C,6.0,6.0,0
+8,Atalanta,Scamacca,A,5.5,5.5,0
+8,Atalanta,De Ketelaere,A,7.0,8.0,0
+8,Atalanta,Krstovic,A,8.5,15.5,0
+8,Bologna,Skorupski,P,6.0,6.0,0
+8,Bologna,Darmian,D,6.0,6.0,0
+8,Bologna,Zortea,D,6.0,6.0,0
+8,Bologna,Miranda J.,D,6.5,7.5,0
+8,Bologna,Casale,D,7.0,10.0,0
+8,Bologna,Theate,D,6.5,6.5,0
+8,Bologna,Vitik,D,55.0,55.0,0
+8,Bologna,Alhassane,D,6.0,6.0,0
+8,Bologna,Bernardeschi,C,7.0,9.5,0
+8,Bologna,Odgaard,C,5.5,5.5,0
+8,Bologna,Cambiaghi,C,6.5,6.5,0
+8,Bologna,Pobega,C,6.0,6.0,0
+8,Bologna,Ferguson,C,6.5,6.5,0
+8,Bologna,Mbangula,C,55.0,55.0,0
+8,Bologna,Amondarain,C,6.0,6.0,0
+8,Bologna,Libra,C,6.0,6.0,0
+8,Cagliari,Caprile,P,6.0,4.0,2
+8,Cagliari,Obert,D,5.0,5.0,0
+8,Cagliari,Rodriguez Ju.,D,5.0,5.0,0
+8,Cagliari,Z&#xE8; Pedro,,6.0,5.5,0
+8,Cagliari,Aurelio,D,55.0,55.0,0
+8,Cagliari,Sugawara,D,5.5,5.5,0
+8,Cagliari,Gagliardini,C,5.5,5.0,0
+8,Cagliari,Deiola,C,4.5,4.0,0
+8,Cagliari,Winks,C,6.0,6.0,0
+8,Cagliari,Adopo,C,5.5,5.5,0
+8,Cagliari,Fadera,C,5.5,5.5,0
+8,Cagliari,Romano,C,6.0,6.0,0
+8,Cagliari,Massolin,C,5.5,5.5,0
+8,Cagliari,Maldini,A,5.0,5.0,0
+8,Cagliari,Mendy P.,A,5.5,5.5,0
+8,Cagliari,Kevin Carlos,A,5.5,5.5,0
+8,Como,Butez,P,6.0,6.0,0
+8,Como,Kambwala,D,6.0,6.0,0
+8,Como,Couto,D,6.0,5.5,0
+8,Como,Ramon,D,6.5,6.5,0
+8,Como,Kempf,D,6.5,6.5,0
+8,Como,Smolcic I.,D,6.0,6.0,0
+8,Como,Kaiki,D,7.0,8.0,0
+8,Como,Caqueret,C,6.5,7.5,0
+8,Como,Ricci S.,C,5.5,5.5,0
+8,Como,Da Cunha,C,6.0,6.0,0
+8,Como,Perrone,C,6.5,6.5,0
+8,Como,Baturina,C,5.5,5.5,0
+8,Como,Addai,C,6.5,6.5,0
+8,Como,Lahdo,C,55.0,55.0,0
+8,Como,Milla,C,6.5,6.0,0
+8,Como,Douvikas,A,7.5,13.5,0
+8,Fiorentina,De Gea,P,7.5,5.5,2
+8,Fiorentina,Dragusin,D,6.5,6.5,0
+8,Fiorentina,Pongracic,D,6.0,6.0,0
+8,Fiorentina,Dod&#xF2;,,5.5,5.0,0
+8,Fiorentina,Jimenez A.,D,7.0,10.0,0
+8,Fiorentina,Joao Mario,D,55.0,55.0,0
+8,Fiorentina,Valdepenas,D,5.0,4.5,0
+8,Fiorentina,Viery,D,5.0,4.5,0
+8,Fiorentina,Fagioli,C,6.0,7.0,0
+8,Fiorentina,Brescianini,C,6.0,6.0,0
+8,Fiorentina,Ndour,C,6.0,6.0,0
+8,Fiorentina,Njie,C,5.5,5.5,0
+8,Fiorentina,Mastantuono,C,6.5,6.5,0
+8,Fiorentina,Beto,A,55.0,55.0,0
+8,Fiorentina,Pellegrino M.,A,5.5,5.5,0
+8,Fiorentina,Gnonto,A,5.5,5.5,0
+8,Frosinone,Palmisani,P,6.0,2.0,4
+8,Frosinone,Terzic,D,7.0,9.5,0
+8,Frosinone,Monterisi,D,6.0,6.0,0
+8,Frosinone,Cittadini,D,4.5,4.5,0
+8,Frosinone,Oyono A.,D,6.5,6.5,0
+8,Frosinone,Calvani,D,5.5,5.5,0
+8,Frosinone,Bracaglia,D,5.5,5.0,0
+8,Frosinone,Tchato,D,55.0,55.0,0
+8,Frosinone,Zerbin,C,6.0,6.0,0
+8,Frosinone,Masini,C,5.5,5.5,0
+8,Frosinone,Cal&#xF2;,,7.5,10.5,0
+8,Frosinone,Cichella,C,6.0,6.0,0
+8,Frosinone,Schmid,C,8.0,14.0,0
+8,Frosinone,Raimondo,A,5.5,5.0,0
+8,Frosinone,Kvernadze,A,6.0,5.5,0
+8,Frosinone,Ghedjemis,A,8.0,11.0,0
+8,Genoa,Bijlow,P,7.0,7.0,0
+8,Genoa,Vasquez,D,6.0,6.0,0
+8,Genoa,Ostigard,D,6.5,6.5,0
+8,Genoa,Marcandalli,D,6.0,6.0,0
+8,Genoa,Otoa,D,6.0,5.5,0
+8,Genoa,Puczka,D,55.0,55.0,0
+8,Genoa,Mitaj,D,6.0,6.0,0
+8,Genoa,El Shaarawy,C,6.5,7.5,0
+8,Genoa,Traor&#xE8; Hj.,,6.5,6.5,0
+8,Genoa,Messias,C,6.0,6.0,0
+8,Genoa,Frendrup,C,6.0,6.0,0
+8,Genoa,Ellertsson,C,7.0,10.0,0
+8,Genoa,Amorim,C,55.0,55.0,0
+8,Genoa,Wiafe,C,6.0,6.0,0
+8,Genoa,Colombo,A,6.0,6.0,0
+8,Genoa,Osmajic,A,6.0,6.0,0
+8,Inter,Provedel,P,5.5,4.5,1
+8,Inter,Dimarco,D,6.0,6.0,0
+8,Inter,Bastoni,D,6.0,6.0,0
+8,Inter,Akanji,D,6.5,6.5,0
+8,Inter,Carlos Augusto,D,6.5,6.5,0
+8,Inter,Bisseck,D,6.0,6.0,0
+8,Inter,Zielinski,C,7.0,10.0,0
+8,Inter,Barella,C,6.0,6.0,0
+8,Inter,Calhanoglu,C,6.0,6.0,0
+8,Inter,Mkhitaryan,C,5.5,5.5,0
+8,Inter,Diouf,C,6.0,7.0,0
+8,Inter,Sucic P.,C,6.5,6.5,0
+8,Inter,Thuram,A,7.5,10.5,0
+8,Inter,Bonny,A,6.0,6.0,0
+8,Inter,Esposito F.P.,A,5.5,5.5,0
+8,Inter,Lavelli,,55.0,55.0,0
+8,Juventus,Vicario,P,6.0,6.0,0
+8,Juventus,Bremer,D,6.5,6.5,0
+8,Juventus,Kalulu,D,6.5,6.5,0
+8,Juventus,Cambiaso,D,5.5,5.5,0
+8,Juventus,Gatti,D,7.0,8.0,0
+8,Juventus,Cabal,D,6.0,6.0,0
+8,Juventus,Lucum&#xEC;,,6.5,6.5,0
+8,Juventus,Douglas Luiz,C,7.5,11.5,0
+8,Juventus,McKennie,C,7.0,10.0,0
+8,Juventus,Sarr P.,C,55.0,55.0,0
+8,Juventus,Koopmeiners,C,6.5,6.5,0
+8,Juventus,Alajbegovic,C,55.0,55.0,0
+8,Juventus,Boga,A,6.0,6.0,0
+8,Juventus,Kolo Muani,A,5.5,5.5,0
+8,Juventus,Woltemade,A,6.0,6.0,0
+8,Lazio,Mandas,P,6.5,5.5,1
+8,Lazio,Lazzari,D,6.0,6.0,0
+8,Lazio,Pedraza,D,6.0,6.0,0
+8,Lazio,Tavares N.,D,6.5,6.5,0
+8,Lazio,Leite,D,6.0,6.0,0
+8,Lazio,Provstgaard,D,6.0,5.5,0
+8,Lazio,Floriani Mussolini,D,5.5,5.5,0
+8,Lazio,Sutalo J.,D,6.0,6.0,0
+8,Lazio,Zaccagni,C,6.0,6.0,0
+8,Lazio,Frattesi,C,6.0,6.0,0
+8,Lazio,Belahyane,C,6.5,6.5,0
+8,Lazio,Isaksen,C,6.5,6.5,0
+8,Lazio,Dele-Bashiru,C,6.0,6.0,0
+8,Lazio,Taylor K.,C,7.0,10.0,0
+8,Lazio,Noslin,A,5.5,5.5,0
+8,Lecce,Falcone,P,6.0,4.0,2
+8,Lecce,Gallo,D,6.0,6.0,0
+8,Lecce,Gaspar K.,D,5.0,4.0,0
+8,Lecce,Tiago Gabriel,D,5.5,5.5,0
+8,Lecce,Veiga D.,D,5.5,5.5,0
+8,Lecce,Ndaba,D,6.0,6.0,0
+8,Lecce,Siebert,D,6.0,6.0,0
+8,Lecce,Maleh,C,5.0,5.0,0
+8,Lecce,Kaba,C,5.5,5.5,0
+8,Lecce,Ngom,C,5.0,5.0,0
+8,Lecce,Monteiro J.,C,5.0,5.0,0
+8,Lecce,Geubbels,A,5.0,5.0,0
+8,Lecce,N&#x27;Dri,,5.5,5.5,0
+8,Lecce,Stulic,A,55.0,55.0,0
+8,Lecce,Fatah,A,5.5,5.5,0
+8,Lecce,Esteban,A,5.5,5.5,0
+8,Milan,Maignan,P,6.0,6.0,0
+8,Milan,Tomori,D,6.5,6.5,0
+8,Milan,Pavlovic,D,6.5,6.5,0
+8,Milan,De Winter,D,6.0,6.0,0
+8,Milan,Bartesaghi,D,7.0,7.0,0
+8,Milan,Diawara S.,D,6.0,6.0,0
+8,Milan,Pulisic,C,7.0,10.0,0
+8,Milan,Modric,C,7.0,7.5,0
+8,Milan,Loftus-Cheek,C,6.0,6.0,0
+8,Milan,Musah,C,6.0,6.0,0
+8,Milan,Ciss&#xE8; A.,,55.0,55.0,0
+8,Milan,Jashari,C,6.0,6.0,0
+8,Milan,Comotto,C,55.0,55.0,0
+8,Milan,Hutchinson,C,6.5,9.5,0
+8,Milan,Ramos G.,A,5.5,5.0,0
+8,Milan,Camarda,A,55.0,55.0,0
+8,Monza,Tornqvist,P,6.0,3.0,3
+8,Monza,Carboni A.,D,5.0,5.0,0
+8,Monza,Birindelli,D,6.0,6.0,0
+8,Monza,Goglichidze,D,6.5,6.5,0
+8,Monza,Lucchesi,D,5.5,5.5,0
+8,Monza,Kouadio,D,6.0,6.0,0
+8,Monza,Mangas,D,6.0,6.0,0
+8,Monza,Folorunsho,C,6.0,6.0,0
+8,Monza,Akinsanmiro,C,5.5,5.5,0
+8,Monza,Foe Ondoa,C,5.0,5.0,0
+8,Monza,Mout,C,55.0,55.0,0
+8,Monza,Cutrone,A,55.0,55.0,0
+8,Monza,Mota,A,5.5,5.5,0
+8,Monza,Ngonge,A,6.5,6.5,0
+8,Monza,Varela G.,A,7.0,10.0,0
+8,Monza,Robinson J.,A,5.5,5.5,0
+8,Napoli,Meret,P,6.5,3.5,3
+8,Napoli,Spinazzola,D,6.5,6.5,0
+8,Napoli,Di Lorenzo,D,6.5,6.5,0
+8,Napoli,Badiashile,D,6.5,6.5,0
+8,Napoli,Olivera,D,6.0,7.0,0
+8,Napoli,Beukema,D,5.0,5.0,0
+8,Napoli,Marin R.,D,6.0,5.5,0
+8,Napoli,Politano,C,7.0,8.0,0
+8,Napoli,De Bruyne,C,6.5,6.5,0
+8,Napoli,Zambo Anguissa,C,7.0,10.0,0
+8,Napoli,Lobotka,C,6.0,6.0,0
+8,Napoli,McTominay,C,7.5,13.5,0
+8,Napoli,Vergara,C,6.0,6.0,0
+8,Napoli,Hojlund,A,6.0,6.0,0
+8,Napoli,Lang,A,6.0,6.0,0
+8,Napoli,Giovane,A,5.5,5.5,0
+8,Parma,Corvi,P,5.5,3.5,2
+8,Parma,Diego Carlos,D,5.5,3.5,0
+8,Parma,Valeri,D,5.5,5.5,0
+8,Parma,Delprato,D,5.5,5.5,0
+8,Parma,Troilo,D,6.0,6.0,0
+8,Parma,Drobnic,D,5.5,5.5,0
+8,Parma,Fabbian,C,6.0,7.0,0
+8,Parma,Bernab&#xE8;,,5.5,5.5,0
+8,Parma,Keita M.,C,5.5,5.5,0
+8,Parma,Ordonez C.,C,5.5,5.5,0
+8,Parma,Sierro,C,6.0,5.5,0
+8,Parma,Tour&#xE8; E.,,5.5,5.5,0
+8,Parma,Frigan,A,6.0,6.0,0
+8,Parma,Romero D.,A,6.0,6.0,0
+8,Parma,Lontani,A,6.5,9.5,0
+8,Roma,Gollini,P,6.5,3.5,3
+8,Roma,Mancini,D,5.5,5.5,0
+8,Roma,N&#x27;Dicka,,6.0,6.0,0
+8,Roma,Balerdi,D,8.0,13.5,0
+8,Roma,Hermoso,D,6.0,6.0,0
+8,Roma,Molina N.,D,6.5,6.5,0
+8,Roma,Ghilardi,D,55.0,55.0,0
+8,Roma,Rensch,D,5.5,5.0,0
+8,Roma,Wesley,D,5.5,6.5,0
+8,Roma,De Roon,C,6.0,5.5,0
+8,Roma,Cristante,C,6.0,5.5,0
+8,Roma,Pisilli,C,5.5,5.5,0
+8,Roma,Mora,C,6.0,6.0,0
+8,Roma,Malen,A,5.5,6.5,0
+8,Roma,Soul&#xE8;,,7.0,10.0,0
+8,Roma,Castro S.,A,6.5,6.5,0
+8,Sassuolo,Turati,P,6.0,4.0,2
+8,Sassuolo,Caleta-Car,D,5.0,5.0,0
+8,Sassuolo,Doig,D,6.0,6.0,0
+8,Sassuolo,Van Der Brempt,D,5.5,5.0,0
+8,Sassuolo,Cand&#xE8;,,5.0,5.0,0
+8,Sassuolo,Obrador,D,6.0,6.0,0
+8,Sassuolo,Matic,C,5.5,5.5,0
+8,Sassuolo,Volpato,C,6.0,6.0,0
+8,Sassuolo,Lipani,C,5.5,5.5,0
+8,Sassuolo,Adzic,C,5.5,5.5,0
+8,Sassuolo,Dominguez B.,C,6.0,6.0,0
+8,Sassuolo,Bakola,C,5.5,5.5,0
+8,Sassuolo,Berardi,A,5.5,5.0,0
+8,Sassuolo,Esposito Se.,A,55.0,55.0,0
+8,Sassuolo,Laurient&#xE8;,,5.5,5.5,0
+8,Sassuolo,Bowie,A,5.0,5.0,0
+8,Torino,Perri,P,6.5,4.5,2
+8,Torino,Ismajli,D,6.5,6.0,0
+8,Torino,Patterson,D,5.5,3.5,0
+8,Torino,Comuzzo,D,5.0,5.0,0
+8,Torino,Coco,D,6.0,6.0,0
+8,Torino,Belghali,D,7.0,10.0,0
+8,Torino,Mandragora,C,6.5,6.5,0
+8,Torino,Vlasic,C,7.5,10.5,0
+8,Torino,Gineitis,C,6.5,7.5,0
+8,Torino,Cacciamani,C,5.5,5.5,0
+8,Torino,Aboukhlal,C,55.0,55.0,0
+8,Torino,Fitz-Jim,C,7.0,10.0,0
+8,Torino,Braganca,C,6.0,6.0,0
+8,Torino,Simeone,A,7.0,8.0,0
+8,Torino,Adams C.,A,6.5,6.5,0
+8,Torino,Kulenovic,A,6.0,6.0,0
+8,Udinese,Okoye,P,5.5,3.5,2
+8,Udinese,Kabasele,D,6.0,6.0,0
+8,Udinese,Vojvoda,D,5.5,5.5,0
+8,Udinese,Kamara H.,D,6.0,6.0,0
+8,Udinese,Abankwah,D,6.0,6.0,0
+8,Udinese,Palma,D,5.5,5.5,0
+8,Udinese,Arizala,D,6.0,6.0,0
+8,Udinese,Zaniolo,C,5.5,5.5,0
+8,Udinese,Lovric,C,55.0,55.0,0
+8,Udinese,Karlstrom,C,6.0,5.5,0
+8,Udinese,Ekkelenkamp,C,5.5,5.5,0
+8,Udinese,Piotrowski,C,5.5,5.5,0
+8,Udinese,Miller L.,C,6.0,6.0,0
+8,Udinese,Chakvetadze,C,5.5,5.5,0
+8,Udinese,Davis K.,A,5.0,5.0,0
+8,Udinese,Vinciati,,55.0,55.0,0
+8,Venezia,Stankovic F.,P,6.0,5.0,1
+8,Venezia,Juan Jesus,D,6.0,6.0,0
+8,Venezia,Mazzocchi,D,6.0,6.0,0
+8,Venezia,Haps,D,5.5,5.5,0
+8,Venezia,Hainaut,D,5.0,5.0,0
+8,Venezia,Moreno M.,D,6.5,6.5,0
+8,Venezia,Halhal,D,6.0,6.0,0
+8,Venezia,Sohm,C,5.5,5.5,0
+8,Venezia,Basic,C,5.5,5.5,0
+8,Venezia,Perez K.,C,5.5,5.5,0
+8,Venezia,Dagasso,C,6.0,6.0,0
+8,Venezia,Yeboah J.,A,6.5,6.5,0
+8,Venezia,Rrahmani Al.,A,55.0,55.0,0
+8,Venezia,Lauberbach,A,55.0,55.0,0
+8,Venezia,Adams A.,A,5.5,5.5,0
+9,Atalanta,Carnesecchi,P,6.0,4.0,2
+9,Atalanta,Zappacosta,D,5.5,5.5,0
+9,Atalanta,Scalvini,D,5.5,5.5,0
+9,Atalanta,Kristensen T.,D,55.0,55.0,0
+9,Atalanta,Bernasconi,D,5.5,5.5,0
+9,Atalanta,Obric,D,5.5,5.0,0
+9,Atalanta,Pasalic,C,5.5,5.5,0
+9,Atalanta,Gaetano,C,6.5,6.5,0
+9,Atalanta,Elmas,C,5.5,5.0,0
+9,Atalanta,Zalewski,C,7.5,11.5,0
+9,Atalanta,Ederson D.S.,C,5.0,5.0,0
+9,Atalanta,Rowe,C,5.5,5.5,0
+9,Atalanta,Sulemana K.,A,55.0,55.0,0
+9,Atalanta,De Ketelaere,A,7.5,11.5,0
+9,Atalanta,Krstovic,A,5.5,5.5,0
+9,Bologna,Skorupski,P,6.5,4.5,2
+9,Bologna,Darmian,D,5.5,5.5,0
+9,Bologna,Zortea,D,6.5,7.5,0
+9,Bologna,Miranda J.,D,7.0,8.0,0
+9,Bologna,Casale,D,5.5,5.5,0
+9,Bologna,Theate,D,5.0,5.0,0
+9,Bologna,Vitik,D,6.0,6.0,0
+9,Bologna,Heggem,D,6.0,5.5,0
+9,Bologna,Helland,D,55.0,55.0,0
+9,Bologna,Alhassane,D,5.5,5.5,0
+9,Bologna,Bernardeschi,C,6.0,6.0,0
+9,Bologna,Odgaard,C,6.5,7.5,0
+9,Bologna,Cambiaghi,C,6.5,6.5,0
+9,Bologna,Pobega,C,6.5,6.0,0
+9,Bologna,Ferguson,C,6.5,6.5,0
+9,Bologna,Mbangula,C,9.0,18.0,0
+9,Cagliari,Caprile,P,6.5,2.5,4
+9,Cagliari,Mina,D,5.0,5.0,0
+9,Cagliari,Obert,D,5.5,6.5,0
+9,Cagliari,Rodriguez Ju.,D,5.5,5.0,0
+9,Cagliari,Z&#xE8; Pedro,,5.0,5.0,0
+9,Cagliari,Sugawara,D,4.5,4.5,0
+9,Cagliari,Deiola,C,6.0,6.0,0
+9,Cagliari,Adopo,C,5.5,5.5,0
+9,Cagliari,Fadera,C,5.5,5.5,0
+9,Cagliari,Liteta,C,55.0,55.0,0
+9,Cagliari,Romano,C,5.5,5.5,0
+9,Cagliari,Massolin,C,55.0,55.0,0
+9,Cagliari,Maldini,A,7.0,10.0,0
+9,Cagliari,Nzola,A,7.0,10.0,0
+9,Cagliari,Trepy,A,55.0,55.0,0
+9,Cagliari,Mendy P.,A,6.0,6.0,0
+9,Como,Sanchez Ro.,P,7.0,6.0,1
+9,Como,Couto,D,6.5,7.5,0
+9,Como,Valle,D,5.5,5.5,0
+9,Como,Ramon,D,6.5,9.5,0
+9,Como,Kempf,D,6.0,6.0,0
+9,Como,Smolcic I.,D,55.0,55.0,0
+9,Como,Kaiki,D,6.5,6.5,0
+9,Como,Caqueret,C,6.0,6.0,0
+9,Como,Ricci S.,C,55.0,55.0,0
+9,Como,Da Cunha,C,6.5,6.5,0
+9,Como,Perrone,C,5.0,5.0,0
+9,Como,Paz N.,C,7.5,11.5,0
+9,Como,Baturina,C,7.0,10.0,0
+9,Como,Addai,C,6.0,6.0,0
+9,Como,Milla,C,6.5,6.5,0
+9,Como,Douvikas,A,5.5,5.5,0
+9,Fiorentina,De Gea,P,6.5,4.5,2
+9,Fiorentina,Dragusin,D,6.0,6.0,0
+9,Fiorentina,Jimenez A.,D,6.5,7.5,0
+9,Fiorentina,Joao Mario,D,7.0,10.0,0
+9,Fiorentina,Viery,D,6.5,6.0,0
+9,Fiorentina,Fagioli,C,5.0,5.0,0
+9,Fiorentina,Brescianini,C,5.5,5.5,0
+9,Fiorentina,Ndour,C,5.5,5.5,0
+9,Fiorentina,Njie,C,7.5,11.5,0
+9,Fiorentina,Mastantuono,C,6.5,6.5,0
+9,Fiorentina,Oulai,C,6.0,6.0,0
+9,Fiorentina,Goncalves P.,C,55.0,55.0,0
+9,Fiorentina,Beto,A,55.0,55.0,0
+9,Fiorentina,Pellegrino M.,A,5.0,4.5,0
+9,Fiorentina,Gnonto,A,5.5,5.0,0
+9,Frosinone,Palmisani,P,6.5,5.5,1
+9,Frosinone,Terzic,D,6.5,6.5,0
+9,Frosinone,Monterisi,D,6.0,6.0,0
+9,Frosinone,Oyono A.,D,6.5,6.5,0
+9,Frosinone,Calvani,D,6.0,6.0,0
+9,Frosinone,Omar Fayed,D,5.5,5.5,0
+9,Frosinone,Fini,C,6.0,6.0,0
+9,Frosinone,Hasa,C,55.0,55.0,0
+9,Frosinone,El Azzouzi A.,C,55.0,55.0,0
+9,Frosinone,Cal&#xF2;,,7.5,10.5,0
+9,Frosinone,Cichella,C,7.0,10.0,0
+9,Frosinone,Schmid,C,7.0,8.0,0
+9,Frosinone,Raimondo,A,7.0,10.0,0
+9,Frosinone,Kvernadze,A,8.0,10.0,0
+9,Frosinone,Ghedjemis,A,6.5,7.5,0
+9,Frosinone,Birligea,A,7.5,13.5,0
+9,Genoa,Bijlow,P,6.5,6.5,0
+9,Genoa,Vasquez,D,6.5,6.5,0
+9,Genoa,Ostigard,D,6.5,6.5,0
+9,Genoa,Ehizibue,D,6.5,9.5,0
+9,Genoa,Marcandalli,D,6.0,6.0,0
+9,Genoa,Mitaj,D,6.0,6.0,0
+9,Genoa,Messias,C,6.0,6.0,0
+9,Genoa,Frendrup,C,6.5,6.5,0
+9,Genoa,Baldanzi,C,7.5,11.5,0
+9,Genoa,Ellertsson,C,6.5,6.5,0
+9,Genoa,Amorim,C,7.0,7.0,0
+9,Genoa,Meichtry,C,6.0,6.0,0
+9,Genoa,Wiafe,C,55.0,55.0,0
+9,Genoa,Colombo,A,55.0,55.0,0
+9,Genoa,Vitinha O.,A,6.5,6.5,0
+9,Genoa,Osmajic,A,6.5,6.5,0
+9,Inter,Provedel,P,7.0,7.0,0
+9,Inter,Dimarco,D,5.5,5.5,0
+9,Inter,Bastoni,D,6.0,5.5,0
+9,Inter,Akanji,D,6.0,6.0,0
+9,Inter,Carlos Augusto,D,6.5,6.5,0
+9,Inter,Spence,D,55.0,55.0,0
+9,Inter,Bisseck,D,5.5,5.5,0
+9,Inter,Zielinski,C,6.0,6.0,0
+9,Inter,Barella,C,6.0,5.5,0
+9,Inter,Calhanoglu,C,6.5,6.5,0
+9,Inter,Diouf,C,6.0,6.0,0
+9,Inter,Stankovic A.,C,5.5,5.5,0
+9,Inter,Sucic P.,C,6.0,6.0,0
+9,Inter,Thuram,A,6.5,6.5,0
+9,Inter,Bonny,A,5.5,5.5,0
+9,Inter,Esposito F.P.,A,6.0,6.0,0
+9,Juventus,Vicario,P,6.0,4.0,2
+9,Juventus,Bremer,D,5.0,5.0,0
+9,Juventus,Kalulu,D,4.5,4.5,0
+9,Juventus,Cambiaso,D,4.0,4.0,0
+9,Juventus,Gatti,D,5.5,5.5,0
+9,Juventus,Cabal,D,6.0,6.0,0
+9,Juventus,Lucum&#xEC;,,5.5,5.5,0
+9,Juventus,Douglas Luiz,C,5.0,5.0,0
+9,Juventus,McKennie,C,5.5,5.5,0
+9,Juventus,Sarr P.,C,5.0,5.0,0
+9,Juventus,Koopmeiners,C,6.0,6.0,0
+9,Juventus,Zhegrova,C,5.5,5.0,0
+9,Juventus,Alajbegovic,C,6.0,6.0,0
+9,Juventus,Boga,A,5.5,5.5,0
+9,Juventus,Kolo Muani,A,5.0,5.0,0
+9,Juventus,Woltemade,A,5.5,5.5,0
+9,Lazio,Mandas,P,6.0,4.0,2
+9,Lazio,Lazzari,D,6.0,6.0,0
+9,Lazio,Pedraza,D,6.0,6.0,0
+9,Lazio,Tavares N.,D,6.5,6.5,0
+9,Lazio,Leite,D,5.5,5.5,0
+9,Lazio,Floriani Mussolini,D,7.0,10.0,0
+9,Lazio,Sutalo J.,D,5.5,3.5,0
+9,Lazio,Zaccagni,C,7.5,9.5,0
+9,Lazio,Frattesi,C,6.0,3.0,0
+9,Lazio,Cancellieri,C,6.0,6.0,0
+9,Lazio,Belahyane,C,7.0,7.0,0
+9,Lazio,Isaksen,C,8.0,12.0,0
+9,Lazio,Dele-Bashiru,C,6.5,7.5,0
+9,Lazio,Taylor K.,C,7.5,11.0,0
+9,Lazio,Pinamonti,A,6.0,6.0,0
+9,Lazio,Noslin,A,8.0,14.0,0
+9,Lecce,Falcone,P,7.0,2.0,5
+9,Lecce,Gallo,D,5.0,5.0,0
+9,Lecce,Tiago Gabriel,D,5.0,4.5,0
+9,Lecce,Veiga D.,D,5.0,5.0,0
+9,Lecce,Ndaba,D,5.5,5.5,0
+9,Lecce,Siebert,D,4.5,4.0,0
+9,Lecce,Maleh,C,5.5,5.5,0
+9,Lecce,Kaba,C,55.0,55.0,0
+9,Lecce,Gorter,C,6.0,7.0,0
+9,Lecce,Gandelman,C,5.5,5.5,0
+9,Lecce,Ngom,C,5.0,4.5,0
+9,Lecce,Monteiro J.,C,6.5,9.5,0
+9,Lecce,N&#x27;Dri,,5.0,5.0,0
+9,Lecce,Stulic,A,5.0,5.0,0
+9,Lecce,Fatah,A,5.5,5.5,0
+9,Lecce,Esteban,A,5.0,5.0,0
+9,Milan,Maignan,P,6.0,2.0,4
+9,Milan,Tomori,D,6.5,7.5,0
+9,Milan,Pavlovic,D,5.5,5.5,0
+9,Milan,Estupinan,D,5.5,5.5,0
+9,Milan,De Winter,D,5.0,5.0,0
+9,Milan,Bartesaghi,D,5.0,3.0,0
+9,Milan,Diawara S.,D,5.0,5.0,0
+9,Milan,Pulisic,C,5.0,5.0,0
+9,Milan,Modric,C,5.5,5.5,0
+9,Milan,Musah,C,5.5,5.5,0
+9,Milan,Ciss&#xE8; A.,,7.5,13.5,0
+9,Milan,Jashari,C,5.5,5.5,0
+9,Milan,Comotto,C,55.0,55.0,0
+9,Milan,Hutchinson,C,6.5,6.5,0
+9,Milan,Ramos G.,A,5.0,5.0,0
+9,Milan,Camarda,A,5.0,5.0,0
+9,Monza,Tornqvist,P,6.5,2.5,4
+9,Monza,Carboni A.,D,5.5,5.5,0
+9,Monza,Antov,D,6.0,6.0,0
+9,Monza,Birindelli,D,5.0,5.0,0
+9,Monza,Goglichidze,D,5.0,4.5,0
+9,Monza,Lucchesi,D,5.5,5.5,0
+9,Monza,Bakoune,D,5.5,5.5,0
+9,Monza,Mangas,D,5.0,5.0,0
+9,Monza,Colpani,C,5.5,5.5,0
+9,Monza,Akinsanmiro,C,5.0,5.0,0
+9,Monza,Colombo L.,C,5.5,5.0,0
+9,Monza,Foe Ondoa,C,5.5,5.0,0
+9,Monza,Ngonge,A,5.5,5.5,0
+9,Monza,Varela G.,A,7.0,10.0,0
+9,Monza,Robinson J.,A,6.0,7.0,0
+9,Monza,Zeballos,A,6.0,6.0,0
+9,Napoli,Milinkovic-Savic V.,P,7.0,6.0,1
+9,Napoli,Di Lorenzo,D,6.0,7.0,0
+9,Napoli,Rrahmani,D,6.0,6.0,0
+9,Napoli,Olivera,D,6.0,6.0,0
+9,Napoli,Marin R.,D,6.5,9.5,0
+9,Napoli,Marianucci,D,6.0,6.0,0
+9,Napoli,Politano,C,7.0,11.0,0
+9,Napoli,De Bruyne,C,7.0,10.0,0
+9,Napoli,Zambo Anguissa,C,6.0,6.0,0
+9,Napoli,Lobotka,C,55.0,55.0,0
+9,Napoli,McTominay,C,6.5,6.5,0
+9,Napoli,Gilmour,C,6.5,6.5,0
+9,Napoli,Vergara,C,6.0,6.0,0
+9,Napoli,Hojlund,A,7.0,10.0,0
+9,Napoli,Lucca,A,55.0,55.0,0
+9,Napoli,Lang,A,7.0,8.0,0
+9,Parma,Daffara,P,6.5,6.5,0
+9,Parma,Valeri,D,6.0,6.0,0
+9,Parma,Carboni F.,D,6.0,6.0,0
+9,Parma,Delprato,D,6.5,6.5,0
+9,Parma,Troilo,D,7.5,7.5,0
+9,Parma,Britschgi,D,5.5,5.5,0
+9,Parma,Drobnic,D,6.0,6.0,0
+9,Parma,Fabbian,C,5.5,5.5,0
+9,Parma,Almqvist,C,55.0,55.0,0
+9,Parma,Bernab&#xE8;,,5.0,2.0,0
+9,Parma,Keita M.,C,6.5,6.5,0
+9,Parma,Sierro,C,5.5,5.5,0
+9,Parma,Tour&#xE8; E.,,5.0,5.0,0
+9,Parma,Frigan,A,5.5,5.5,0
+9,Parma,Romero D.,A,5.5,5.5,0
+9,Parma,Lontani,A,5.5,5.0,0
+9,Roma,Gollini,P,7.0,5.0,2
+9,Roma,Mancini,D,5.5,5.5,0
+9,Roma,N&#x27;Dicka,,6.0,6.0,0
+9,Roma,Molina N.,D,6.5,7.5,0
+9,Roma,Ghilardi,D,6.5,7.5,0
+9,Roma,Rensch,D,5.0,5.0,0
+9,Roma,Wesley,D,6.0,6.0,0
+9,Roma,Koulierakis,D,6.0,6.0,0
+9,Roma,Lulli,D,7.5,11.5,0
+9,Roma,De Roon,C,6.0,6.0,0
+9,Roma,Cristante,C,6.0,6.0,0
+9,Roma,Pisilli,C,6.5,9.5,0
+9,Roma,Mora,C,7.5,10.5,0
+9,Roma,Malen,A,7.0,10.0,0
+9,Roma,Soul&#xE8;,,6.0,6.0,0
+9,Roma,Castro S.,A,5.5,5.5,0
+9,Sassuolo,Turati,P,7.0,7.0,0
+9,Sassuolo,Caleta-Car,D,3.5,3.5,0
+9,Sassuolo,Walukiewicz,D,55.0,55.0,0
+9,Sassuolo,Doig,D,5.5,5.5,0
+9,Sassuolo,Cand&#xE8;,,5.5,5.5,0
+9,Sassuolo,Odenthal,D,4.0,4.0,0
+9,Sassuolo,Cinquegrano,D,5.0,6.0,0
+9,Sassuolo,Ghion,,6.0,6.0,0
+9,Sassuolo,Thorstvedt,C,5.0,4.0,0
+9,Sassuolo,Sulemana I.,C,5.0,5.0,0
+9,Sassuolo,Lipani,C,4.0,4.0,0
+9,Sassuolo,Bakola,C,5.5,5.5,0
+9,Sassuolo,Berardi,A,5.0,4.5,0
+9,Sassuolo,Esposito Se.,A,7.0,10.0,0
+9,Sassuolo,Laurient&#xE8;,,5.5,5.5,0
+9,Sassuolo,Bowie,A,5.5,5.5,0
+9,Torino,Perri,P,6.0,3.0,3
+9,Torino,Ismajli,D,5.0,5.0,0
+9,Torino,Patterson,D,5.0,5.0,0
+9,Torino,Comuzzo,D,5.5,5.5,0
+9,Torino,Coco,D,5.0,5.0,0
+9,Torino,Belghali,D,6.5,6.0,0
+9,Torino,Vlasic,C,5.5,5.5,0
+9,Torino,Ilkhan,C,55.0,55.0,0
+9,Torino,Gineitis,C,6.0,6.0,0
+9,Torino,Oristanio,C,55.0,55.0,0
+9,Torino,Cacciamani,C,6.0,6.0,0
+9,Torino,Fitz-Jim,C,6.5,7.5,0
+9,Torino,Braganca,C,5.5,5.5,0
+9,Torino,Simeone,A,6.5,6.5,0
+9,Torino,Adams C.,A,7.0,10.0,0
+9,Torino,Kulenovic,A,5.5,5.5,0
+9,Udinese,Okoye,P,6.5,9.5,0
+9,Udinese,Kabasele,D,6.5,6.5,0
+9,Udinese,Vojvoda,D,6.0,6.0,0
+9,Udinese,Kamara H.,D,5.5,5.5,0
+9,Udinese,Bertola,D,6.0,6.0,0
+9,Udinese,Ebosse,D,6.0,6.0,0
+9,Udinese,Abankwah,D,5.5,5.5,0
+9,Udinese,Palma,D,6.5,6.5,0
+9,Udinese,Zaniolo,C,6.0,5.5,0
+9,Udinese,Karlstrom,C,5.5,5.0,0
+9,Udinese,Ekkelenkamp,C,6.0,6.0,0
+9,Udinese,Unai Gomez,C,55.0,55.0,0
+9,Udinese,Piotrowski,C,6.0,6.0,0
+9,Udinese,Miller L.,C,55.0,55.0,0
+9,Udinese,Chakvetadze,C,5.5,5.5,0
+9,Udinese,Davis K.,A,5.5,5.5,0
+9,Venezia,Stankovic F.,P,6.0,4.0,2
+9,Venezia,Juan Jesus,D,6.0,6.0,0
+9,Venezia,Mazzocchi,D,6.0,6.0,0
+9,Venezia,Haps,D,5.5,5.5,0
+9,Venezia,Hainaut,D,6.0,6.0,0
+9,Venezia,Moreno M.,D,5.5,3.5,0
+9,Venezia,Halhal,D,6.0,4.0,0
+9,Venezia,Sohm,C,5.5,5.5,0
+9,Venezia,Busio,C,5.0,5.0,0
+9,Venezia,Basic,C,6.0,6.0,0
+9,Venezia,Helgason,C,6.5,6.5,0
+9,Venezia,Perez K.,C,6.5,6.5,0
+9,Venezia,Yeboah J.,A,5.5,5.5,0
+9,Venezia,Lauberbach,A,6.5,6.5,0
+9,Venezia,Adams A.,A,6.5,6.5,0
+10,Bologna,Skorupski,P,7.0,9.0,0
+10,Bologna,Darmian,D,6.0,6.0,0
+10,Bologna,Zortea,D,5.0,4.5,0
+10,Bologna,Miranda J.,D,7.0,8.0,0
+10,Bologna,Casale,D,6.5,6.5,0
+10,Bologna,Theate,D,5.5,5.5,0
+10,Bologna,Vitik,D,6.0,6.0,0
+10,Bologna,Bernardeschi,C,6.5,9.5,0
+10,Bologna,Odgaard,C,5.5,5.0,0
+10,Bologna,Cambiaghi,C,6.5,6.5,0
+10,Bologna,Pobega,C,7.0,9.5,0
+10,Bologna,Ferguson,C,6.0,6.0,0
+10,Bologna,El Azzouzi O.,C,6.0,6.0,0
+10,Bologna,Mbangula,C,5.5,5.5,0
+10,Bologna,Amondarain,C,55.0,55.0,0
+10,Bologna,Dovbyk,A,55.0,55.0,0
+10,Cagliari,Caprile,P,6.5,4.5,2
+10,Cagliari,Obert,D,5.0,4.0,0
+10,Cagliari,Rodriguez Ju.,D,6.0,5.5,0
+10,Cagliari,Z&#xE8; Pedro,,5.5,5.5,0
+10,Cagliari,Kofler,D,5.5,5.5,0
+10,Cagliari,Deiola,C,5.5,5.5,0
+10,Cagliari,Adopo,C,5.5,5.5,0
+10,Cagliari,Fazzini,C,5.5,5.0,0
+10,Cagliari,Fadera,C,6.5,7.5,0
+10,Cagliari,Liteta,C,6.0,6.0,0
+10,Cagliari,Romano,C,5.5,5.5,0
+10,Cagliari,Maldini,A,6.0,6.0,0
+10,Cagliari,Nzola,A,7.0,10.0,0
+10,Cagliari,Trepy,A,6.0,6.0,0
+10,Cagliari,Mendy P.,A,5.5,5.5,0
+10,Cagliari,Kevin Carlos,A,55.0,55.0,0
+10,Como,Butez,P,6.0,6.0,0
+10,Como,Couto,D,6.5,6.5,0
+10,Como,Valle,D,55.0,55.0,0
+10,Como,Ramon,D,6.5,6.5,0
+10,Como,Kempf,D,6.5,6.5,0
+10,Como,Smolcic I.,D,55.0,55.0,0
+10,Como,Kaiki,D,6.0,5.5,0
+10,Como,Caqueret,C,6.0,6.0,0
+10,Como,Ricci S.,C,6.0,6.0,0
+10,Como,Da Cunha,C,7.0,10.0,0
+10,Como,Perrone,C,6.0,6.0,0
+10,Como,Liberali,C,6.0,6.0,0
+10,Como,Paz N.,C,6.0,6.0,0
+10,Como,Baturina,C,6.5,6.5,0
+10,Como,Milla,C,5.5,5.5,0
+10,Como,Douvikas,A,6.5,6.5,0
+10,Frosinone,Palmisani,P,6.0,6.0,0
+10,Frosinone,Monterisi,D,7.0,7.0,0
+10,Frosinone,Amey,D,6.5,7.5,0
+10,Frosinone,Calvani,D,6.5,6.5,0
+10,Frosinone,Bracaglia,D,6.5,6.5,0
+10,Frosinone,Tchato,D,5.5,5.5,0
+10,Frosinone,Zerbin,C,55.0,55.0,0
+10,Frosinone,Hasa,C,6.5,6.5,0
+10,Frosinone,Masini,C,6.0,5.5,0
+10,Frosinone,Cal&#xF2;,,7.5,10.5,0
+10,Frosinone,Cichella,C,6.0,6.0,0
+10,Frosinone,Schmid,C,6.5,6.5,0
+10,Frosinone,Raimondo,A,6.0,6.0,0
+10,Frosinone,Kvernadze,A,7.0,8.0,0
+10,Frosinone,Ghedjemis,A,7.5,10.5,0
+10,Frosinone,Birligea,A,6.5,6.5,0
+10,Genoa,Bijlow,P,6.5,5.5,1
+10,Genoa,Vasquez,D,6.5,6.5,0
+10,Genoa,Ostigard,D,6.5,6.5,0
+10,Genoa,Ehizibue,D,6.0,6.0,0
+10,Genoa,Marcandalli,D,6.0,6.0,0
+10,Genoa,El Shaarawy,C,6.5,7.5,0
+10,Genoa,Traor&#xE8; Hj.,,6.5,6.0,0
+10,Genoa,Messias,C,8.0,12.0,0
+10,Genoa,Frendrup,C,6.5,6.5,0
+10,Genoa,Sow,C,55.0,55.0,0
+10,Genoa,Ellertsson,C,6.0,6.0,0
+10,Genoa,Meichtry,C,55.0,55.0,0
+10,Genoa,Wiafe,C,6.0,6.0,0
+10,Genoa,Colombo,A,55.0,55.0,0
+10,Genoa,Vitinha O.,A,6.0,6.0,0
+10,Genoa,Osmajic,A,7.0,10.0,0
+10,Inter,Martinez Jo.,P,6.0,3.0,3
+10,Inter,Dimarco,D,55.0,55.0,0
+10,Inter,Bastoni,D,6.5,9.5,0
+10,Inter,Akanji,D,6.0,7.0,0
+10,Inter,Carlos Augusto,D,4.5,4.0,0
+10,Inter,Spence,D,6.0,6.0,0
+10,Inter,Bisseck,D,5.5,5.5,0
+10,Inter,Zielinski,C,5.5,5.5,0
+10,Inter,Barella,C,5.0,5.0,0
+10,Inter,Calhanoglu,C,5.5,5.5,0
+10,Inter,Mkhitaryan,C,5.5,5.5,0
+10,Inter,Diouf,C,5.5,5.5,0
+10,Inter,Sucic P.,C,5.0,5.0,0
+10,Inter,Thuram,A,5.0,5.0,0
+10,Inter,Bonny,A,55.0,55.0,0
+10,Inter,Esposito F.P.,A,55.0,55.0,0
+10,Juventus,Vicario,P,6.5,6.5,0
+10,Juventus,Bremer,D,6.0,6.0,0
+10,Juventus,Kalulu,D,6.0,6.0,0
+10,Juventus,Cambiaso,D,6.0,7.0,0
+10,Juventus,Gatti,D,6.0,6.0,0
+10,Juventus,Cabal,D,6.5,6.5,0
+10,Juventus,Lucum&#xEC;,,6.0,5.5,0
+10,Juventus,Kelly L.,D,6.0,6.0,0
+10,Juventus,Douglas Luiz,C,6.0,5.5,0
+10,Juventus,McKennie,C,5.5,5.5,0
+10,Juventus,Koopmeiners,C,5.5,5.5,0
+10,Juventus,Zhegrova,C,6.5,7.5,0
+10,Juventus,Alajbegovic,C,7.5,10.0,0
+10,Juventus,Boga,A,7.0,10.0,0
+10,Juventus,Kolo Muani,A,5.0,5.0,0
+10,Juventus,Woltemade,A,6.5,6.5,0
+10,Lazio,Mandas,P,6.0,5.0,1
+10,Lazio,Pedraza,D,6.5,7.5,0
+10,Lazio,Tavares N.,D,6.0,6.0,0
+10,Lazio,Leite,D,6.0,6.0,0
+10,Lazio,Provstgaard,D,6.0,6.0,0
+10,Lazio,Floriani Mussolini,D,6.0,6.0,0
+10,Lazio,Sutalo J.,D,5.5,5.5,0
+10,Lazio,Cataldi,C,55.0,55.0,0
+10,Lazio,Zaccagni,C,6.0,6.0,0
+10,Lazio,Frattesi,C,5.5,5.5,0
+10,Lazio,Belahyane,C,5.5,5.5,0
+10,Lazio,Isaksen,C,7.5,10.5,0
+10,Lazio,Dele-Bashiru,C,6.0,6.0,0
+10,Lazio,Taylor K.,C,6.5,6.5,0
+10,Lazio,Pinamonti,A,7.0,9.5,0
+10,Lazio,Noslin,A,6.5,7.5,0
+10,Lecce,Falcone,P,6.0,4.0,2
+10,Lecce,Gallo,D,6.0,6.0,0
+10,Lecce,Dembel&#xE8; A.,,6.0,6.0,0
+10,Lecce,Tiago Gabriel,D,5.0,5.0,0
+10,Lecce,Veiga D.,D,5.0,5.0,0
+10,Lecce,Siebert,D,4.5,4.0,0
+10,Lecce,Maleh,C,6.0,9.0,0
+10,Lecce,Kaba,C,6.0,5.5,0
+10,Lecce,Gorter,C,5.5,5.5,0
+10,Lecce,Gandelman,C,6.0,6.0,0
+10,Lecce,Ngom,C,5.5,5.5,0
+10,Lecce,Monteiro J.,C,6.0,6.0,0
+10,Lecce,N&#x27;Dri,,5.5,5.5,0
+10,Lecce,Stulic,A,5.0,5.0,0
+10,Lecce,Fatah,A,6.0,6.0,0
+10,Lecce,Esteban,A,5.5,5.5,0
+10,Milan,Maignan,P,7.0,6.0,1
+10,Milan,Pavlovic,D,7.0,7.0,0
+10,Milan,De Winter,D,6.5,6.0,0
+10,Milan,Terracciano F.,D,55.0,55.0,0
+10,Milan,Gila,D,6.5,6.5,0
+10,Milan,Bartesaghi,D,55.0,55.0,0
+10,Milan,Diawara S.,D,6.5,6.5,0
+10,Milan,Rabiot,C,7.0,10.0,0
+10,Milan,Pulisic,C,7.0,10.0,0
+10,Milan,Modric,C,7.0,7.0,0
+10,Milan,Musah,C,6.5,6.5,0
+10,Milan,Moreira,C,8.0,12.5,0
+10,Milan,Ciss&#xE8; A.,,55.0,55.0,0
+10,Milan,Jashari,C,55.0,55.0,0
+10,Milan,Hutchinson,C,55.0,55.0,0
+10,Milan,Ramos G.,A,6.0,6.0,0
+10,Monza,Tornqvist,P,6.0,4.0,2
+10,Monza,Birindelli,D,6.0,6.0,0
+10,Monza,Goglichidze,D,6.0,6.0,0
+10,Monza,Lucchesi,D,5.0,4.5,0
+10,Monza,Kouadio,D,6.0,6.0,0
+10,Monza,Mangas,D,6.0,5.5,0
+10,Monza,Tour&#xE8; I.,,5.5,5.0,0
+10,Monza,Colombo L.,C,6.0,6.0,0
+10,Monza,Foe Ondoa,C,5.5,5.5,0
+10,Monza,Mout,C,5.5,5.5,0
+10,Monza,Cutrone,A,4.5,1.5,0
+10,Monza,Mota,A,6.5,6.5,0
+10,Monza,Ngonge,A,5.5,5.5,0
+10,Monza,Varela G.,A,7.0,10.0,0
+10,Monza,Robinson J.,A,6.5,6.5,0
+10,Monza,Zeballos,A,5.5,5.5,0
+10,Napoli,Meret,P,6.5,4.5,2
+10,Napoli,Di Lorenzo,D,5.5,5.5,0
+10,Napoli,Rrahmani,D,6.0,6.0,0
+10,Napoli,Olivera,D,5.5,5.5,0
+10,Napoli,Beukema,D,55.0,55.0,0
+10,Napoli,Marin R.,D,6.0,5.5,0
+10,Napoli,Marianucci,D,5.0,4.0,0
+10,Napoli,Politano,C,5.5,5.5,0
+10,Napoli,De Bruyne,C,6.0,6.0,0
+10,Napoli,Zambo Anguissa,C,5.5,5.5,0
+10,Napoli,McTominay,C,5.0,5.0,0
+10,Napoli,Gilmour,C,5.5,5.5,0
+10,Napoli,Vergara,C,5.5,5.5,0
+10,Napoli,Lucca,A,6.5,6.5,0
+10,Napoli,Lang,A,5.5,5.5,0
+10,Napoli,Giovane,A,55.0,55.0,0
+10,Roma,Gollini,P,6.0,4.0,2
+10,Roma,Mancini,D,55.0,55.0,0
+10,Roma,N&#x27;Dicka,,6.5,9.5,0
+10,Roma,Hermoso,D,6.0,6.0,0
+10,Roma,Molina N.,D,6.0,6.0,0
+10,Roma,Ghilardi,D,7.0,10.0,0
+10,Roma,Rensch,D,55.0,55.0,0
+10,Roma,Wesley,D,6.5,7.5,0
+10,Roma,Koulierakis,D,55.0,55.0,0
+10,Roma,De Roon,C,6.5,6.5,0
+10,Roma,Cristante,C,7.5,11.0,0
+10,Roma,Pisilli,C,6.0,6.0,0
+10,Roma,Mora,C,7.0,10.0,0
+10,Roma,Malen,A,7.0,10.0,0
+10,Roma,Soul&#xE8;,,7.5,9.5,0
+10,Roma,Castro S.,A,6.5,7.5,0
+10,Torino,Perri,P,5.5,3.5,2
+10,Torino,Ismajli,D,6.5,6.5,0
+10,Torino,Patterson,D,5.0,5.0,0
+10,Torino,Comuzzo,D,5.5,5.5,0
+10,Torino,Coco,D,7.0,6.5,0
+10,Torino,Belghali,D,6.0,6.0,0
+10,Torino,Vlasic,C,5.5,5.5,0
+10,Torino,Ilkhan,C,5.0,5.0,0
+10,Torino,Gineitis,C,6.0,5.5,0
+10,Torino,Oristanio,C,5.5,5.5,0
+10,Torino,Aboukhlal,C,5.5,5.0,0
+10,Torino,Braganca,C,5.5,5.5,0
+10,Torino,Zapata D.,A,5.5,5.5,0
+10,Torino,Simeone,A,5.5,5.5,0
+10,Torino,Adams C.,A,5.5,5.5,0
+10,Torino,Kulenovic,A,55.0,55.0,0
+10,Udinese,Okoye,P,5.0,0.0,5
+10,Udinese,Kabasele,D,4.0,4.0,0
+10,Udinese,Vojvoda,D,5.0,5.0,0
+10,Udinese,Kamara H.,D,5.5,6.5,0
+10,Udinese,Abankwah,D,5.0,5.0,0
+10,Udinese,Palma,D,5.0,8.0,0
+10,Udinese,Arizala,D,55.0,55.0,0
+10,Udinese,Zaniolo,C,6.0,9.0,0
+10,Udinese,Karlstrom,C,5.0,5.0,0
+10,Udinese,Ekkelenkamp,C,5.5,5.5,0
+10,Udinese,Unai Gomez,C,6.0,6.0,0
+10,Udinese,Jovanovic,C,55.0,55.0,0
+10,Udinese,Piotrowski,C,5.5,5.5,0
+10,Udinese,Miller L.,C,5.5,5.0,0
+10,Udinese,Chakvetadze,C,5.5,5.5,0
+10,Udinese,Davis K.,A,5.0,5.0,0
+10,Venezia,Stankovic F.,P,6.5,5.5,1
+10,Venezia,Juan Jesus,D,5.0,4.5,0
+10,Venezia,Mazzocchi,D,6.0,6.0,0
+10,Venezia,Sagrado,D,5.5,5.5,0
+10,Venezia,Hainaut,D,5.5,5.5,0
+10,Venezia,Moreno M.,D,6.0,6.0,0
+10,Venezia,Halhal,D,6.0,6.0,0
+10,Venezia,Sohm,C,5.5,5.0,0
+10,Venezia,Busio,C,6.0,6.0,0
+10,Venezia,Basic,C,6.0,6.0,0
+10,Venezia,Helgason,C,6.0,6.0,0
+10,Venezia,Perez K.,C,6.0,6.0,0
+10,Venezia,Yeboah J.,A,5.5,5.5,0
+10,Venezia,Rrahmani Al.,A,55.0,55.0,0
+10,Venezia,Lauberbach,A,5.5,5.5,0
+10,Venezia,Adams A.,A,5.5,5.5,0

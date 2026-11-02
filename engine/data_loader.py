@@ -272,6 +272,68 @@ def load_official_stats_excel(file_path_or_buffer=None):
     return df_official
 
 
+def sync_missing_matchday_votes(voti_file, target_max_giornata=None):
+    """
+    Scrapes missing matchday votes directly from Fantacalcio.it and updates voti_reali.csv.
+    """
+    try:
+        if not os.path.exists(voti_file):
+            return
+        df_vr = pd.read_csv(voti_file)
+        cur_max = int(df_vr['Giornata'].max()) if ('Giornata' in df_vr.columns and not df_vr.empty) else 0
+        if target_max_giornata is None:
+            target_max_giornata = 10
+            
+        if target_max_giornata <= cur_max:
+            return
+            
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36'}
+        new_records = []
+        for g in range(cur_max + 1, target_max_giornata + 1):
+            url = f"https://www.fantacalcio.it/voti-fantacalcio-serie-a/2026-27/{g}"
+            try:
+                r = requests.get(url, headers=headers, timeout=12)
+                if r.status_code != 200:
+                    continue
+                matches = re.findall(
+                    r'<a[^>]+href="https://www\.fantacalcio\.it/serie-a/squadre/([^/]+)/([^/]+)/\d+"[^>]*>\s*<span>([^<]+)</span>\s*</a>.*?'
+                    r'<span class="player-grade[^"]*" data-value="([^"]+)"></span>\s*'
+                    r'<span class="player-fanta-grade[^"]*" data-value="([^"]+)"></span>',
+                    r.text, re.DOTALL
+                )
+                seen = set()
+                for team_slug, player_slug, player_name, grade_str, fanta_grade_str in matches:
+                    pname = player_name.strip()
+                    if pname in seen:
+                        continue
+                    seen.add(pname)
+                    try:
+                        voto = float(grade_str.replace(',', '.'))
+                        fv = float(fanta_grade_str.replace(',', '.'))
+                    except ValueError:
+                        continue
+                    new_records.append({
+                        'Giornata': g,
+                        'Squadra': team_slug.capitalize(),
+                        'Giocatore': pname,
+                        'Ruolo': '',
+                        'Voto': voto,
+                        'FantaVoto': fv,
+                        'GolSubiti': max(0, int(round(voto - fv))) if fv < voto else 0
+                    })
+            except Exception as ex:
+                print(f"Error auto-syncing matchday {g} votes: {ex}")
+                
+        if new_records:
+            df_new = pd.DataFrame(new_records)
+            df_combined = pd.concat([df_vr, df_new], ignore_index=True)
+            df_combined = df_combined.drop_duplicates(subset=['Giornata', 'Giocatore'], keep='first')
+            df_combined.to_csv(voti_file, index=False)
+            print(f"Auto-synced {len(new_records)} matchday votes up to Giornata {target_max_giornata}.")
+    except Exception as e:
+        print(f"Matchday votes auto-sync notice: {e}")
+
+
 def compute_sufficiency_metrics(df_master, voti_file=None):
     """
     Computes consistency and sufficiency percentage (votes >= 6.0) for every player.
@@ -281,6 +343,9 @@ def compute_sufficiency_metrics(df_master, voti_file=None):
     import math
     if voti_file is None:
         voti_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "voti_reali.csv")
+        
+    target_g = int(df_master['Presenze'].max()) if ('Presenze' in df_master.columns and not df_master.empty) else 10
+    sync_missing_matchday_votes(voti_file, target_g)
         
     obs_map = {}
     gk_cs_map = {}
@@ -323,16 +388,20 @@ def compute_sufficiency_metrics(df_master, voti_file=None):
         z = (mv - 6.0) / 0.45
         bayesian_pct = 0.5 * (1.0 + math.erf(z / math.sqrt(2.0))) * 100.0
         
+        n_pres = int(r.get('Presenze', 0) or 0)
         if pname in obs_map:
             n, ge6 = obs_map[pname]
-            obs_pct = (ge6 / n) * 100.0
-            # Shrinkage blend with prior weight = 3 matches
+            if n_pres > n:
+                rate = ge6 / max(1, n)
+                extra = int(round((n_pres - n) * rate))
+                ge6 += extra
+                n = n_pres
+            obs_pct = (ge6 / max(1, n)) * 100.0
             pct_suff = round(((n / (n + 3.0)) * obs_pct) + ((3.0 / (n + 3.0)) * bayesian_pct), 1)
             voti_ge6_list.append(ge6)
             voti_tot_list.append(n)
         else:
             pct_suff = round(bayesian_pct, 1)
-            n_pres = int(r.get('Presenze', 0))
             ge6_est = int(round(n_pres * (pct_suff / 100.0)))
             voti_ge6_list.append(ge6_est)
             voti_tot_list.append(n_pres)
