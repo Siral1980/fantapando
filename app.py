@@ -1,3 +1,5 @@
+from engine.pitch_component import render_tactical_pitch
+import html
 import urllib.parse
 """
 FantaMantra AI - Applicazione di Gestione Rosa, Formazioni e Valutatore Scambi.
@@ -778,29 +780,7 @@ with tab_formazione:
                 })
             df_bench_display = pd.DataFrame(bench_rows)
 
-            # Handle click on tactical pitch chip via query params
-            if 'view' in st.query_params:
-                del st.query_params['view']
-
-            if 'giornata' in st.query_params:
-                try:
-                    st.session_state['selected_giornata'] = int(st.query_params['giornata'])
-                except Exception:
-                    pass
-                del st.query_params['giornata']
-
-            if 'pitch_player' in st.query_params:
-                clicked_pitch_player = st.query_params['pitch_player']
-                del st.query_params['pitch_player']
-                show_player_profile_dialog(
-                    clicked_pitch_player,
-                    df_master,
-                    calendar=calendar,
-                    matchday=selected_giornata,
-                    df_roster=df_my_roster
-                )
-
-            st.caption("💡 *Clicca su qualsiasi calciatore in campo o in panchina per aprire la sua Scheda Dettagliata.*")
+            st.caption("💡 *Clicca su qualsiasi calciatore in campo, sui pulsanti rapidi o in panchina per aprire il popup con la Scheda Dettagliata.*")
 
             # Official Mantra Experience 2026/2027 Coordinate Layouts (x% from left, y% from top)
             MANTRA_OFFICIAL_COORDS = {
@@ -1080,17 +1060,15 @@ with tab_formazione:
                     match_txt = f"{pl.get('Squadra', '')} {pl.get('Match', '')}"
 
                     p_name = pl['Giocatore']
-                    p_quoted = urllib.parse.quote(p_name)
-                    chip_url = f"?pitch_player={p_quoted}&view=pitch&giornata={selected_giornata}"
+                    p_escaped = html.escape(p_name, quote=True)
 
                     chip_html = (
-                        f"<a href='{chip_url}' target='_self' title='👆 Clicca per aprire la Scheda Dettagliata di {p_name}' "
-                        f"style='text-decoration: none; color: inherit; display: block; position: absolute; "
-                        f"left: {c['x']}%; top: {c['y']}%; transform: translate(-50%, -50%); "
-                        f"width: 104px; z-index: 10; cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease;'>"
-                        f"<div class='pitch-player-card' style='background: rgba(15,23,42,0.92); border: 1.5px solid {slot_c}; "
-                        f"border-radius: 7px; padding: 4px 6px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.65); "
-                        f"backdrop-filter: blur(4px); transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;'>"
+                        f"<div class='pitch-player-card pitch-player-card-abs' data-player='{p_escaped}' "
+                        f"title='👆 Clicca per aprire la Scheda Dettagliata di {p_name}' "
+                        f"style='position: absolute; left: {c['x']}%; top: {c['y']}%; transform: translate(-50%, -50%); "
+                        f"width: 104px; z-index: 10; cursor: pointer; background: rgba(15,23,42,0.92); "
+                        f"border: 1.5px solid {slot_c}; border-radius: 7px; padding: 4px 6px; text-align: center; "
+                        f"box-shadow: 0 4px 12px rgba(0,0,0,0.65); backdrop-filter: blur(4px);'>"
                         f"<div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;'>"
                         f"<span style='background: {slot_c}; color: #ffffff; padding: 1px 4px; border-radius: 3px; font-size: 0.65rem; font-weight: 800;'>{slot_label}</span>"
                         f"<span style='font-size: 0.65rem; color: {fdr_c}; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 62px;'>{match_txt}</span>"
@@ -1100,7 +1078,7 @@ with tab_formazione:
                         f"<div style='display: flex; justify-content: space-between; align-items: center; margin-top: 2px; font-size: 0.70rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 2px;'>"
                         f"<span style='color: #94a3b8;'>V {pred_v:.1f}</span>"
                         f"<span style='color: #38bdf8; font-weight: 800;'>xFV {xfv_val:.2f}</span>"
-                        f"</div></div></a>"
+                        f"</div></div>"
                     )
                     player_chips.append(chip_html)
 
@@ -1152,12 +1130,12 @@ with tab_formazione:
                     pred_v = float(pl.get('Pred_Voto', 6.0))
                     xfv_val = float(pl.get('xFV', 0.0))
                     fb_name = pl['Giocatore']
-                    fb_q = urllib.parse.quote(fb_name)
-                    fb_url = f"?pitch_player={fb_q}&view=pitch&giornata={selected_giornata}"
+                    fb_escaped = html.escape(fb_name, quote=True)
                     return (
-                        f"<a href='{fb_url}' target='_self' title='👆 Clicca per aprire la Scheda Dettagliata di {fb_name}' style='text-decoration: none; color: inherit;'>"
-                        f"<div class='pitch-player-card' style='background: rgba(15,23,42,0.92); border: 1.5px solid {slot_c}; border-radius: 8px; "
-                        f"padding: 6px 8px; width: 124px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.6); flex-shrink: 0; cursor: pointer; transition: transform 0.15s ease;'>"
+                        f"<div class='pitch-player-card pitch-player-card-flex' data-player='{fb_escaped}' "
+                        f"title='👆 Clicca per aprire la Scheda Dettagliata di {fb_name}' "
+                        f"style='background: rgba(15,23,42,0.92); border: 1.5px solid {slot_c}; border-radius: 8px; "
+                        f"padding: 6px 8px; width: 124px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.6); flex-shrink: 0; cursor: pointer;'>"
                         f"<div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;'>"
                         f"<span style='background: {slot_c}; color: #ffffff; padding: 1px 5px; border-radius: 4px; font-size: 0.68rem; font-weight: 800;'>{pl['Slot_Assegnato']}</span>"
                         f"<span style='font-size: 0.68rem; color: {fdr_c}; font-weight: 700;'>{pl.get('Squadra','')} {pl.get('Match','')}</span>"
@@ -1166,7 +1144,7 @@ with tab_formazione:
                         f"<div style='display: flex; justify-content: space-between; align-items: center; margin-top: 3px; font-size: 0.74rem;'>"
                         f"<span style='color: #94a3b8;'>Voto {pred_v:.1f}</span>"
                         f"<span style='color: #38bdf8; font-weight: 800;'>xFV {xfv_val:.2f}</span>"
-                        f"</div></div></a>"
+                        f"</div></div>"
                     )
                 def _render_fb_row(players):
                     if not players: return ""
@@ -1189,7 +1167,41 @@ with tab_formazione:
 
             # Strip all line indentation to guarantee CommonMark markdown never creates code blocks
             clean_pitch_html = "".join(line.strip() for line in pitch_raw.splitlines())
-            st.markdown(clean_pitch_html, unsafe_allow_html=True)
+
+            # Render the interactive pitch component (WebSocket, no URL change, no login prompt)
+            pitch_click_res = render_tactical_pitch(clean_pitch_html, key=f"tactical_pitch_{current_active_team}")
+            if pitch_click_res and isinstance(pitch_click_res, dict):
+                clicked_p = pitch_click_res.get('player')
+                ts = pitch_click_res.get('ts')
+                if clicked_p and ts != st.session_state.get('_last_pitch_click_ts'):
+                    st.session_state['_last_pitch_click_ts'] = ts
+                    show_player_profile_dialog(
+                        clicked_p,
+                        df_master,
+                        calendar=calendar,
+                        matchday=selected_giornata,
+                        df_roster=df_my_roster
+                    )
+
+            # Quick-access starter pills bar
+            starter_names = [p['Giocatore'] for p in titolari_list]
+            selected_starter_pill = st.pills(
+                "🔍 Scheda Rapida Titolari:",
+                options=starter_names,
+                key=f"pill_starter_{current_active_team}"
+            )
+            if selected_starter_pill:
+                if st.session_state.get('_last_pill_starter') != selected_starter_pill:
+                    st.session_state['_last_pill_starter'] = selected_starter_pill
+                    show_player_profile_dialog(
+                        selected_starter_pill,
+                        df_master,
+                        calendar=calendar,
+                        matchday=selected_giornata,
+                        df_roster=df_my_roster
+                    )
+            else:
+                st.session_state['_last_pill_starter'] = None
 
             st.markdown("**🟡 Panchina Consigliata (Ordine 1-12)**")
             bench_event = st.dataframe(
@@ -1216,13 +1228,17 @@ with tab_formazione:
                     r_idx = b_rows[0]
                     if r_idx < len(df_bench_display):
                         p_name = df_bench_display.iloc[r_idx]['Calciatore']
-                        show_player_profile_dialog(
-                            p_name,
-                            df_master,
-                            calendar=calendar,
-                            matchday=selected_giornata,
-                            df_roster=df_my_roster
-                        )
+                        if st.session_state.get('_last_bench_selected_player') != p_name:
+                            st.session_state['_last_bench_selected_player'] = p_name
+                            show_player_profile_dialog(
+                                p_name,
+                                df_master,
+                                calendar=calendar,
+                                matchday=selected_giornata,
+                                df_roster=df_my_roster
+                            )
+                else:
+                    st.session_state['_last_bench_selected_player'] = None
 
             # Ballottaggi Chiave Decisi dall'Algoritmo (Disponibile come expander pulito)
             if 'Panchina' in opt_res and opt_res['Panchina']:
