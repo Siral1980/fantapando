@@ -291,9 +291,9 @@ def predict_player_xfv(player_row, matchday=6, calendar=None, ratings_cache=None
     if is_dfactor_role:
         dfactor_val_add = round(np.clip((pred_voto - 6.0) * 0.40 * (pct_suff / 100.0), -0.20, 0.35), 2)
         if pct_suff >= 78.0:
-            dfactor_badge = f"🛡️ ANCORA DIFENSIVA ({pct_suff}% >=6)"
+            dfactor_badge = f"️ ANCORA DIFENSIVA ({pct_suff}% >=6)"
         elif pct_suff < 45.0:
-            dfactor_badge = f"⚠️ RISCHIO D-FACTOR ({pct_suff}% >=6)"
+            dfactor_badge = f"🟡 RISCHIO D-FACTOR ({pct_suff}% >=6)"
         else:
             dfactor_badge = f"Sufficienza: {pct_suff}%"
     else:

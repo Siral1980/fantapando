@@ -468,7 +468,7 @@ def create_or_update_user(
         "updated_at": now_str
     }
     save_users_db(db, trigger_git_sync=True)
-    return True, f"✅ Utente '{clean_u}' salvato in modo permanente (Locale + GitHub Cloud)!"
+    return True, f"Utente '{clean_u}' salvato in modo permanente (Locale + GitHub Cloud)!"
 
 
 def delete_user_account(username: str):
@@ -485,7 +485,7 @@ def delete_user_account(username: str):
     if clean_u not in deleted_list:
         deleted_list.append(clean_u)
     save_users_db(db, trigger_git_sync=True)
-    return True, f"🗑️ Utente '{clean_u}' eliminato definitivamente."
+    return True, f"️ Utente '{clean_u}' eliminato definitivamente."
 
 
 def grant_league_to_user(username: str, league_id: str):
@@ -506,7 +506,7 @@ def render_login_screen():
     st.markdown(
         """
         <div style="max-width: 460px; margin: 60px auto 20px auto; padding: 28px 32px; background: linear-gradient(145deg, #0f172a, #1e293b); border: 1.5px solid #00f0ff; border-radius: 14px; box-shadow: 0 0 25px rgba(0, 240, 255, 0.2);">
-            <div style="text-align: center; font-size: 2.2rem; margin-bottom: 4px;">⚽🔐</div>
+            <div style="text-align: center; font-size: 2.2rem; margin-bottom: 4px;"></div>
             <h2 style="text-align: center; color: #00f0ff; margin: 0 0 6px 0; font-weight: 800;">FantaManager AI</h2>
             <p style="text-align: center; color: #94a3b8; font-size: 0.9rem; margin-bottom: 16px;">
                 Inserisci le tue credenziali per accedere alle tue leghe Mantra & Classic.
@@ -519,9 +519,9 @@ def render_login_screen():
     col_l, col_c, col_r = st.columns([1.2, 1.6, 1.2])
     with col_c:
         with st.form("login_auth_form"):
-            in_user = st.text_input("👤 Username:", placeholder="es. admin o il tuo username")
-            in_pass = st.text_input("🔑 Password:", type="password", placeholder="••••••••")
-            submit_login = st.form_submit_button("🚀 Accedi all'App", type="primary", width='stretch')
+            in_user = st.text_input(" Username:", placeholder="es. admin o il tuo username")
+            in_pass = st.text_input(" Password:", type="password", placeholder="••••••••")
+            submit_login = st.form_submit_button(" Accedi all'App", type="primary", width='stretch')
 
             if submit_login:
                 ok, u_obj, msg = authenticate_user(in_user, in_pass)
@@ -539,11 +539,11 @@ def render_login_screen():
                     st.success(f"Benvenuto, {u_obj.get('display_name', u_obj['username'])}!")
                     st.rerun()
                 else:
-                    st.error(f"❌ {msg}")
+                    st.error(f"{msg}")
 
         if is_running_on_localhost():
             st.markdown("---")
-            if st.button("⚡ Accesso Rapido Localhost (Admin)", width='stretch'):
+            if st.button(" Accesso Rapido Localhost (Admin)", width='stretch'):
                 db = load_users_db()
                 admin_u = db.get('users', {}).get('admin', {})
                 st.session_state['auth_username'] = 'admin'

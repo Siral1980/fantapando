@@ -408,7 +408,7 @@ def optimize_best_mantra_lineup(df_projected_roster, allowed_formations=None):
                     'Slot_Scoperti': [],
                     'Somma_xFV_Titolari': alt['Somma_xFV_Titolari'],
                     'D_Factor': alt['D_Factor_Atteso'],
-                    'Tipo': '🛡️ Copertura Garantita (11 Valido)',
+                    'Tipo': '️ Copertura Garantita (11 Valido)',
                     'Dettaglio': f"{alt['Modulo']} garantisce una formazione valida anche in caso di assenze grazie alla panchina (scarto {delta:+.2f} pt)."
                 })
         elif len(uncovered) > 1:
@@ -424,7 +424,7 @@ def optimize_best_mantra_lineup(df_projected_roster, allowed_formations=None):
                         'Slot_Scoperti': alt.get('Slot_Scoperti', []),
                         'Somma_xFV_Titolari': alt['Somma_xFV_Titolari'],
                         'D_Factor': alt['D_Factor_Atteso'],
-                        'Tipo': '⚠️ Minor Rischio Inferiorità',
+                        'Tipo': '🟡 Minor Rischio Inferiorità',
                         'Dettaglio': f"{alt['Modulo']} riduce gli slot critici non sostituibili a {len(alt['Slot_Scoperti'])} ({', '.join(alt['Slot_Scoperti'])}), scarto {delta:+.2f} pt."
                     })
 
@@ -452,12 +452,12 @@ def optimize_best_mantra_lineup(df_projected_roster, allowed_formations=None):
             'xFV_Titolari': c['Somma_xFV_Titolari'],
             'D_Factor': c['D_Factor_Atteso'],
             'Stato_Copertura': (
-                '✅ Copertura 100% Diretta'
+                'Copertura 100% Diretta'
                 if len(c.get('Slot_Scoperti', [])) == 0 and len(c.get('Slot_Coperti_Cambio_Modulo', [])) == 0
                 else (
-                    f"🔄 Coperto con Cambio Modulo ({', '.join(x['Slot'] + '→' + x['Nuovo_Modulo'] for x in c.get('Slot_Coperti_Cambio_Modulo', []))})"
+                    f" Coperto con Cambio Modulo ({', '.join(x['Slot'] + '→' + x['Nuovo_Modulo'] for x in c.get('Slot_Coperti_Cambio_Modulo', []))})"
                     if len(c.get('Slot_Scoperti', [])) == 0
-                    else f"🚨 CRITICO ({len(c['Slot_Scoperti'])} non sostituibili: {', '.join(c['Slot_Scoperti'])})"
+                    else f" CRITICO ({len(c['Slot_Scoperti'])} non sostituibili: {', '.join(c['Slot_Scoperti'])})"
                 )
             ),
             'Delta_vs_Top': round(c['Punti_Attesi_Totali'] - best_formation_result['Punti_Attesi_Totali'], 2),
@@ -591,7 +591,7 @@ def order_bench_master_mode(titolari, df_bench_candidates, max_subs=5):
     # Posizione 1: 2° Portiere
     if not por_df.empty:
         p1 = por_df.iloc[0].to_dict()
-        p1['Fascia_Master'] = '🧤 2° PORTIERE'
+        p1['Fascia_Master'] = ' 2° PORTIERE'
         p1['Note_Tattiche'] = 'Subentra automaticamente solo se il Portiere titolare è S.V.'
         bench_final.append(p1)
 
@@ -609,14 +609,14 @@ def order_bench_master_mode(titolari, df_bench_candidates, max_subs=5):
     outfield_depth = outfield_df.iloc[5:5 + depth_slots]
     for _, row in outfield_depth.iterrows():
         p_copy = row.to_dict()
-        p_copy['Fascia_Master'] = '🪑 RINCALZO'
+        p_copy['Fascia_Master'] = '🟡 RINCALZO'
         p_copy['Note_Tattiche'] = 'Subentra se i primi 5 non configurano modulo valido o sono S.V.'
         bench_final.append(p_copy)
 
     # Posizione 12: 3° Portiere in coda (se presente)
     if has_third_por and len(bench_final) < 12:
         p3 = por_df.iloc[1].to_dict()
-        p3['Fascia_Master'] = '🧤 3° PORTIERE'
+        p3['Fascia_Master'] = ' 3° PORTIERE'
         p3['Note_Tattiche'] = 'Copertura di emergenza estrema per la porta.'
         bench_final.append(p3)
 
@@ -681,7 +681,7 @@ def simulate_master_substitutions(titolari, panchina, initial_formation, max_sub
                         'In_Roles': b.get('RuoloMantra', ''),
                         'In_Fascia': b.get('Fascia_Master', ''),
                         'Modulo_Nuovo': current_module,
-                        'Status': '✅ CAMBIO EFFETTUATO',
+                        'Status': 'CAMBIO EFFETTUATO',
                         'Dettaglio': f"Subentra il 2° portiere (Panchina #{b_idx+1}) mantenendo invariato il modulo {current_module}."
                     })
                     sub_found = True
@@ -695,7 +695,7 @@ def simulate_master_substitutions(titolari, panchina, initial_formation, max_sub
                     'In_Roles': '-',
                     'In_Fascia': '-',
                     'Modulo_Nuovo': current_module,
-                    'Status': '❌ PORTA SCOPERTA',
+                    'Status': 'PORTA SCOPERTA',
                     'Dettaglio': 'Nessun portiere di riserva disponibile a voto.'
                 })
 
@@ -711,7 +711,7 @@ def simulate_master_substitutions(titolari, panchina, initial_formation, max_sub
                 'In_Roles': '-',
                 'In_Fascia': '-',
                 'Modulo_Nuovo': current_module,
-                'Status': '⚠️ CAMBI ESAURITI',
+                'Status': '🟡 CAMBI ESAURITI',
                 'Dettaglio': f'Raggiunto il tetto massimo di {max_subs} sostituzioni consentite.'
             })
             continue
@@ -743,7 +743,7 @@ def simulate_master_substitutions(titolari, panchina, initial_formation, max_sub
                     'In_Roles': b.get('RuoloMantra', ''),
                     'In_Fascia': b.get('Fascia_Master', ''),
                     'Modulo_Nuovo': current_module,
-                    'Status': '✅ CAMBIO EFFETTUATO',
+                    'Status': 'CAMBIO EFFETTUATO',
                     'Dettaglio': f"Entra #{b_idx+1} {b['Giocatore']} ({b.get('RuoloMantra', '')}). {trans_msg}."
                 })
                 sub_found = True
@@ -758,13 +758,13 @@ def simulate_master_substitutions(titolari, panchina, initial_formation, max_sub
                 'In_Roles': '-',
                 'In_Fascia': '-',
                 'Modulo_Nuovo': f'{current_module} (Incompleto)',
-                'Status': '❌ SQUADRA IN 10',
+                'Status': 'SQUADRA IN 10',
                 'Dettaglio': 'Nessun giocatore disponibile in panchina è in grado di completare un modulo valido.'
             })
 
     return {
         'Sostituzioni': subs_made,
-        'Cambi_Effettuati': len([s for s in subs_made if s['Status'] == '✅ CAMBIO EFFETTUATO']),
+        'Cambi_Effettuati': len([s for s in subs_made if s['Status'] == 'CAMBIO EFFETTUATO']),
         'Modulo_Finale': current_module,
         'Rosa_In_Campo': current_field
     }
@@ -786,7 +786,7 @@ def audit_master_bench_coverage(titolari, panchina, initial_formation):
             'Titolare_Testato': f"{por_tits[0]['Giocatore']} ({por_tits[0]['Slot_Assegnato']})",
             'Giocatore_Subentrante': f"#{sub.get('In_Pos')} {sub.get('In')} ({sub.get('In_Roles')})",
             'Modulo_Risultante': sub.get('Modulo_Nuovo', initial_formation),
-            'Esito': '✅ Coperto' if '✅' in sub.get('Status', '') else '❌ Scoperto'
+            'Esito': 'Coperto' if '' in sub.get('Status', '') else 'Scoperto'
         })
         
     # 2. Difensore Centrale (Dc)
@@ -799,7 +799,7 @@ def audit_master_bench_coverage(titolari, panchina, initial_formation):
             'Titolare_Testato': f"{dc_tits[0]['Giocatore']} ({dc_tits[0]['Slot_Assegnato']})",
             'Giocatore_Subentrante': f"#{sub.get('In_Pos')} {sub.get('In')} ({sub.get('In_Roles')})",
             'Modulo_Risultante': sub.get('Modulo_Nuovo', initial_formation),
-            'Esito': '✅ Coperto' if '✅' in sub.get('Status', '') else '❌ Scoperto'
+            'Esito': 'Coperto' if '' in sub.get('Status', '') else 'Scoperto'
         })
         
     # 3. Terzino / Esterno (Dd/Ds/E)
@@ -812,7 +812,7 @@ def audit_master_bench_coverage(titolari, panchina, initial_formation):
             'Titolare_Testato': f"{wing_tits[0]['Giocatore']} ({wing_tits[0]['Slot_Assegnato']})",
             'Giocatore_Subentrante': f"#{sub.get('In_Pos')} {sub.get('In')} ({sub.get('In_Roles')})",
             'Modulo_Risultante': sub.get('Modulo_Nuovo', initial_formation),
-            'Esito': '✅ Coperto' if '✅' in sub.get('Status', '') else '❌ Scoperto'
+            'Esito': 'Coperto' if '' in sub.get('Status', '') else 'Scoperto'
         })
         
     # 4. Mediano / Mezzala (M/C)
@@ -825,7 +825,7 @@ def audit_master_bench_coverage(titolari, panchina, initial_formation):
             'Titolare_Testato': f"{mid_tits[0]['Giocatore']} ({mid_tits[0]['Slot_Assegnato']})",
             'Giocatore_Subentrante': f"#{sub.get('In_Pos')} {sub.get('In')} ({sub.get('In_Roles')})",
             'Modulo_Risultante': sub.get('Modulo_Nuovo', initial_formation),
-            'Esito': '✅ Coperto' if '✅' in sub.get('Status', '') else '❌ Scoperto'
+            'Esito': 'Coperto' if '' in sub.get('Status', '') else 'Scoperto'
         })
         
     # 5. Attaccante / Punta (Pc/A/W)
@@ -838,7 +838,7 @@ def audit_master_bench_coverage(titolari, panchina, initial_formation):
             'Titolare_Testato': f"{att_tits[0]['Giocatore']} ({att_tits[0]['Slot_Assegnato']})",
             'Giocatore_Subentrante': f"#{sub.get('In_Pos')} {sub.get('In')} ({sub.get('In_Roles')})",
             'Modulo_Risultante': sub.get('Modulo_Nuovo', initial_formation),
-            'Esito': '✅ Coperto' if '✅' in sub.get('Status', '') else '❌ Scoperto'
+            'Esito': 'Coperto' if '' in sub.get('Status', '') else 'Scoperto'
         })
         
     # 6. Doppia assenza contemporanea (Difensore + Centrocampista)
@@ -846,13 +846,13 @@ def audit_master_bench_coverage(titolari, panchina, initial_formation):
         sim2 = simulate_master_substitutions(titolari, panchina, initial_formation, simulated_missing_names=[dc_tits[0]['Giocatore'], mid_tits[0]['Giocatore']])
         subs2 = sim2['Sostituzioni']
         in_names = " + ".join([f"#{s.get('In_Pos')} {s.get('In')}" for s in subs2])
-        all_ok = all('✅' in s.get('Status', '') for s in subs2) and len(subs2) == 2
+        all_ok = all('' in s.get('Status', '') for s in subs2) and len(subs2) == 2
         tests.append({
             'Scenario': 'Doppia Assenza (Dc + M/C)',
             'Titolare_Testato': f"{dc_tits[0]['Giocatore']} + {mid_tits[0]['Giocatore']}",
             'Giocatore_Subentrante': in_names,
             'Modulo_Risultante': sim2.get('Modulo_Finale', initial_formation),
-            'Esito': '✅ Coperto' if all_ok else '❌ Scoperto'
+            'Esito': 'Coperto' if all_ok else 'Scoperto'
         })
         
     return pd.DataFrame(tests)
@@ -1172,7 +1172,7 @@ def optimize_best_classic_lineup(df_projected_roster, allowed_formations=None):
                 'Titolare_Testato': f"{role_tits[0]['Giocatore']} ({role_code})",
                 'Giocatore_Subentrante': f"#{sub.get('In_Pos')} {sub.get('In')} ({sub.get('In_Roles')})",
                 'Modulo_Risultante': sub.get('Modulo_Nuovo', best['Modulo']),
-                'Esito': '✅ Coperto' if ('✅' in sub.get('Status', '') or '🔄' in sub.get('Status', '')) else '❌ Scoperto'
+                'Esito': 'Coperto' if ('' in sub.get('Status', '') or '' in sub.get('Status', '')) else 'Scoperto'
             })
     best['Audit_Copertura'] = pd.DataFrame(audit_tests)
 
@@ -1182,7 +1182,7 @@ def optimize_best_classic_lineup(df_projected_roster, allowed_formations=None):
             'Modulo': c['Modulo'],
             'Punti_Totali': c['Punti_Attesi_Totali'],
             'Delta_vs_Top': round(c['Punti_Attesi_Totali'] - top_score, 2),
-            'Stato_Copertura': '✅ Copertura Blindata' if len(c.get('Slot_Scoperti', [])) == 0 else f"⚠️ Scoperti: {', '.join(c.get('Slot_Scoperti', []))}",
+            'Stato_Copertura': 'Copertura Blindata' if len(c.get('Slot_Scoperti', [])) == 0 else f"🟡 Scoperti: {', '.join(c.get('Slot_Scoperti', []))}",
             'xFV_Titolari': c['Somma_xFV_Titolari'],
             'D_Factor': c['D_Factor_Atteso'],
             'Punti_Robusti': c['Punti_Benchmark_Robusto'],
@@ -1219,7 +1219,7 @@ def order_bench_classic_mode(titolari, df_bench_candidates, max_subs=5):
 
     if not por_df.empty:
         p1 = por_df.iloc[0].to_dict()
-        p1['Fascia_Master'] = '🧤 2° PORTIERE'
+        p1['Fascia_Master'] = ' 2° PORTIERE'
         p1['Note_Tattiche'] = 'Subentra automaticamente solo se il Portiere titolare è S.V.'
         bench_final.append(p1)
 
@@ -1235,13 +1235,13 @@ def order_bench_classic_mode(titolari, df_bench_candidates, max_subs=5):
     outfield_depth = outfield_df.iloc[5:5 + depth_slots]
     for _, row in outfield_depth.iterrows():
         p_copy = row.to_dict()
-        p_copy['Fascia_Master'] = '🪑 RINCALZO'
+        p_copy['Fascia_Master'] = '🟡 RINCALZO'
         p_copy['Note_Tattiche'] = f"Subentro di profondità (Ruolo Classic: {p_copy.get('RuoloClassic')})."
         bench_final.append(p_copy)
 
     if has_third_por and len(bench_final) < 12:
         p3 = por_df.iloc[1].to_dict()
-        p3['Fascia_Master'] = '🧤 3° PORTIERE'
+        p3['Fascia_Master'] = ' 3° PORTIERE'
         p3['Note_Tattiche'] = 'Copertura di emergenza estrema per la porta.'
         bench_final.append(p3)
 
@@ -1319,7 +1319,7 @@ def simulate_classic_substitutions(titolari, panchina, initial_formation, max_su
                     'In_Roles': 'P',
                     'In_Fascia': b.get('Fascia_Master', ''),
                     'Modulo_Nuovo': current_mod,
-                    'Status': '✅ CAMBIO EFFETTUATO',
+                    'Status': 'CAMBIO EFFETTUATO',
                     'Dettaglio': f"Subentra il 2° portiere (Panchina #{b_idx+1}) mantenendo invariato il modulo {current_mod}."
                 })
                 sub_ok = True
@@ -1333,7 +1333,7 @@ def simulate_classic_substitutions(titolari, panchina, initial_formation, max_su
                 'In_Roles': '-',
                 'In_Fascia': '-',
                 'Modulo_Nuovo': current_mod,
-                'Status': '❌ PORTA SCOPERTA',
+                'Status': 'PORTA SCOPERTA',
                 'Dettaglio': 'Nessun portiere di riserva disponibile a voto.'
             })
 
@@ -1349,7 +1349,7 @@ def simulate_classic_substitutions(titolari, panchina, initial_formation, max_su
                 'In_Roles': '-',
                 'In_Fascia': '-',
                 'Modulo_Nuovo': current_mod,
-                'Status': '⚠️ CAMBI ESAURITI',
+                'Status': '🟡 CAMBI ESAURITI',
                 'Dettaglio': f'Raggiunto il tetto massimo di {max_subs} sostituzioni consentite.'
             })
             continue
@@ -1370,8 +1370,8 @@ def simulate_classic_substitutions(titolari, panchina, initial_formation, max_su
                     'In_Roles': target_rc,
                     'In_Fascia': b.get('Fascia_Master', ''),
                     'Modulo_Nuovo': current_mod,
-                    'Status': '✅ CAMBIO DIRETTO RUOLO',
-                    'Dettaglio': f"Sostituzione diretta ruolo su ruolo ({target_rc} ➔ {target_rc}). Modulo {current_mod} preservato."
+                    'Status': 'CAMBIO DIRETTO RUOLO',
+                    'Dettaglio': f"Sostituzione diretta ruolo su ruolo ({target_rc}  {target_rc}). Modulo {current_mod} preservato."
                 })
                 sub_ok = True
                 break
@@ -1394,7 +1394,7 @@ def simulate_classic_substitutions(titolari, panchina, initial_formation, max_su
                         'In_Roles': b.get('RuoloClassic', ''),
                         'In_Fascia': b.get('Fascia_Master', ''),
                         'Modulo_Nuovo': new_mod,
-                        'Status': '🔄 CAMBIO CON CAMBIO MODULO',
+                        'Status': ' CAMBIO CON CAMBIO MODULO',
                         'Dettaglio': f"Subentra {b.get('RuoloClassic')} ({b['Giocatore']}) adattando la disposizione tattica al modulo {new_mod}."
                     })
                     sub_ok = True
@@ -1409,7 +1409,7 @@ def simulate_classic_substitutions(titolari, panchina, initial_formation, max_su
                 'In_Roles': '-',
                 'In_Fascia': '-',
                 'Modulo_Nuovo': current_mod,
-                'Status': '❌ INFERIORITÀ NUMERICA',
+                'Status': 'INFERIORITÀ NUMERICA',
                 'Dettaglio': f"Nessun calciatore disponibile in panchina in grado di coprire il ruolo {target_rc} o configurare un modulo Classic valido."
             })
 

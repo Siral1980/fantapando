@@ -276,7 +276,7 @@ def get_roster_dataframe(df_master, player_names=None):
 
         loan_map, _ = build_loan_registry(league)
         df_squad['Stato_Prestito'] = [loan_map.get((my_team, g), {}).get('Stato_Prestito', 'Proprietà') for g in df_squad['Giocatore']]
-        df_squad['Badge_Prestito'] = [loan_map.get((my_team, g), {}).get('Badge_Prestito', '✅ PROPRIETÀ') for g in df_squad['Giocatore']]
+        df_squad['Badge_Prestito'] = [loan_map.get((my_team, g), {}).get('Badge_Prestito', 'PROPRIETÀ') for g in df_squad['Giocatore']]
         df_squad['Dettaglio_Prestito'] = [loan_map.get((my_team, g), {}).get('Dettaglio_Prestito', 'Cartellino di proprietà') for g in df_squad['Giocatore']]
         df_squad['Controparte_Prestito'] = [loan_map.get((my_team, g), {}).get('Controparte', '-') for g in df_squad['Giocatore']]
 
@@ -295,7 +295,7 @@ def get_roster_dataframe(df_master, player_names=None):
         df_squad['FuoriSerieA'] = False
         df_squad['NomeGrezzo'] = df_squad['Giocatore']
         df_squad['Stato_Prestito'] = 'Proprietà'
-        df_squad['Badge_Prestito'] = '✅ PROPRIETÀ'
+        df_squad['Badge_Prestito'] = 'PROPRIETÀ'
         df_squad['Dettaglio_Prestito'] = 'Cartellino di proprietà'
         df_squad['Controparte_Prestito'] = '-'
         df_squad['Schierabile'] = True
@@ -358,7 +358,7 @@ def get_roster_dataframe(df_master, player_names=None):
 
             if is_da_svinc:
                 st_val = 'Fuori Serie A'
-                badge_val = '🚫 DA SVINCOLARE (*)'
+                badge_val = '🔴 DA SVINCOLARE (*)'
                 desc_val = 'Fuori lista Serie A (*) — da svincolare al prossimo mercato'
                 is_ok = False
                 tit_cat = 'Non Schierabile'
@@ -366,7 +366,7 @@ def get_roster_dataframe(df_master, player_names=None):
                 prob_titolare_pct = 0
                 prob_lbl = '0%'
             elif is_prestito_out:
-                badge_val = '📤 PRESTITO OUT'
+                badge_val = '🔴 PRESTITO OUT'
                 if not desc_val:
                     desc_val = f"Ceduto in prestito a {row.get('Controparte_Prestito', 'altra squadra')}"
                 is_ok = False
@@ -375,14 +375,14 @@ def get_roster_dataframe(df_master, player_names=None):
                 prob_titolare_pct = 0
                 prob_lbl = '0%'
             elif st_val == 'Infortunato':
-                badge_val = '🚑 INFORTUNATO'
+                badge_val = '🔴 INFORTUNATO'
                 is_ok = False
                 tit_cat = 'Non Schierabile'
                 prob_pct = 0
                 prob_titolare_pct = 0
                 prob_lbl = '0%'
             elif st_val == 'Squalificato':
-                badge_val = '🟥 SQUALIFICATO'
+                badge_val = '🔴 SQUALIFICATO'
                 is_ok = False
                 tit_cat = 'Non Schierabile'
                 prob_pct = 0
@@ -415,12 +415,12 @@ def get_roster_dataframe(df_master, player_names=None):
                         prob_lbl = f"Tit. {prob_titolare_pct}%"
                     else:
                         prob_lbl = f"Sub. {prob_subentro_pct}%"
-                    base_badge = f"🪑 PROB. PANCHINARO ({prob_lbl})"
+                    base_badge = f"🟡 PROB. PANCHINARO ({prob_lbl})"
 
                 if st_val == 'In dubbio':
-                    badge_val = f"⚠️ IN DUBBIO · {base_badge}"
+                    badge_val = f"🟡 IN DUBBIO · {base_badge}"
                 elif st_val == 'Diffidato':
-                    badge_val = f"{base_badge} 🟨"
+                    badge_val = f"{base_badge} 🟡"
                 elif 'Disponibile (Forzato)' in st_val:
                     badge_val = f"🟢 FORZATO DISP. · {base_badge}"
                 else:
@@ -465,7 +465,7 @@ def get_roster_dataframe(df_master, player_names=None):
             'Fuori Serie A' if d else 'Disponibile' for d in df_squad.get('Da_Svincolare', False)
         ]
         df_squad['Badge_Disponibilita'] = [
-            '🚫 DA SVINCOLARE (*)' if d else '✅ DISPONIBILE' for d in df_squad.get('Da_Svincolare', False)
+            '🔴 DA SVINCOLARE (*)' if d else '🟢 DISPONIBILE' for d in df_squad.get('Da_Svincolare', False)
         ]
         df_squad['Dettaglio_Disponibilita'] = ''
         df_squad['Motivo_Indisponibilita'] = 'Disponibile'

@@ -171,8 +171,16 @@ def run_full_sync_pipeline(force_live_scrape: bool = True, source: str = "auto")
         print(f"[SyncManager] Step 2/2: Building master database with live stats and Understat...")
         df_master, _ = sync_and_build_database(force_live_scrape=force_live_scrape)
         
+        # Step 3: Synchronize all league rosters and user squads with master data
+        print("[SyncManager] Step 3/3: Synchronizing all league rosters and squads with master data...")
+        try:
+            from engine.league_manager import sync_all_league_rosters
+            sync_all_league_rosters(df_master)
+        except Exception as e_roster:
+            print(f"[SyncManager] Notice synchronizing rosters: {e_roster}")
+        
         count = len(df_master) if df_master is not None else 0
-        details = f"Sincronizzati {count} calciatori con statistiche ufficiali, metriche Understat e voti reali."
+        details = f"Sincronizzati {count} calciatori e tutte le rose di lega con statistiche ufficiali, metriche Understat e voti reali."
         save_sync_state(status="success", details=details, source=source)
         print(f"[SyncManager] Sync completed successfully! ({details})")
         return True, details

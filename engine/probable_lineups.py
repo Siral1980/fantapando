@@ -642,9 +642,9 @@ def build_consensus_probable_lineups():
                 missing_src = [s for s in active_sources if s not in sources_starting]
                 bal_str = f"Titolare su {', '.join(sources_starting)} (Panchina su {', '.join(missing_src)})"
             if pname in f_dubbio and f_dubbio[pname]:
-                bal_str = f"{bal_str} | ⚠️ {f_dubbio[pname]}" if bal_str else f"⚠️ In dubbio: {f_dubbio[pname]}"
+                bal_str = f"{bal_str} | 🟡️ {f_dubbio[pname]}" if bal_str else f"🟡️ In dubbio: {f_dubbio[pname]}"
             elif is_da_valutare and inf_desc:
-                bal_str = f"{bal_str} | ⚠️ {inf_desc}" if bal_str else f"⚠️ Da valutare: {inf_desc}"
+                bal_str = f"{bal_str} | 🟡️ {inf_desc}" if bal_str else f"🟡️ Da valutare: {inf_desc}"
 
             dettaglio_indisp = ""
             if pname in f_squal:

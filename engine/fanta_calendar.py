@@ -4,6 +4,7 @@ Computes dynamic difficulty ratings combining the live Serie A standings and 3-y
 """
 
 import os
+import re
 import json
 import datetime
 import pandas as pd
@@ -38,6 +39,52 @@ HISTORICAL_3YR_POWER = {
 }
 
 TEAMS = list(HISTORICAL_3YR_POWER.keys())
+
+SERIE_A_3LETTER = {
+    'atalanta': 'ATA', 'bologna': 'BOL', 'cagliari': 'CAG', 'como': 'COM',
+    'empoli': 'EMP', 'fiorentina': 'FIO', 'frosinone': 'FRO', 'genoa': 'GEN',
+    'verona': 'VER', 'hellas verona': 'VER', 'inter': 'INT', 'juventus': 'JUV',
+    'lazio': 'LAZ', 'lecce': 'LEC', 'milan': 'MIL', 'monza': 'MON',
+    'napoli': 'NAP', 'parma': 'PAR', 'roma': 'ROM', 'sassuolo': 'SAS',
+    'torino': 'TOR', 'udinese': 'UDI', 'venezia': 'VEN', 'salernitana': 'SAL',
+    'cremonese': 'CRE', 'spezia': 'SPE', 'sampdoria': 'SAM'
+}
+
+def get_team_3letter(team_name: str) -> str:
+    if not team_name:
+        return "---"
+    clean = re.sub(r'\s*\([CT]\)\s*', '', str(team_name)).strip().lower()
+    if clean in SERIE_A_3LETTER:
+        return SERIE_A_3LETTER[clean]
+    for k, v in SERIE_A_3LETTER.items():
+        if k in clean or clean in k:
+            return v
+    letters = re.sub(r'[^a-zA-Z]', '', clean)
+    return letters[:3].upper() if letters else "---"
+
+def format_match_3letter(pl_or_sq, opp_name=None, is_home=True) -> str:
+    """Formats fixture as 'NAP - JUV' using official 3-letter team codes."""
+    if isinstance(pl_or_sq, dict):
+        pl = pl_or_sq
+        sq = pl.get('Squadra', '')
+        m_raw = str(pl.get('Match', '') or '')
+        opp = pl.get('Avversario', '')
+        home_val = pl.get('IsHome')
+        if home_val is None:
+            home_val = '(T)' not in m_raw and 'TRASFERTA' not in str(pl.get('Location', '')).upper()
+        if not opp or opp == '-':
+            opp = re.sub(r'\s*\([CT]\)\s*', '', m_raw).strip()
+        s_code = get_team_3letter(sq)
+        opp_code = get_team_3letter(opp)
+        if not opp_code or opp_code == '---':
+            return s_code
+        return f"{s_code} - {opp_code}" if home_val else f"{opp_code} - {s_code}"
+
+    s_code = get_team_3letter(pl_or_sq)
+    opp_code = get_team_3letter(opp_name)
+    if not opp_code or opp_code == '---':
+        return s_code
+    return f"{s_code} - {opp_code}" if is_home else f"{opp_code} - {s_code}"
 
 _STANDINGS_CACHE = None
 _RATINGS_CACHE = {}

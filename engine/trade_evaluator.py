@@ -90,16 +90,16 @@ def _build_player_card(p_row, meta):
     badge_rientro = meta['badge_rientro']
 
     if st_val == 'Infortunato':
-        status_badge = f"🚑 {motivo_inj} ({badge_rientro})"
+        status_badge = f"🔴 {motivo_inj} ({badge_rientro})"
         status_color = "#ef4444"
     elif st_val == 'Squalificato':
-        status_badge = "🟥 Squalificato (1 turno)"
+        status_badge = "🔴 Squalificato (1 turno)"
         status_color = "#f97316"
     elif st_val == 'In dubbio':
-        status_badge = f"⚠️ {motivo_inj or 'In dubbio'}"
+        status_badge = f"🟡 {motivo_inj or 'In dubbio'}"
         status_color = "#eab308"
     else:
-        status_badge = "✅ Disponibile"
+        status_badge = "Disponibile"
         status_color = "#10b981"
 
     st_starter = meta['starter']
@@ -156,7 +156,7 @@ def _detect_trade_archetype(give_df, receive_df, p1_delta_tot, p1_delta_per_game
 
     if rec_missed > 0 and (p2_delta > 5.0 or p1_delta_per_game > 0.10):
         return (
-            "🎰 Scommessa High-Risk / High-Reward",
+            " Scommessa High-Risk / High-Reward",
             "Accetti un'assenza per infortunio o squalifica in cambio di un picco di bonus molto più elevato una volta che il calciatore sarà a regime.",
             [
                 "Accetta se: la tua rosa ha già alternative solide per coprire i prossimi turni di stop senza andare in emergenza.",
@@ -165,7 +165,7 @@ def _detect_trade_archetype(give_df, receive_df, p1_delta_tot, p1_delta_per_game
         )
     elif give_missed > 0 and rec_missed == 0:
         return (
-            "🚑 Azzeramento Emergenza Infermeria",
+            "🔴 Azzeramento Emergenza Infermeria",
             "Ti liberi di tempi di recupero pendenti acquisendo calciatori sani, arruolabili e pronti al voto da subito.",
             [
                 "Ideale se: hai urgenza immediata di punti e certezze di formazione senza attendere i report medici.",
@@ -174,7 +174,7 @@ def _detect_trade_archetype(give_df, receive_df, p1_delta_tot, p1_delta_per_game
         )
     elif num_give > num_rec and p4_delta > 8.0:
         return (
-            "👑 Upgrade Top di Reparto (Qualità vs Quantità)",
+            " Upgrade Top di Reparto (Qualità vs Quantità)",
             "Concentri il fanta-valore su un unico fuoriclasse di prima fascia, massimizzando lo slot titolare e liberando posti in rosa.",
             [
                 "Consigliato se: hai una panchina profonda e puoi sacrificare due titolari medi per un fuoriclasse decisivo.",
@@ -183,7 +183,7 @@ def _detect_trade_archetype(give_df, receive_df, p1_delta_tot, p1_delta_per_game
         )
     elif num_give < num_rec and p4_delta < -8.0:
         return (
-            "📦 Allargamento Rosa (Profondità vs Vertice)",
+            " Allargamento Rosa (Profondità vs Vertice)",
             "Sacrifichi una stella per acquisire due o più titolari affidabili e colmare lacune gravi in ruoli scoperti.",
             [
                 "Strategia corretta se: hai buchi cronici nella formazione che ti causano voti persi o riserve d'ufficio.",
@@ -192,7 +192,7 @@ def _detect_trade_archetype(give_df, receive_df, p1_delta_tot, p1_delta_per_game
         )
     elif rec_delta_xg < -0.35:
         return (
-            "🎯 Opportunità Buy-Low (Valore Inespresso)",
+            " Opportunità Buy-Low (Valore Inespresso)",
             "Sfrutti la sfortuna realizzativa recente della controparte: prendi calciatori che producono tanti tiri e xG, destinati a sbloccarsi.",
             [
                 "Consigliatissimo: la legge dei grandi numeri premia chi calcia tanto in porta con regolarità.",
@@ -201,7 +201,7 @@ def _detect_trade_archetype(give_df, receive_df, p1_delta_tot, p1_delta_per_game
         )
     elif give_delta_xg > 0.40:
         return (
-            "💰 Operazione Sell-High (Cessione al Picco)",
+            " Operazione Sell-High (Cessione al Picco)",
             "Monetizzi al massimo valore un calciatore che ha overperformato rispetto alla qualità dei suoi tiri, prima della fisiologica normalizzazione.",
             [
                 "Mossa astuta: scambi un momento di grazia straordinario per valore strutturale duraturo.",
@@ -210,7 +210,7 @@ def _detect_trade_archetype(give_df, receive_df, p1_delta_tot, p1_delta_per_game
         )
     elif p3_delta >= 10.0:
         return (
-            "🛡️ Consolidamento & Affidabilità (Safety First)",
+            "️ Consolidamento & Affidabilità (Safety First)",
             "Sacrifichi la discontinuità o scommesse sporadiche per comprare certezze assolute di voto, minutaggio pieno e sufficienze costanti.",
             [
                 "Ideale se: giochi con il Modificatore Difesa / D-Factor Mantra o se punti su un'ossatura granitica.",
@@ -219,7 +219,7 @@ def _detect_trade_archetype(give_df, receive_df, p1_delta_tot, p1_delta_per_game
         )
     elif p2_delta >= 10.0:
         return (
-            "📈 Operazione sul Momentum (Cavalchi la Forma)",
+            " Operazione sul Momentum (Cavalchi la Forma)",
             "Punti sulla forma smagliante e sulla fiducia del momento, cedendo calciatori in fase calante o involuzione tattica.",
             [
                 "Vantaggioso nel breve-medio termine per sfruttare il trend positivo delle prossime gare.",
@@ -228,7 +228,7 @@ def _detect_trade_archetype(give_df, receive_df, p1_delta_tot, p1_delta_per_game
         )
     else:
         return (
-            "⚖️ Baratto Tattico Ruolo-su-Ruolo",
+            "🟡️ Baratto Tattico Ruolo-su-Ruolo",
             "Scambio simmetrico tra calciatori di pari caratura: non altera gli equilibri complessivi e risponde a scelte tattiche individuali.",
             [
                 "Criterio di scelta: analizza i matchup e il calendario FDR delle prossime 5 giornate.",
@@ -337,16 +337,16 @@ def evaluate_trade(
             if meta['st_val'] == 'Infortunato':
                 if meta['target_g'] is not None and g < meta['target_g']:
                     is_out = True
-                    out_reason = f"🚑 Out ({meta['motivo_inj']})"
+                    out_reason = f"🔴 Out ({meta['motivo_inj']})"
                     give_missed_games += 1
                 elif meta['target_g'] is None and g <= start_matchday + 2:
                     is_out = True
-                    out_reason = f"🚑 Out ({meta['motivo_inj']})"
+                    out_reason = f"🔴 Out ({meta['motivo_inj']})"
                     give_missed_games += 1
             elif meta['st_val'] == 'Squalificato':
                 if g == start_matchday:
                     is_out = True
-                    out_reason = "🟥 Squalificato"
+                    out_reason = "🔴 Squalificato"
                     give_missed_games += 1
 
             if is_out:
@@ -379,16 +379,16 @@ def evaluate_trade(
             if meta['st_val'] == 'Infortunato':
                 if meta['target_g'] is not None and g < meta['target_g']:
                     is_out = True
-                    out_reason = f"🚑 Out ({meta['motivo_inj']})"
+                    out_reason = f"🔴 Out ({meta['motivo_inj']})"
                     rec_missed_games += 1
                 elif meta['target_g'] is None and g <= start_matchday + 2:
                     is_out = True
-                    out_reason = f"🚑 Out ({meta['motivo_inj']})"
+                    out_reason = f"🔴 Out ({meta['motivo_inj']})"
                     rec_missed_games += 1
             elif meta['st_val'] == 'Squalificato':
                 if g == start_matchday:
                     is_out = True
-                    out_reason = "🟥 Squalificato"
+                    out_reason = "🔴 Squalificato"
                     rec_missed_games += 1
 
             if is_out:
@@ -580,7 +580,7 @@ def evaluate_trade(
     # 9-Tier Nuanced Verdict Spectrum
     if composite_score >= 28.0:
         verdict = "GRANDE AFFARE (Fortemente Consigliato)"
-        verdict_badge = "💎 GRANDE AFFARE"
+        verdict_badge = " GRANDE AFFARE"
         status_color = "emerald"
         tier_level = 1
         tier_desc = "Guadagno netto e indiscutibile: rinforzo di altissimo profilo sotto ogni aspetto."
@@ -628,7 +628,7 @@ def evaluate_trade(
         tier_desc = "Operazione che indebolisce lo slot titolare: stai sacrificando un elemento solido per alternative inferiori."
     else:
         verdict = "PESSIMO AFFARE (Scambio da Evitare)"
-        verdict_badge = "⛔ DA EVITARE"
+        verdict_badge = "🔴 DA EVITARE"
         status_color = "red"
         tier_level = 9
         tier_desc = "Cessione fortemente a perdere: svendita ingiustificata del patrimonio di rosa."
@@ -673,11 +673,11 @@ def evaluate_trade(
 
     # Injury notes
     if rec_missed_games > 0:
-        note_cliniche.append(f"⚠️ Attenzione infermeria: i calciatori ricevuti salteranno circa **{rec_missed_games} presenze totali** per infortunio/squalifica prima del rientro.")
+        note_cliniche.append(f"🟡 Attenzione infermeria: i calciatori ricevuti salteranno circa **{rec_missed_games} presenze totali** per infortunio/squalifica prima del rientro.")
     if give_missed_games > 0:
-        note_cliniche.append(f"💡 Cedi giocatori attualmente indisponibili (**{give_missed_games} partite saltate**): ti liberi di tempi di recupero pendenti.")
+        note_cliniche.append(f"Cedi giocatori attualmente indisponibili (**{give_missed_games} partite saltate**): ti liberi di tempi di recupero pendenti.")
     if rec_missed_games == 0 and give_missed_games == 0:
-        note_cliniche.append("✅ Situazione medica ottimale: tutti i calciatori coinvolti sono sani e arruolabili subito.")
+        note_cliniche.append("Situazione medica ottimale: tutti i calciatori coinvolti sono sani e arruolabili subito.")
 
     # Pillar-based reasons
     if p1_winner == 'RICEVI':
@@ -748,7 +748,7 @@ def evaluate_trade(
     suff_give = round(_weighted_metric(df_give_dfactor, df_give_w, 'Pct_Sufficienza', 60.0), 1)
     suff_receive = round(_weighted_metric(df_recv_dfactor, df_recv_w, 'Pct_Sufficienza', 60.0), 1)
 
-    reasons = vantaggi + [f"⚠️ {r}" for r in rischi] + note_cliniche
+    reasons = vantaggi + [f"🟡 {r}" for r in rischi] + note_cliniche
 
     return {
         'Verdetto': verdict,

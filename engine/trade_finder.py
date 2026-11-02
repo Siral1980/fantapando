@@ -214,8 +214,8 @@ def compute_real_starter_status(row, tot_matchdays=None):
         if burst_rate >= 0.35 and not 'Por' in roles_str:
             return {
                 'Status': 'SUPER_SUB',
-                'Badge': '⚡ JOLLY / SUPER-SUB',
-                'Label': f'⚡ Super-Sub ({int(m_per_app)} min/p, {xg_90:.2f} xG/90)',
+                'Badge': ' JOLLY / SUPER-SUB',
+                'Label': f' Super-Sub ({int(m_per_app)} min/p, {xg_90:.2f} xG/90)',
                 'Min_Per_Pres': round(m_per_app, 1),
                 'Pct_Minuti': round(pct_mins, 1),
                 'Tier_Weight': 0.55,
@@ -1831,7 +1831,7 @@ def find_win_win_trades(
                     is_stash = opp_inj.get('Is_Injured', False) and not opp_inj.get('Is_Long_Term', False)
                     if is_stash:
                         score += 20.0
-                        reasons.append(f"🩹 Opportunità Stash: {opp_p_name} è momentaneamente infortunato lieve ({opp_inj.get('Dettaglio', 'rientro a breve')}), prendibile a prezzo di saldo")
+                        reasons.append(f" Opportunità Stash: {opp_p_name} è momentaneamente infortunato lieve ({opp_inj.get('Dettaglio', 'rientro a breve')}), prendibile a prezzo di saldo")
 
                     opp_dept_name = _get_department_name(opp_p_roles)
                     short_str = "/".join(list(my_give_roles))
@@ -1848,7 +1848,7 @@ def find_win_win_trades(
                         'Score': round(score, 1),
                         'Squadra_Avversaria': opp_team,
                         'Tipo_Scambio': '1x1',
-                        'Label_Tipo': '⚖️ Scambio Diretto (1x1)',
+                        'Label_Tipo': '🟡️ Scambio Diretto (1x1)',
                         'Is_Stash_Injury': is_stash,
                         'Tu_Cedi_List': [give_fmt],
                         'Tu_Ricevi_List': [rec_fmt],
@@ -1960,7 +1960,7 @@ def find_win_win_trades(
 
                             score += 25.0
                             reasons.append(
-                                f"🔄 Combo Vasi Comunicanti: scambi un titolare/top esubero coperto ({g1_name}) più una riserva ({g2_name}) "
+                                f" Combo Vasi Comunicanti: scambi un titolare/top esubero coperto ({g1_name}) più una riserva ({g2_name}) "
                                 f"per acquisire il titolare desiderato ({t1_name}) senza sguarnire la rosa, liberando spazio per le riserve già in rosa."
                             )
 
@@ -1988,7 +1988,7 @@ def find_win_win_trades(
                                 'Score': round(score, 1),
                                 'Squadra_Avversaria': opp_team,
                                 'Tipo_Scambio': '2x2',
-                                'Label_Tipo': '🔄 Combo Titolare + Riserva (2x2)',
+                                'Label_Tipo': ' Combo Titolare + Riserva (2x2)',
                                 'Is_Stash_Injury': t1_fmt['Is_Stash_Injury'] or t2_fmt['Is_Stash_Injury'],
                                 'Tu_Cedi_List': give_list,
                                 'Tu_Ricevi_List': rec_list,
@@ -2056,8 +2056,8 @@ def find_win_win_trades(
                     score += 35.0
                     reasons.append(f"Risolve molteplici falle di {opp_team}: offri due giocatori complementari che coprono {', '.join(solved_w)}")
                     score += 30.0
-                    reasons.append(f"🚀 Upgrade di Reparto: inserisci un top asset ({t1_name}) aumentando il picco qualitativo dei tuoi titolari")
-                    reasons.append(f"📈 Libera uno slot a voto, consentendo alle tue riserve di reparto di scalare titolari.")
+                    reasons.append(f" Upgrade di Reparto: inserisci un top asset ({t1_name}) aumentando il picco qualitativo dei tuoi titolari")
+                    reasons.append(f" Libera uno slot a voto, consentendo alle tue riserve di reparto di scalare titolari.")
 
                     pitch = (
                         f"Ciao! Visto che a {opp_team} farebbe comodo rinforzare contemporaneamente più reparti scoperti, vi andrebbe di valutare un'offerta 2 per 1? "
@@ -2082,7 +2082,7 @@ def find_win_win_trades(
                         'Score': round(score, 1),
                         'Squadra_Avversaria': opp_team,
                         'Tipo_Scambio': '2x1',
-                        'Label_Tipo': '🚀 Upgrade Reparto (2x1)',
+                        'Label_Tipo': ' Upgrade Reparto (2x1)',
                         'Is_Stash_Injury': t1_fmt['Is_Stash_Injury'],
                         'Tu_Cedi_List': give_list,
                         'Tu_Ricevi_List': rec_list,
@@ -2161,7 +2161,7 @@ def find_win_win_trades(
                         'Score': round(score, 1),
                         'Squadra_Avversaria': opp_team,
                         'Tipo_Scambio': '1x2',
-                        'Label_Tipo': '📐 Ristrutturazione Modulo (1x2)',
+                        'Label_Tipo': ' Ristrutturazione Modulo (1x2)',
                         'Is_Stash_Injury': t1_fmt['Is_Stash_Injury'] or t2_fmt['Is_Stash_Injury'],
                         'Tu_Cedi_List': give_list,
                         'Tu_Ricevi_List': rec_list,
@@ -2308,10 +2308,10 @@ def simulate_opponent_post_trade(
     if target_has_por:
         if len(opp_pors_after) < 2 or len(opp_starters_after) == 0:
             is_goal_uncovered = True
-            critical_flaws.append("🚨 Porta scoperta: l'avversario resterebbe con meno di 2 portieri o senza un titolare a voto.")
+            critical_flaws.append(" Porta scoperta: l'avversario resterebbe con meno di 2 portieri o senza un titolare a voto.")
         elif give_has_por:
             por_names = [p['Giocatore'] for p in give_pkg if _has_role(p, 'Por')]
-            reassurances.append(f"🛡️ Porta salvaguardata al 100%: riceve {', '.join(por_names)} come titolare affidabile.")
+            reassurances.append(f"️ Porta salvaguardata al 100%: riceve {', '.join(por_names)} come titolare affidabile.")
 
     # 2. Outfield core depth checks (Dc, M, Pc)
     role_checks = [('Dc', 3, 'Difensori Centrali' if not is_classic else 'Difensori'),
@@ -2331,7 +2331,7 @@ def simulate_opponent_post_trade(
                 active_c = sum(1 for p in opp_new_list if _has_role(p, 'C') and is_active_squad_player(p, tot_matchdays=None))
                 if active_c >= 4:
                     continue
-            critical_flaws.append(f"⚠️ Carenza creata in {label} ({r}): scende a {c_after} giocatori attivi.")
+            critical_flaws.append(f"🟡 Carenza creata in {label} ({r}): scende a {c_after} giocatori attivi.")
 
     # 3. Simulate opponent lineup
     opt_opp_new = optimize_best_lineup(pd.DataFrame(opp_new_list), allowed_formations=allowed_formations, mode=league_type)
@@ -2360,12 +2360,12 @@ def simulate_opponent_post_trade(
     # Positive tactical reassurances
     if promoted_internal_reserves:
         reassurances.append(
-            f"🔄 Spazio titolare sbloccato per le riserve: la cessione promuove negli 11 {', '.join(promoted_internal_reserves)}, "
+            f" Spazio titolare sbloccato per le riserve: la cessione promuove negli 11 {', '.join(promoted_internal_reserves)}, "
             f"precedentemente chiuso in panchina ma con fanta-valore comparabile."
         )
     if is_module_changed and delta_opp_pts >= -0.50:
         reassurances.append(
-            f"📐 Cambio modulo proficuo: consente a {opp_team_name} di passare dal {curr_mod} al {new_mod}, "
+            f" Cambio modulo proficuo: consente a {opp_team_name} di passare dal {curr_mod} al {new_mod}, "
             f"ottimizzando la resa complessiva della rosa."
         )
 
@@ -2380,13 +2380,13 @@ def simulate_opponent_post_trade(
         if not promoted_internal_reserves and delta_opp_pts < -0.35:
             has_starter_deficit_flaw = True
             critical_flaws.append(
-                f"⚠️ Perdita netta di titolari: cede {len(opp_starters_giving)} titolari ({', '.join(opp_starters_giving)}) "
+                f"🟡 Perdita netta di titolari: cede {len(opp_starters_giving)} titolari ({', '.join(opp_starters_giving)}) "
                 f"senza avere riserve interne pronte a subentrare negli 11 ({delta_opp_pts:+.2f} pt)."
             )
         elif delta_opp_pts < -0.90:
             has_starter_deficit_flaw = True
             critical_flaws.append(
-                f"⚠️ Peggioramento eccessivo della formazione: la perdita dei titolari non è compensata "
+                f"🟡 Peggioramento eccessivo della formazione: la perdita dei titolari non è compensata "
                 f"dalle riserve interne ({delta_opp_pts:+.2f} pt attesi)."
             )
 
@@ -2684,16 +2684,16 @@ def find_trades_for_target_players(
         # Format label
         fmt_label = f"{give_n}x{num_targets}"
         if give_n == 1 and num_targets == 1:
-            tipo_pacchetto = "🎯 Scambio Diretto (1x1)"
+            tipo_pacchetto = " Scambio Diretto (1x1)"
             badge_tipo = "1x1 DIRETTO"
         elif give_n > num_targets:
-            tipo_pacchetto = f"🚀 Upgrade Reparto ({fmt_label})"
+            tipo_pacchetto = f" Upgrade Reparto ({fmt_label})"
             badge_tipo = f"{fmt_label} UPGRADE"
         elif give_n < num_targets:
-            tipo_pacchetto = f"📦 Ristrutturazione / Espansione ({fmt_label})"
+            tipo_pacchetto = f" Ristrutturazione / Espansione ({fmt_label})"
             badge_tipo = f"{fmt_label} RISTRUTTURAZIONE"
         else:
-            tipo_pacchetto = f"🔄 Scambio Bilanciato ({fmt_label})"
+            tipo_pacchetto = f" Scambio Bilanciato ({fmt_label})"
             badge_tipo = f"{fmt_label} BILANCIATO"
 
         # Pre-score without tier discrimination: based on mutual need, fairness, and overall quality
@@ -2893,7 +2893,7 @@ def find_trades_for_target_players(
             'Delta_Punti_Titolari': delta_lineup_pts,
             'Modulo_Titolare_Nuovo': opt_my_new.get('Modulo', my_curr_modulo),
             'Punti_Titolari_Nuovi': new_lineup_pts,
-            'Copertura_Nuova': '✅ Copertura 100%' if not opt_my_new.get('Ha_Problemi_Copertura', False) else f"⚠️ Rischio ({len(opt_my_new.get('Slot_Scoperti', []))} scoperti)",
+            'Copertura_Nuova': 'Copertura 100%' if not opt_my_new.get('Ha_Problemi_Copertura', False) else f"🟡 Rischio ({len(opt_my_new.get('Slot_Scoperti', []))} scoperti)",
             'Carenze_Risolte': solved_bottlenecks,
             'Leva_di_Trattativa': leva,
             'Messaggio_Trattativa': pitch_msg,

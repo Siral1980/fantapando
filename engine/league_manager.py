@@ -1071,6 +1071,130 @@ def load_league_rosters(league_id=None):
     return {}
 
 
+def sync_all_league_rosters(df_master=None):
+    """
+    Synchronizes all league rosters with the latest df_master data:
+    1. If a saved league source file (lista_calciatori_mantra_lega_attuale.xlsx) is available, re-parses it.
+    2. Updates every player across all teams in league_rosters.json (for all leagues) with the latest
+       stats, presenze, MV, FM, goals, assists, Understat metrics, and sufficiency from df_master.
+    3. Re-synchronizes user_roster.json for the active team.
+    """
+    import pandas as pd
+    if df_master is None:
+        master_csv = os.path.join(DATA_DIR, "players_master.csv")
+        if os.path.exists(master_csv):
+            df_master = pd.read_csv(master_csv)
+        else:
+            return False, "players_master.csv non trovato"
+
+    if df_master.empty:
+        return False, "df_master vuoto"
+
+    # Build fast lookup maps from df_master
+    master_by_cod = {}
+    master_by_name = {}
+    for _, row in df_master.iterrows():
+        r_dict = row.to_dict()
+        cod = r_dict.get('Cod')
+        if cod and pd.notna(cod):
+            try:
+                master_by_cod[int(cod)] = r_dict
+            except Exception:
+                pass
+        p_name = str(r_dict.get('Giocatore', '')).strip().lower()
+        if p_name:
+            master_by_name[p_name] = r_dict
+
+    # Check if lista_calciatori_mantra_lega_attuale.xlsx exists to re-parse officially
+    lega_xlsx = os.path.join(DATA_DIR, "lista_calciatori_mantra_lega_attuale.xlsx")
+    if os.path.exists(lega_xlsx):
+        try:
+            parsed_from_xlsx = parse_official_league_excel(lega_xlsx, df_master)
+            if parsed_from_xlsx and len(parsed_from_xlsx) >= 2:
+                save_league_rosters(parsed_from_xlsx)
+                print(f"[LeagueManager] Re-parsed {len(parsed_from_xlsx)} teams from {lega_xlsx}")
+        except Exception as e:
+            print(f"[LeagueManager] Notice re-parsing {lega_xlsx}: {e}")
+
+    # Update all league_rosters.json files on disk
+    target_files = [ROOT_LEAGUE_FILE]
+    leagues_dir = os.path.join(DATA_DIR, "leagues")
+    if os.path.exists(leagues_dir):
+        for root, _, files in os.walk(leagues_dir):
+            for f in files:
+                if f == "league_rosters.json":
+                    p = os.path.join(root, f)
+                    if p not in target_files:
+                        target_files.append(p)
+
+    updated_count = 0
+    for l_path in target_files:
+        if not os.path.exists(l_path):
+            continue
+        try:
+            with open(l_path, 'r', encoding='utf-8') as f:
+                l_data = json.load(f)
+            if not isinstance(l_data, dict):
+                continue
+
+            for t_name, player_list in l_data.items():
+                for p in player_list:
+                    match_row = None
+                    p_cod = p.get('Cod')
+                    if p_cod:
+                        try:
+                            match_row = master_by_cod.get(int(p_cod))
+                        except Exception:
+                            pass
+                    if not match_row:
+                        p_n = str(p.get('Giocatore', '')).strip().lower()
+                        match_row = master_by_name.get(p_n)
+
+                    if match_row:
+                        p['Presenze'] = int(match_row.get('Presenze', 0))
+                        p['MV_Stagione'] = float(match_row.get('MV_Stagione', 0.0))
+                        p['FM_Stagione'] = float(match_row.get('FM_Stagione', 0.0))
+                        p['GF'] = int(match_row.get('GF', 0))
+                        p['GS'] = int(match_row.get('GS', 0))
+                        p['ASS'] = int(match_row.get('ASS', 0))
+                        p['AMM'] = int(match_row.get('AMM', 0))
+                        p['ESP'] = int(match_row.get('ESP', 0))
+                        p['RuoloClassic'] = str(match_row.get('RuoloClassic', p.get('RuoloClassic', 'C')))
+                        p['RuoloMantra'] = str(match_row.get('RuoloMantra', p.get('RuoloMantra', 'C')))
+                        p['Squadra'] = str(match_row.get('Squadra', p.get('Squadra', '')))
+                        if 'Pct_Sufficienza' in match_row:
+                            p['Pct_Sufficienza'] = float(match_row['Pct_Sufficienza'])
+                        if 'Pct_Parate' in match_row:
+                            p['Pct_Parate'] = float(match_row['Pct_Parate'])
+                        if 'xG_Tot' in match_row:
+                            p['xG_Tot'] = float(match_row['xG_Tot'])
+                        if 'xA_Tot' in match_row:
+                            p['xA_Tot'] = float(match_row['xA_Tot'])
+                        if 'xFV' in match_row:
+                            p['xFV'] = float(match_row['xFV'])
+                        if 'Goals_Prevented' in match_row:
+                            p['Goals_Prevented'] = float(match_row['Goals_Prevented'])
+                        if 'Errors_Leading_To_Goal' in match_row:
+                            p['Errors_Leading_To_Goal'] = int(match_row['Errors_Leading_To_Goal'])
+
+            with open(l_path, 'w', encoding='utf-8') as f:
+                json.dump(l_data, f, indent=2, ensure_ascii=False)
+            updated_count += 1
+        except Exception as e:
+            print(f"[LeagueManager] Error updating {l_path}: {e}")
+
+    # Re-sync active team into user_roster.json
+    try:
+        active_t = get_active_my_team()
+        active_l = load_league_rosters()
+        if active_t in active_l:
+            sync_user_roster_from_league(active_l, active_t)
+    except Exception as e:
+        print(f"[LeagueManager] Error syncing active user roster: {e}")
+
+    return True, f"Rose aggiornate con successo ({updated_count} file sincronizzati)"
+
+
 def get_active_my_team(league_id=None):
     """
     Returns the user's selected team for their specific session and active league.
@@ -1377,7 +1501,7 @@ def build_loan_registry(league_data=None):
                 # Mapping for borrower
                 loan_map[(borrower_team, name)] = {
                     'Stato_Prestito': 'Prestito IN',
-                    'Badge_Prestito': f"📥 IN PRESTITO (da {owner_team})",
+                    'Badge_Prestito': f"🟢 IN PRESTITO (da {owner_team})",
                     'Dettaglio_Prestito': f"In prestito temporaneo da {owner_team} (costo d'asta originale: {owner_entry['cost']} cr.)",
                     'Controparte': owner_team,
                     'Schierabile': True,
@@ -1387,7 +1511,7 @@ def build_loan_registry(league_data=None):
                 # Mapping for owner
                 loan_map[(owner_team, name)] = {
                     'Stato_Prestito': 'Prestito OUT',
-                    'Badge_Prestito': f"📤 PRESTITO CEDUTO (a {borrower_team})",
+                    'Badge_Prestito': f"🔴 PRESTITO CEDUTO (a {borrower_team})",
                     'Dettaglio_Prestito': f"Cartellino di proprietà prestato gratuitamente a {borrower_team}",
                     'Controparte': borrower_team,
                     'Schierabile': False,
@@ -1423,7 +1547,7 @@ def get_out_of_serie_a_summary(league_data=None):
                     'Squadra_Lega': team,
                     'Ruolo': p.get('RuoloMantra', 'N/D'),
                     'Costo_Asta': p.get('Costo', 0),
-                    'Stato': '🚫 Fuori Serie A (*)',
+                    'Stato': '🔴 Fuori Serie A (*)',
                     'Consiglio': 'Svincolare al prossimo mercato per recuperare crediti'
                 })
 
@@ -1495,16 +1619,16 @@ def get_team_roster_df(team_name, league_data_or_master=None, df_master=None):
             schierabile = not is_out
 
         disp_status = 'Disponibile'
-        badge_disp = '✅ DISPONIBILE'
+        badge_disp = '🟢 DISPONIBILE'
         det_disp = ''
         tit_cat = 'Probabile Titolare'
         if is_out:
             disp_status = 'Fuori Serie A'
-            badge_disp = '🚫 DA SVINCOLARE (*)'
+            badge_disp = '🔴 DA SVINCOLARE (*)'
             det_disp = 'Fuori dalla Serie A (*) — da svincolare al prossimo mercato'
             tit_cat = 'Non Schierabile'
         elif not schierabile:
-            badge_disp = '📤 PRESTITO OUT'
+            badge_disp = '🔴 PRESTITO OUT'
             tit_cat = 'Non Schierabile'
         else:
             try:
@@ -1518,13 +1642,13 @@ def get_team_roster_df(team_name, league_data_or_master=None, df_master=None):
                         st_v = 'Squalificato'
                 if st_v == 'Infortunato':
                     disp_status = 'Infortunato'
-                    badge_disp = '🚑 INFORTUNATO'
+                    badge_disp = '🔴 INFORTUNATO'
                     det_disp = st_i.get('Dettaglio') or (pr_i.get('Dettaglio_Indisponibile', '') if pr_i else '')
                     schierabile = False
                     tit_cat = 'Non Schierabile'
                 elif st_v == 'Squalificato':
                     disp_status = 'Squalificato'
-                    badge_disp = '🟥 SQUALIFICATO'
+                    badge_disp = '🔴 SQUALIFICATO'
                     det_disp = st_i.get('Dettaglio') or (pr_i.get('Dettaglio_Indisponibile', '') if pr_i else '')
                     schierabile = False
                     tit_cat = 'Non Schierabile'
@@ -1557,7 +1681,7 @@ def get_team_roster_df(team_name, league_data_or_master=None, df_master=None):
                             lbl_p = f"Tit. {pr_tit}%"
                         else:
                             lbl_p = f"Sub. {pr_sub}%"
-                        badge_disp = f"🪑 PROB. PANCHINARO ({lbl_p})"
+                        badge_disp = f"🟡 PROB. PANCHINARO ({lbl_p})"
             except Exception:
                 pass
 
@@ -1646,7 +1770,7 @@ def get_league_summary(league_data_or_master=None, df_master=None):
     return pd.DataFrame(summary_rows)
 
 
-def render_league_upload_section(key_prefix, df_master, label_title="📥 Carica / Aggiorna File delle Rose (.xlsx, .xls, .csv)"):
+def render_league_upload_section(key_prefix, df_master, label_title="🟢 Carica / Aggiorna File delle Rose (.xlsx, .xls, .csv)"):
     """
     Renders an interactive, foolproof upload and confirmation widget for league rosters.
     Supports updating current league, creating a new named league, or guest session.
@@ -1671,7 +1795,7 @@ def render_league_upload_section(key_prefix, df_master, label_title="📥 Carica
                 if parsed_data:
                     tot_teams = len(parsed_data)
                     tot_players = sum(len(p) for p in parsed_data.values())
-                    st.success(f"✅ File analizzato con successo! Rilevate **{tot_teams} squadre** e **{tot_players} calciatori**.")
+                    st.success(f"File analizzato con successo! Rilevate **{tot_teams} squadre** e **{tot_players} calciatori**.")
                     
                     teams_found = list(parsed_data.keys())
                     current_active = get_active_my_team()
@@ -1689,9 +1813,9 @@ def render_league_upload_section(key_prefix, df_master, label_title="📥 Carica
                     scope_choice = st.radio(
                         "Destinazione delle rose caricate:",
                         options=[
-                            f"💾 Salva e aggiorna la lega attiva: '{curr_league_name}'",
-                            "➕ Salva come NUOVA LEGA separata (crea un archivio indipendente)",
-                            "👤 Solo per questa mia sessione (ospite temporaneo, non tocca il disco)"
+                            f" Salva e aggiorna la lega attiva: '{curr_league_name}'",
+                            " Salva come NUOVA LEGA separata (crea un archivio indipendente)",
+                            " Solo per questa mia sessione (ospite temporaneo, non tocca il disco)"
                         ],
                         index=0 if 'custom_league_data' not in st.session_state else 2,
                         key=f"{key_prefix}_scope_choice",
@@ -1699,7 +1823,7 @@ def render_league_upload_section(key_prefix, df_master, label_title="📥 Carica
                     )
 
                     new_lg_custom_name = ""
-                    if scope_choice.startswith("➕"):
+                    if scope_choice.startswith(""):
                         new_lg_custom_name = st.text_input(
                             "Nome della nuova lega da creare:",
                             value=f"Lega {getattr(uploaded_file, 'name', 'Nuova').split('.')[0].replace('_', ' ').title()}",
@@ -1719,7 +1843,7 @@ def render_league_upload_section(key_prefix, df_master, label_title="📥 Carica
                     sel_col1, sel_col2 = st.columns([1.5, 1])
                     with sel_col1:
                         target_team = st.selectbox(
-                            "👉 Seleziona quale di queste squadre è la TUA SQUADRA (La Mia Rosa):",
+                            " Seleziona quale di queste squadre è la TUA SQUADRA (La Mia Rosa):",
                             options=teams_found,
                             index=def_idx,
                             key=f"{key_prefix}_select_my_team"
@@ -1727,7 +1851,7 @@ def render_league_upload_section(key_prefix, df_master, label_title="📥 Carica
                     with sel_col2:
                         st.markdown("<br>", unsafe_allow_html=True)
                         apply_btn = st.button(
-                            f"🚀 Salva ed Entra (Mia Rosa: {target_team})",
+                            f" Salva ed Entra (Mia Rosa: {target_team})",
                             type="primary",
                             key=f"{key_prefix}_apply_btn",
                             width='stretch'
@@ -1738,7 +1862,7 @@ def render_league_upload_section(key_prefix, df_master, label_title="📥 Carica
                     saved_sig_key = f"{key_prefix}_saved_file_sig"
                     if apply_btn:
                         fname = getattr(uploaded_file, 'name', 'File_Rose_Lega')
-                        if scope_choice.startswith("👤"):
+                        if scope_choice.startswith(""):
                             st.session_state['custom_league_data'] = parsed_data
                             set_active_my_team(target_team, persist_disk=False)
                             st.session_state['custom_league_meta'] = {
@@ -1748,9 +1872,9 @@ def render_league_upload_section(key_prefix, df_master, label_title="📥 Carica
                             }
                             sync_user_roster_from_league(parsed_data, target_team)
                             st.session_state[saved_sig_key] = file_sig
-                            st.toast(f"✅ Lega ospite attivata per questa sessione!", icon="🏆")
+                            st.toast(f"Lega ospite attivata per questa sessione!", )
                             st.rerun()
-                        elif scope_choice.startswith("➕"):
+                        elif scope_choice.startswith(""):
                             nl_name = new_lg_custom_name.strip() or "Nuova Lega"
                             ok, new_lid, msg = create_new_league(nl_name, parsed_data, target_team, league_type=chosen_type)
                             if ok:
@@ -1758,8 +1882,8 @@ def render_league_upload_section(key_prefix, df_master, label_title="📥 Carica
                                 set_active_my_team(target_team, persist_disk=True, league_id=new_lid)
                                 sync_user_roster_from_league(parsed_data, target_team, league_id=new_lid)
                                 st.session_state[saved_sig_key] = file_sig
-                                st.toast(f"🏆 {msg} ({chosen_type.upper()})", icon="🎉")
-                                st.success(f"🏆 Nuova lega '{nl_name}' ({chosen_type.upper()}) creata con successo! Squadra attiva: **{target_team}**.")
+                                st.toast(f"{msg} ({chosen_type.upper()})", )
+                                st.success(f"Nuova lega '{nl_name}' ({chosen_type.upper()}) creata con successo! Squadra attiva: **{target_team}**.")
                                 st.rerun()
                             else:
                                 st.error(msg)
@@ -1770,7 +1894,7 @@ def render_league_upload_section(key_prefix, df_master, label_title="📥 Carica
                             set_active_my_team(target_team, persist_disk=True)
                             sync_user_roster_from_league(parsed_data, target_team)
                             st.session_state[saved_sig_key] = file_sig
-                            st.toast(f"✅ Lega '{curr_league_name}' aggiornata con successo ({chosen_type.upper()})!", icon="🏆")
+                            st.toast(f"Lega '{curr_league_name}' aggiornata con successo ({chosen_type.upper()})!", )
                             st.rerun()
                         
                     # Preview of the chosen team
@@ -1785,7 +1909,7 @@ def render_league_upload_section(key_prefix, df_master, label_title="📥 Carica
                                 'Squadra': p.get('Squadra', ''),
                                 'Costo': p.get('Costo', 1),
                                 'FM': p.get('FM_Stagione', 0.0),
-                                'Stato': '🔄 Prestito' if p.get('InPrestito') else ('⚠️ Svincolo' if p.get('FuoriSerieA') else '✅ Proprietà')
+                                'Stato': ' Prestito' if p.get('InPrestito') else ('🟡 Svincolo' if p.get('FuoriSerieA') else '🟢 Proprietà')
                             }
                             for p in team_pls[:10]
                         ])
@@ -1793,5 +1917,5 @@ def render_league_upload_section(key_prefix, df_master, label_title="📥 Carica
                         if len(team_pls) > 10:
                             st.caption(f"...e altri {len(team_pls) - 10} calciatori.")
             except Exception as e:
-                st.error(f"❌ Errore durante l'elaborazione del file: {e}")
-                st.info("💡 **Consiglio:** Assicurati di esportare il file direttamente da Fantacalcio.it in formato Excel (.xlsx) o CSV con l'elenco delle rose della tua lega.")
+                st.error(f"Errore durante l'elaborazione del file: {e}")
+                st.info("**Consiglio:** Assicurati di esportare il file direttamente da Fantacalcio.it in formato Excel (.xlsx) o CSV con l'elenco delle rose della tua lega.")

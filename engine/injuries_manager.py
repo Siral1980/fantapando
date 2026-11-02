@@ -195,7 +195,7 @@ def parse_injury_details(det, status, current_giornata=10):
     if status == 'Squalificato':
         target_g = current_giornata + 1 if current_giornata else 11
         return {
-            'Tipo': '🟥 Squalifica',
+            'Tipo': '🔴 Squalifica',
             'Motivo': 'Squalificato per il turno',
             'Rientro_Previsto': f'{target_g}ª Giornata',
             'Badge_Rientro': f'🟢 Rientro {target_g}ª G.',
@@ -205,7 +205,7 @@ def parse_injury_details(det, status, current_giornata=10):
         
     if status == 'Diffidato':
         return {
-            'Tipo': '🟨 Diffida',
+            'Tipo': '🟡 Diffida',
             'Motivo': 'In diffida (a rischio)',
             'Rientro_Previsto': 'Disponibile',
             'Badge_Rientro': 'In campo',
@@ -284,19 +284,19 @@ def parse_injury_details(det, status, current_giornata=10):
     elif 'febbraio' in det_lower:
         rientro_txt = 'Febbraio 2027'
         g_target = 23
-        badge_rientro = '⛔ Rientro ~23ª G.'
+        badge_rientro = '🔴 Rientro ~23ª G.'
     elif 'marzo' in det_lower:
         rientro_txt = 'Marzo 2027'
         g_target = 27
-        badge_rientro = '⛔ Rientro ~27ª G.'
+        badge_rientro = '🔴 Rientro ~27ª G.'
     elif 'aprile' in det_lower:
         rientro_txt = 'Aprile 2027'
         g_target = 31
-        badge_rientro = '⛔ Rientro ~31ª G.'
+        badge_rientro = '🔴 Rientro ~31ª G.'
     elif any(k in det_lower for k in ['maggio', 'stagione finita']):
         rientro_txt = 'Fine Stagione'
         g_target = 36
-        badge_rientro = '⛔ Stagione finita'
+        badge_rientro = '🔴 Stagione finita'
     elif any(k in det_lower for k in ['fine ottobre', 'fine di ottobre']):
         rientro_txt = 'Fine Ottobre'
         g_target = 10
@@ -307,7 +307,7 @@ def parse_injury_details(det, status, current_giornata=10):
         badge_rientro = '🟡 In dubbio'
         
     return {
-        'Tipo': '🚑 Infortunio',
+        'Tipo': '🔴 Infortunio',
         'Motivo': motivo,
         'Rientro_Previsto': rientro_txt,
         'Badge_Rientro': badge_rientro,

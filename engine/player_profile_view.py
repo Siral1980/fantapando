@@ -305,13 +305,13 @@ def render_player_profile_content(player_name_or_row, df_master, calendar=None, 
     starter_color = "#10b981" if st_info['Status'] == 'TITOLARE' else ("#f59e0b" if st_info['Status'] == 'CO_TITOLARE' else "#94a3b8")
 
     if stato_prestito == 'Prestito IN':
-        prestito_badge = f'<span style="background: #0284c7; color: white; padding: 4px 14px; border-radius: 8px; font-size: 1.05rem; font-weight: 800; border: 1.5px solid #38bdf8; box-shadow: 0 2px 6px rgba(2,132,199,0.4);">🔄 IN PRESTITO (da {prestito_det})</span>'
+        prestito_badge = f'<span style="background: #0284c7; color: white; padding: 4px 14px; border-radius: 8px; font-size: 1.05rem; font-weight: 800; border: 1.5px solid #38bdf8; box-shadow: 0 2px 6px rgba(2,132,199,0.4);"> IN PRESTITO (da {prestito_det})</span>'
     elif stato_prestito == 'Prestito OUT':
-        prestito_badge = f'<span style="background: #d97706; color: white; padding: 4px 14px; border-radius: 8px; font-size: 1.05rem; font-weight: 800; border: 1.5px solid #fbbf24; box-shadow: 0 2px 6px rgba(217,119,6,0.4);">📤 PRESTITO CEDUTO (a {prestito_det})</span>'
+        prestito_badge = f'<span style="background: #d97706; color: white; padding: 4px 14px; border-radius: 8px; font-size: 1.05rem; font-weight: 800; border: 1.5px solid #fbbf24; box-shadow: 0 2px 6px rgba(217,119,6,0.4);">🔴 PRESTITO CEDUTO (a {prestito_det})</span>'
     else:
         prestito_badge = ''
 
-    signal_badge = f'<span style="background: rgba(245, 158, 11, 0.25); border: 2px solid #fbbf24; color: #fde047; padding: 6px 16px; border-radius: 18px; font-size: 1.05rem; font-weight: 800;">⚡ {signal}</span>' if ('BUY-LOW' in signal or 'SELL-HIGH' in signal) else ''
+    signal_badge = f'<span style="background: rgba(245, 158, 11, 0.25); border: 2px solid #fbbf24; color: #fde047; padding: 6px 16px; border-radius: 18px; font-size: 1.05rem; font-weight: 800;"> {signal}</span>' if ('BUY-LOW' in signal or 'SELL-HIGH' in signal) else ''
     inj_box = f'<div style="margin-top: 8px; font-size: 0.95rem; color: #fca5a5; font-weight: 600;"><b>Dettaglio Medico:</b> {inj_detail}</div>' if (is_injured and inj_detail) else ''
     prest_box = f'<div style="margin-top: 6px; font-size: 0.95rem; color: #bae6fd; font-weight: 700;"><b>Accordo di Prestito:</b> {prestito_det}</div>' if (prestito_det and stato_prestito != 'Proprietà') else ''
 
@@ -323,11 +323,11 @@ def render_player_profile_content(player_name_or_row, df_master, calendar=None, 
                 <span style="font-size: 1.15rem; color: #00f0ff; font-weight: 800; background: #081627; padding: 4px 14px; border-radius: 8px; border: 1.5px solid #00f0ff;">{team}</span>
                 <span style="background: #0284c7; color: #ffffff; padding: 4px 14px; border-radius: 8px; font-weight: 800; font-size: 1.05rem; border: 1.5px solid #38bdf8;">Mantra: {ruolo_m}</span>
                 <span style="background: #0f172a; color: #94a3b8; padding: 4px 12px; border-radius: 8px; font-weight: 700; font-size: 1.05rem; border: 1.5px solid #334155;">Classic: {ruolo_c}</span>
-                <span style="background: #78350f; border: 1.5px solid #fbbf24; color: #fef08a; padding: 4px 14px; border-radius: 8px; font-size: 1.05rem; font-weight: 800;">💰 {costo} cr</span>
+                <span style="background: #78350f; border: 1.5px solid #fbbf24; color: #fef08a; padding: 4px 14px; border-radius: 8px; font-size: 1.05rem; font-weight: 800;"> {costo} cr</span>
                 {prestito_badge}
             </div>
             <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                <span style="background: {inj_color}25; border: 2px solid {inj_color}; color: {inj_color}; padding: 6px 16px; border-radius: 18px; font-weight: 800; font-size: 1.05rem;">{'🚑' if is_injured else '✅'} {inj_badge.upper()}</span>
+                <span style="background: {inj_color}25; border: 2px solid {inj_color}; color: {inj_color}; padding: 6px 16px; border-radius: 18px; font-weight: 800; font-size: 1.05rem;">{'🔴' if is_injured else ''} {inj_badge.upper()}</span>
                 <span style="background: {starter_color}25; border: 2px solid {starter_color}; color: {starter_color}; padding: 6px 16px; border-radius: 18px; font-weight: 800; font-size: 1.05rem;">{st_info['Badge']}</span>
                 {signal_badge}
             </div>
@@ -343,7 +343,7 @@ def render_player_profile_content(player_name_or_row, df_master, calendar=None, 
 
     # LEFT COLUMN: RADAR + ATTRIBUTE PROGRESS BARS
     with col_left:
-        st.markdown("<div style='font-size: 1.25rem; font-weight: 800; color: #ffffff; margin-bottom: 8px; text-shadow: 0 2px 4px rgba(0,0,0,0.8);'>🎯 Profilo Tecnico & Radar Skill</div>", unsafe_allow_html=True)
+        st.markdown("<div style='font-size: 1.25rem; font-weight: 800; color: #ffffff; margin-bottom: 8px; text-shadow: 0 2px 4px rgba(0,0,0,0.8);'> Profilo Tecnico & Radar Skill</div>", unsafe_allow_html=True)
         skill_data = compute_player_skill_ratings(p_row)
 
         c_rad, c_att = st.columns([1.15, 1.0], gap="medium")
@@ -394,9 +394,9 @@ def render_player_profile_content(player_name_or_row, df_master, calendar=None, 
 
         # 3 IN-DEPTH SUBTABS (Compact Layout with Large Legible Fonts)
         tab_fanta, tab_real, tab_next = st.tabs([
-            "📈 Fantacalcio",
-            "🔬 Dati Reali & Understat",
-            "📅 Calendario 5G"
+            " Fantacalcio",
+            " Dati Reali & Understat",
+            " Calendario 5G"
         ])
 
         # SUBTAB 1: FANTACALCIO STATS
@@ -405,9 +405,9 @@ def render_player_profile_content(player_name_or_row, df_master, calendar=None, 
             with f_r1:
                 st.markdown(clean_html(f"""
                 <div class="profile-card-subtab">
-                    <div>🛡️ <b>Sufficienza (&ge;6):</b> <span style="color: #00f0ff; font-weight:800; font-size: 1.15rem;">{float(p_row.get('Pct_Sufficienza', 0.0)):.1f}%</span> ({p_row.get('Voti_Ge_6', 0)}/{p_row.get('Voti_Tot_Valutati', pres)} gare)</div>
+                    <div>️ <b>Sufficienza (&ge;6):</b> <span style="color: #00f0ff; font-weight:800; font-size: 1.15rem;">{float(p_row.get('Pct_Sufficienza', 0.0)):.1f}%</span> ({p_row.get('Voti_Ge_6', 0)}/{p_row.get('Voti_Tot_Valutati', pres)} gare)</div>
                     <div>⏱️ <b>Minuti Giocati:</b> <span style="color: #38bdf8; font-weight:800; font-size: 1.15rem;">{int(p_row.get('Minuti_Reali', 0) or 0)}'</span> (~{st_info['Min_Per_Pres']}'/pres)</div>
-                    <div>⚽ <b>Gol &amp; Assist:</b> <span style="color: #4ade80; font-weight:800; font-size: 1.15rem;">{gf} GF</span> / <span style="color: #c084fc; font-weight:800; font-size: 1.15rem;">{ass} ASS</span></div>
+                    <div><b>Gol &amp; Assist:</b> <span style="color: #4ade80; font-weight:800; font-size: 1.15rem;">{gf} GF</span> / <span style="color: #c084fc; font-weight:800; font-size: 1.15rem;">{ass} ASS</span></div>
                 </div>
                 """), unsafe_allow_html=True)
             with f_r2:
@@ -417,9 +417,9 @@ def render_player_profile_content(player_name_or_row, df_master, calendar=None, 
                 fm_3y = float(p_row.get('FM_Triennio', 0.0) or 0.0)
                 st.markdown(clean_html(f"""
                 <div class="profile-card-subtab">
-                    <div>🟨 <b>Cartellini:</b> <span style="color: #fde047; font-weight:800; font-size: 1.15rem;">{p_row.get('AMM', 0)} Amm.</span> / <span style="color: #f87171; font-weight:800; font-size: 1.15rem;">{p_row.get('ESP', 0)} Esp.</span></div>
-                    <div>🔥 <b>Forma Ultime 3 (U3):</b> MV <b style="color:#ffffff; font-size: 1.15rem;">{mv_u3:.2f}</b> | FM <b style="color:#00f0ff; font-size: 1.15rem;">{fm_u3:.2f}</b></div>
-                    <div>📚 <b>Storico Triennio:</b> MV <b style="color:#ffffff; font-size: 1.15rem;">{mv_3y:.2f}</b> | FM <b style="color:#00f0ff; font-size: 1.15rem;">{fm_3y:.2f}</b></div>
+                    <div>🟡 <b>Cartellini:</b> <span style="color: #fde047; font-weight:800; font-size: 1.15rem;">{p_row.get('AMM', 0)} Amm.</span> / <span style="color: #f87171; font-weight:800; font-size: 1.15rem;">{p_row.get('ESP', 0)} Esp.</span></div>
+                    <div> <b>Forma Ultime 3 (U3):</b> MV <b style="color:#ffffff; font-size: 1.15rem;">{mv_u3:.2f}</b> | FM <b style="color:#00f0ff; font-size: 1.15rem;">{fm_u3:.2f}</b></div>
+                    <div> <b>Storico Triennio:</b> MV <b style="color:#ffffff; font-size: 1.15rem;">{mv_3y:.2f}</b> | FM <b style="color:#00f0ff; font-size: 1.15rem;">{fm_3y:.2f}</b></div>
                 </div>
                 """), unsafe_allow_html=True)
 
@@ -440,10 +440,10 @@ def render_player_profile_content(player_name_or_row, df_master, calendar=None, 
             with u_r1:
                 st.markdown(clean_html(f"""
                 <div class="profile-card-subtab">
-                    <div>⚽ <b>xG/90:</b> <span style="color:#00f0ff; font-weight:800; font-size:1.15rem;">{xg_90:.2f}</span> (Tot: {xg_tot:.2f})</div>
-                    <div>🎯 <b>Tiri/90:</b> <span style="color:#f8fafc; font-weight:800; font-size:1.15rem;">{tiri_90:.1f}</span> ({p_row.get('Tiri_Porta_90', 0.0)} porta)</div>
-                    <div>🍀 <b>Delta xG:</b> <b style="color:{'#4ade80' if delta_xg>0 else '#fde047'}; font-size:1.15rem;">{delta_xg:+.2f}</b></div>
-                    <div>👟 <b>xA/90:</b> <span style="color:#c084fc; font-weight:800; font-size:1.15rem;">{xa_90:.2f}</span> | <b>KP/90:</b> <span style="color:#38bdf8; font-weight:800; font-size:1.15rem;">{kp_90:.1f}</span></div>
+                    <div><b>xG/90:</b> <span style="color:#00f0ff; font-weight:800; font-size:1.15rem;">{xg_90:.2f}</span> (Tot: {xg_tot:.2f})</div>
+                    <div> <b>Tiri/90:</b> <span style="color:#f8fafc; font-weight:800; font-size:1.15rem;">{tiri_90:.1f}</span> ({p_row.get('Tiri_Porta_90', 0.0)} porta)</div>
+                    <div> <b>Delta xG:</b> <b style="color:{'#4ade80' if delta_xg>0 else '#fde047'}; font-size:1.15rem;">{delta_xg:+.2f}</b></div>
+                    <div> <b>xA/90:</b> <span style="color:#c084fc; font-weight:800; font-size:1.15rem;">{xa_90:.2f}</span> | <b>KP/90:</b> <span style="color:#38bdf8; font-weight:800; font-size:1.15rem;">{kp_90:.1f}</span></div>
                 </div>
                 """), unsafe_allow_html=True)
             with u_r2:
@@ -454,18 +454,18 @@ def render_player_profile_content(player_name_or_row, df_master, calendar=None, 
                     blunders = int(p_row.get('Errors_Leading_To_Goal', 0) or 0)
                     st.markdown(clean_html(f"""
                     <div class="profile-card-subtab">
-                        <div>🧤 <b>PSxG:</b> <span style="color:#00f0ff; font-weight:800; font-size:1.15rem;">{psxg:.2f}</span> | <b>GP/90:</b> {gp90:+.2f}</div>
-                        <div>🧱 <b>Goals Prevented:</b> <b style="color:{'#4ade80' if gp>0 else '#fde047'}; font-size:1.15rem;">{gp:+.2f}</b></div>
-                        <div>⚠️ <b>Blunders / Papere:</b> <span style="color:{'#f87171' if blunders>0 else '#4ade80'}; font-weight:800; font-size:1.15rem;">{blunders}</span></div>
+                        <div> <b>PSxG:</b> <span style="color:#00f0ff; font-weight:800; font-size:1.15rem;">{psxg:.2f}</span> | <b>GP/90:</b> {gp90:+.2f}</div>
+                        <div> <b>Goals Prevented:</b> <b style="color:{'#4ade80' if gp>0 else '#fde047'}; font-size:1.15rem;">{gp:+.2f}</b></div>
+                        <div>🟡 <b>Blunders / Papere:</b> <span style="color:{'#f87171' if blunders>0 else '#4ade80'}; font-weight:800; font-size:1.15rem;">{blunders}</span></div>
                     </div>
                     """), unsafe_allow_html=True)
                 else:
                     st.markdown(clean_html(f"""
                     <div class="profile-card-subtab">
-                        <div>⛓️ <b>xGChain:</b> <span style="color:#00f0ff; font-weight:800; font-size:1.15rem;">{xg_chain:.2f}</span></div>
-                        <div>🎯 <b>Precisione Passaggi:</b> <span style="color:#38bdf8; font-weight:800; font-size:1.15rem;">{pass_acc:.0f}%</span></div>
-                        <div>🥊 <b>Duelli Vinti:</b> <span style="color:#4ade80; font-weight:800; font-size:1.15rem;">{duels:.0f}%</span></div>
-                        <div>🛡️ <b>Recuperi/90:</b> <span style="color:#cbd5e1; font-weight:800; font-size:1.15rem;">{rec_90:.1f}</span></div>
+                        <div>️ <b>xGChain:</b> <span style="color:#00f0ff; font-weight:800; font-size:1.15rem;">{xg_chain:.2f}</span></div>
+                        <div> <b>Precisione Passaggi:</b> <span style="color:#38bdf8; font-weight:800; font-size:1.15rem;">{pass_acc:.0f}%</span></div>
+                        <div> <b>Duelli Vinti:</b> <span style="color:#4ade80; font-weight:800; font-size:1.15rem;">{duels:.0f}%</span></div>
+                        <div>️ <b>Recuperi/90:</b> <span style="color:#cbd5e1; font-weight:800; font-size:1.15rem;">{rec_90:.1f}</span></div>
                     </div>
                     """), unsafe_allow_html=True)
 
@@ -487,10 +487,10 @@ def render_player_profile_content(player_name_or_row, df_master, calendar=None, 
             fix_col1, fix_col2 = st.columns([1, 1.2])
             with fix_col1:
                 chart_df = df_fix[['G', 'xFV']].set_index('G')
-                st.markdown("<div style='font-weight: 700; color: #ffffff; font-size: 1.05rem; margin-bottom: 4px;'>📊 Punteggio Atteso xFV:</div>", unsafe_allow_html=True)
+                st.markdown("<div style='font-weight: 700; color: #ffffff; font-size: 1.05rem; margin-bottom: 4px;'> Punteggio Atteso xFV:</div>", unsafe_allow_html=True)
                 st.bar_chart(chart_df, height=185)
             with fix_col2:
-                st.markdown("<div style='font-weight: 700; color: #ffffff; font-size: 1.05rem; margin-bottom: 4px;'>🗓️ Calendario & Difficoltà (FDR 1-5):</div>", unsafe_allow_html=True)
+                st.markdown("<div style='font-weight: 700; color: #ffffff; font-size: 1.05rem; margin-bottom: 4px;'>️ Calendario & Difficoltà (FDR 1-5):</div>", unsafe_allow_html=True)
                 st.dataframe(
                     df_fix[['G', 'Match', 'FDR', 'xFV']],
                     width='stretch',
@@ -499,7 +499,7 @@ def render_player_profile_content(player_name_or_row, df_master, calendar=None, 
                 )
 
 
-@st.dialog("📋 Scheda Profilo Calciatore", width="medium")
+@st.dialog(" Scheda Profilo Calciatore", width="medium")
 def show_player_profile_dialog(player_name, df_master, calendar=None, matchday=8, df_roster=None):
     """
     Displays the player profile as an interactive modal dialog overlay.

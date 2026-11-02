@@ -27,7 +27,8 @@ from engine.sync_manager import (
 from engine.fanta_calendar import (
     get_or_create_calendar, get_schedule_matrix, get_fixture_info,
     TEAM_TIERS, compute_dynamic_team_ratings, compute_current_standings,
-    get_matchday_from_date, SERIE_A_SCHEDULE
+    get_matchday_from_date, SERIE_A_SCHEDULE,
+    format_match_3letter, get_team_3letter
 )
 from engine.models import batch_predict_xfv, calculate_expected_dfactor
 from engine.optimizer import (
@@ -92,7 +93,7 @@ from engine.auth_manager import (
 # Page configuration
 st.set_page_config(
     page_title="FantaMantra AI Manager",
-    page_icon="⚽",
+    page_icon="🟢",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -148,7 +149,7 @@ elif st.session_state['_last_code_version'] != current_code_version:
     from engine.roster_manager import get_roster_dataframe
     from engine.league_manager import get_out_of_serie_a_summary, get_team_roster_df
     st.session_state['_last_code_version'] = current_code_version
-    st.toast("🧹 Rilevate modifiche al codice: moduli ricaricati e cache pulita automaticamente!", icon="🔄")
+    st.toast(" Rilevate modifiche al codice: moduli ricaricati e cache pulita automaticamente!")
 
 @st.cache_data
 def get_master_data(mtime=None, code_ver=None):
@@ -209,15 +210,15 @@ def cached_find_win_win_trades(my_team_name, league_sig, matchday, target_role_f
 # -------------------------------------------------------------
 sync_state = get_sync_state()
 if sync_state.get('is_due', False):
-    with st.spinner("⏳ Auto-check 12h: Aggiornamento database live in corso (Fantacalcio.it + Understat)..."):
+    with st.spinner("Auto-check 12h: Aggiornamento database live in corso (Fantacalcio.it + Understat)..."):
         sync_ok, sync_msg = run_full_sync_pipeline(force_live_scrape=True, source="auto_startup")
         if sync_ok:
             st.cache_data.clear()
             st.cache_resource.clear()
-            st.toast("✅ Database aggiornato automaticamente (ciclo 12h completato)!", icon="⚽")
+            st.toast(" Database aggiornato automaticamente (ciclo 12h completato)!")
             sync_state = get_sync_state()
         else:
-            st.toast(f"⚠️ Auto-check live non completato: {sync_msg}. Uso dati locali salvati.", icon="⚠️")
+            st.toast(f" Auto-check live non completato: {sync_msg}. Uso dati locali salvati.")
 
 master_csv_path = os.path.join(APP_DIR, "data", "players_master.csv")
 mtime_val = os.path.getmtime(master_csv_path) if os.path.exists(master_csv_path) else 0
@@ -238,7 +239,7 @@ is_setup_mode = st.session_state.get('setup_mode', not has_config)
 if is_setup_mode:
     st.markdown("""
     <div style="text-align: center; margin-top: 15px; margin-bottom: 25px;">
-        <h1 style="color: #38bdf8; font-size: 2.4rem; margin-bottom: 5px;">⚽ FantaMantra AI</h1>
+        <h1 style="color: #38bdf8; font-size: 2.4rem; margin-bottom: 5px;"> FantaMantra AI</h1>
         <p style="color: #94a3b8; font-size: 1.15rem;">Configurazione Iniziale: Carica la tua Lega</p>
     </div>
     """, unsafe_allow_html=True)
@@ -247,7 +248,7 @@ if is_setup_mode:
     with w_col2:
         st.markdown("""
         <div style="background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
-            <h3 style="color: #f8fafc; margin-top: 0;">📁 Carica il file Excel Ufficiale della tua Lega</h3>
+            <h3 style="color: #f8fafc; margin-top: 0;"> Carica il file Excel Ufficiale della tua Lega</h3>
             <p style="color: #94a3b8; font-size: 0.95rem;">
                 Carica il file Excel (<code>.xlsx</code>) esportato direttamente dal sito o dall'app Fantacalcio.it con le rose della tua lega.
             </p>
@@ -269,17 +270,17 @@ if is_setup_mode:
                     parsed_league = parse_official_league_excel(uploaded_file, df_master)
                     if parsed_league:
                         save_league_rosters(parsed_league)
-                        st.success(f"✅ File elaborato con successo! Rilevate {len(parsed_league)} squadre.")
+                        st.success(f" File elaborato con successo! Rilevate {len(parsed_league)} squadre.")
             except Exception as e:
                 st.error(f"Errore durante l'elaborazione del file: {e}")
         elif existing_league:
-            st.info(f"💡 È già presente un archivio di lega memorizzato ({len(existing_league)} squadre). Puoi caricare un nuovo file sopra oppure selezionare subito la tua squadra qui sotto.")
+            st.info(f" È già presente un archivio di lega memorizzato ({len(existing_league)} squadre). Puoi caricare un nuovo file sopra oppure selezionare subito la tua squadra qui sotto.")
             parsed_league = existing_league
             
         if parsed_league:
             st.markdown("""
             <div style="background: rgba(16, 38, 26, 0.90); border: 1.5px solid rgba(74, 222, 128, 0.4); border-radius: 12px; padding: 20px; margin-top: 20px; margin-bottom: 20px;">
-                <h3 style="color: #ffffff; margin-top: 0;">👉 Passo 2: Qual è la tua squadra?</h3>
+                <h3 style="color: #ffffff; margin-top: 0;"> Passo 2: Qual è la tua squadra?</h3>
                 <p style="color: #cbd5e1; font-size: 0.95rem;">
                     Seleziona quale tra le squadre partecipanti è la tua per caricare automaticamente la tua rosa e calcolare la formazione.
                 </p>
@@ -309,7 +310,7 @@ if is_setup_mode:
                 st.dataframe(df_team_preview[preview_cols].head(8), width='stretch', hide_index=True)
                 
             st.markdown("<br>", unsafe_allow_html=True)
-            if st.button("🚀 Conferma e Accedi al FantaMantra Manager", type="primary", width='stretch'):
+            if st.button(" Conferma e Accedi al FantaMantra Manager", type="primary", width='stretch'):
                 set_active_my_team(selected_team)
                 sync_user_roster_from_league(parsed_league, selected_team)
                 st.session_state['setup_mode'] = False
@@ -321,12 +322,12 @@ if is_setup_mode:
 # -------------------------------------------------------------
 # SIDEBAR
 # -------------------------------------------------------------
-st.sidebar.title("⚽ FantaMantra AI")
+st.sidebar.title(" FantaMantra AI")
 st.sidebar.caption("Statistical & Tactical Engine con D-Factor")
 
 # User Badge & Logout / Switch User
-u_role_badge = "👑 Admin" if is_current_user_admin() else "👤 Utente"
-u_env_badge = "💻 Localhost" if is_running_on_localhost() else "☁️ Cloud"
+u_role_badge = " Admin" if is_current_user_admin() else " Utente"
+u_env_badge = " Localhost" if is_running_on_localhost() else " Cloud"
 u_col1, u_col2 = st.sidebar.columns([1.65, 1.0])
 with u_col1:
     st.markdown(
@@ -336,7 +337,7 @@ with u_col1:
         unsafe_allow_html=True
     )
 with u_col2:
-    if st.button("🚪 Esci / Test", key="sb_btn_logout_switch", width='stretch', help="Esci o accedi con un altro account per testare la vista di un amico"):
+    if st.button(" Esci / Test", key="sb_btn_logout_switch", width='stretch', help="Esci o accedi con un altro account per testare la vista di un amico"):
         st.session_state.pop('auth_username', None)
         st.session_state.pop('active_league_id', None)
         st.session_state.pop('active_my_team', None)
@@ -355,13 +356,13 @@ leagues_dict = get_available_leagues()
 league_ids = list(leagues_dict.keys())
 
 if not league_ids:
-    st.warning("⚠️ Il tuo account non ha ancora leghe associate.")
+    st.warning(" Il tuo account non ha ancora leghe associate.")
     if is_current_user_admin() or current_user.get('can_create_leagues', False):
         st.info("Usa il modulo qui sotto per creare la tua prima lega!")
         with st.form("empty_user_new_league_form"):
             new_lg_name_e = st.text_input("Nome della nuova lega:", placeholder="es. Fanta Amici 2026")
             new_lg_mode_e = st.radio("Tipologia lega:", ["Mantra", "Classic"], horizontal=True)
-            if st.form_submit_button("➕ Crea Lega", type="primary"):
+            if st.form_submit_button(" Crea Lega", type="primary"):
                 if new_lg_name_e.strip():
                     ok_e, _, msg_e = create_new_league(new_lg_name_e.strip(), league_type=new_lg_mode_e.lower())
                     if ok_e:
@@ -380,10 +381,10 @@ active_league_type = get_league_type(active_league)
 is_classic = (active_league_type == 'classic')
 
 selected_league_id = st.sidebar.selectbox(
-    "🏆 Lega Attiva:",
+    " Lega Attiva:",
     options=league_ids,
     index=curr_league_idx,
-    format_func=lambda x: f"🏆 {leagues_dict.get(x, {}).get('name', x)} ({'🟢 Classic' if leagues_dict.get(x, {}).get('type') == 'classic' else '🔴 Mantra'})",
+    format_func=lambda x: f" {leagues_dict.get(x, {}).get('name', x)} ({'🟢 Classic' if leagues_dict.get(x, {}).get('type') == 'classic' else '🔴 Mantra'})",
     key="sb_active_league_select",
     help="Seleziona la lega da visualizzare e gestire. Ogni utente vede esclusivamente le leghe abilitate per il suo profilo."
 )
@@ -418,7 +419,7 @@ if league_teams:
     st.sidebar.markdown('---')
     idx_team = league_teams.index(current_active_team) if current_active_team in league_teams else 0
     selected_my_team = st.sidebar.selectbox(
-        '👥 Squadra Attiva:',
+        'Squadra Attiva:',
         options=league_teams,
         index=idx_team,
         key=f'sb_team_select_{current_active_team}',
@@ -429,8 +430,8 @@ if league_teams:
         st.rerun()
 
 if 'custom_league_data' in st.session_state:
-    st.sidebar.info('👤 **Lega Ospite in Sessione** (privata)')
-    if st.sidebar.button('🔄 Torna alla Lega Principale', width='stretch'):
+    st.sidebar.info(' **Lega Ospite in Sessione** (privata)')
+    if st.sidebar.button('Torna alla Lega Principale', width='stretch'):
         del st.session_state['custom_league_data']
         st.session_state.pop('custom_league_meta', None)
         st.session_state.pop('active_my_team', None)
@@ -447,7 +448,7 @@ else:
 # Automatic reload of Probable Lineups and Injuries/Suspensions every time the active team changes
 current_team_sync_key = f'{active_league}::{current_active_team}'
 if st.session_state.get('_last_live_synced_team') != current_team_sync_key:
-    with st.spinner(f'🔄 Aggiornamento Probabili Formazioni e Infortunati/Squalificati per {current_active_team}...'):
+    with st.spinner(f' Aggiornamento Probabili Formazioni e Infortunati/Squalificati per {current_active_team}...'):
         refresh_live_lineups_and_injuries()
         st.cache_data.clear()
     st.session_state['_last_live_synced_team'] = current_team_sync_key
@@ -489,7 +490,7 @@ if selected_giornata != st.session_state['selected_giornata']:
     st.rerun()
 
 if selected_giornata != auto_giornata:
-    if st.sidebar.button(f'🎯 Riaggancia ad Oggi ({matchday_info["label"]})'):
+    if st.sidebar.button(f'Riaggancia ad Oggi ({matchday_info["label"]})'):
         st.session_state['selected_giornata'] = auto_giornata
         st.rerun()
 
@@ -502,13 +503,13 @@ with col_sb_s1:
     st.markdown(
         f"<div style='font-size:0.74rem; line-height:1.25; margin-top:2px;'>"
         f"<span style='color:#4ade80;'>🟢 <b>Dati Live Attivi</b></span><br>"
-        f"<span style='color:#cbd5e1; font-size:0.70rem;'>⏱️ Sync: <b>{last_sync_lbl}</b></span><br>"
+        f"<span style='color:#cbd5e1; font-size:0.70rem;'>Sync: <b>{last_sync_lbl}</b></span><br>"
         f"<span style='color:#64748b; font-size:0.68rem;'>Auto (12h): <b>tra {rem_lbl}</b></span>"
         f"</div>",
         unsafe_allow_html=True
     )
 with col_sb_s2:
-    if st.button('🔄 Sync', key='sb_quick_sync_btn', width='stretch', help=f'Aggiorna subito voti, statistiche e infortuni da Fantacalcio.it e Understat. (Ultimo: {sync_state.get("last_sync_datetime", "N/D")}. Prossimo auto-check tra: {rem_lbl})'):
+    if st.button('Sync', key='sb_quick_sync_btn', width='stretch', help=f'Aggiorna subito voti, statistiche e infortuni da Fantacalcio.it e Understat. (Ultimo: {sync_state.get("last_sync_datetime", "N/D")}. Prossimo auto-check tra: {rem_lbl})'):
         st.cache_data.clear()
         st.cache_resource.clear()
         with st.spinner('Sincronizzazione in corso...'):
@@ -519,17 +520,17 @@ with col_sb_s2:
             st.sidebar.error('Errore sync')
         st.rerun()
 
-st.sidebar.caption(f'📋 Rosa `{current_active_team}`: **{len(user_squad_names)} calciatori**')
+st.sidebar.caption(f'Rosa `{current_active_team}`: **{len(user_squad_names)} calciatori**')
 
 # -------------------------------------------------------------
 # MAIN APP TABS
 # -------------------------------------------------------------
 tab_formazione, tab_rosa, tab_scambi, tab_esplora, tab_impostazioni = st.tabs([
-    '🏟️ Formazione & Matchday',
-    '📋 La Mia Rosa',
-    '🤝 Trade Center',
-    '🔍 Esplora & Scouting',
-    '⚙️ Impostazioni & Sync'
+    'Formazione & Matchday',
+    'La Mia Rosa',
+    'Trade Center',
+    'Esplora & Scouting',
+    'Impostazioni & Sync'
 ])
 
 with tab_formazione:
@@ -546,11 +547,11 @@ with tab_formazione:
         # Compact Top Action Bar: Title + Modulo Selector + Live Refresh
         top_bar_c1, top_bar_c2, top_bar_c3 = st.columns([2.3, 1.2, 0.9])
         with top_bar_c1:
-            st.subheader(f"🏆 Formazione {selected_giornata}ª Giornata — {current_active_team}")
-            st.caption(f"📡 Fonti live allineate ({src_badges}) • Sincro: `{prob_last_ts}`")
+            st.subheader(f" Formazione {selected_giornata}ª Giornata — {current_active_team}")
+            st.caption(f" Fonti live allineate ({src_badges}) • Sincro: `{prob_last_ts}`")
         with top_bar_c2:
             forms_dict = CLASSIC_FORMATIONS if is_classic else MANTRA_FORMATIONS
-            modulo_options = ["✨ Consigliato dall'AI (Migliore)"] + list(forms_dict.keys())
+            modulo_options = ["Consigliato dall'AI (Migliore)"] + list(forms_dict.keys())
             selected_modulo_override = st.selectbox(
                 "Modulo Tattico:",
                 options=modulo_options,
@@ -559,19 +560,19 @@ with tab_formazione:
             )
         with top_bar_c3:
             st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
-            if st.button("🔄 Aggiorna Probabili", width='stretch', key="btn_refresh_prob_lineups"):
+            if st.button(" Aggiorna Probabili", width='stretch', key="btn_refresh_prob_lineups"):
                 with st.spinner("Scaricamento Probabili Formazioni e Infortuni/Squalifiche in corso..."):
                     refresh_live_lineups_and_injuries()
                     st.cache_data.clear()
-                st.toast("Probabili formazioni e infortunati aggiornati con successo!", icon="✅")
+                st.toast("Probabili formazioni e infortunati aggiornati con successo!")
                 st.rerun()
 
         # Consolidated Coach Overrides & Injury Management (Collapsed by Default)
         curr_indisp = df_my_roster[df_my_roster['Stato_Disponibilita'] != 'Disponibile'].copy() if 'Stato_Disponibilita' in df_my_roster.columns else pd.DataFrame()
-        n_indisp_badge = f" • 🚑 {len(curr_indisp)} indisponibili/dubbi" if not curr_indisp.empty else ""
-        with st.expander(f"⚙️ Scelte del Mister & Gestione Indisponibili (Forza/Escludi Titolari o Modifica Stati{n_indisp_badge})", expanded=False):
+        n_indisp_badge = f" •  {len(curr_indisp)} indisponibili/dubbi" if not curr_indisp.empty else ""
+        with st.expander(f" Scelte del Mister & Gestione Indisponibili (Forza/Escludi Titolari o Modifica Stati{n_indisp_badge})", expanded=False):
             exclude_uneligible = st.checkbox(
-                "🚫 Escludi automaticamente calciatori non schierabili (Infortunati, Squalificati, Prestiti OUT, Fuori Serie A *)",
+                " Escludi automaticamente calciatori non schierabili (Infortunati, Squalificati, Prestiti OUT, Fuori Serie A *)",
                 value=True,
                 key=f"chk_excl_unel_{current_active_team}"
             )
@@ -579,7 +580,7 @@ with tab_formazione:
             co1, co2 = st.columns(2)
             with co1:
                 forced_starters = st.multiselect(
-                    "📌 Forza nell'11 Titolare:",
+                    " Forza nell'11 Titolare:",
                     options=all_roster_names,
                     default=[],
                     key=f"lineup_force_starters_{current_active_team}",
@@ -587,7 +588,7 @@ with tab_formazione:
                 )
             with co2:
                 excluded_starters = st.multiselect(
-                    "🚫 Escludi dall'11 Titolare (Manda in Panchina):",
+                    " Escludi dall'11 Titolare (Manda in Panchina):",
                     options=[p for p in all_roster_names if p not in forced_starters],
                     default=[],
                     key=f"lineup_exclude_starters_{current_active_team}",
@@ -596,7 +597,7 @@ with tab_formazione:
 
             if not curr_indisp.empty:
                 st.markdown("---")
-                st.markdown("**📋 Indisponibili e Rientri Stimati nella Tua Rosa:**")
+                st.markdown("** Indisponibili e Rientri Stimati nella Tua Rosa:**")
                 role_col_disp = 'RuoloClassic' if is_classic else 'RuoloMantra'
                 df_indisp_display = pd.DataFrame({
                     'Calciatore': curr_indisp['Giocatore'],
@@ -610,7 +611,7 @@ with tab_formazione:
                 st.dataframe(df_indisp_display, hide_index=True, width='stretch')
 
             st.markdown("---")
-            st.markdown("**✍️ Modifica Manualmente Stato Medico (Notizie Ultim'Ora):**")
+            st.markdown("** Modifica Manualmente Stato Medico (Notizie Ultim'Ora):**")
             ov_col1, ov_col2, ov_col3, ov_col4 = st.columns([2, 2, 1, 1])
             with ov_col1:
                 sel_p = st.selectbox("Calciatore:", options=all_roster_names, key="override_sel_p")
@@ -622,7 +623,7 @@ with tab_formazione:
                 )
             with ov_col3:
                 st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
-                if st.button("💾 Applica", type="primary", key="btn_apply_override", width='stretch'):
+                if st.button(" Applica", type="primary", key="btn_apply_override", width='stretch'):
                     if sel_status == "Ripristina Automatico":
                         clear_player_manual_override(sel_p)
                     else:
@@ -631,7 +632,7 @@ with tab_formazione:
                     st.rerun()
             with ov_col4:
                 st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
-                if st.button("🗑️ Reset Tutti", key="btn_reset_all_overrides", width='stretch'):
+                if st.button(" Reset Tutti", key="btn_reset_all_overrides", width='stretch'):
                     clear_all_manual_overrides()
                     st.cache_data.clear()
                     st.rerun()
@@ -644,15 +645,15 @@ with tab_formazione:
                 for _, r in uneligible_rows.iterrows():
                     st_disp = r.get('Stato_Disponibilita', 'Disponibile')
                     if st_disp == 'Infortunato':
-                        motivo = f"🚑 {r.get('Badge_Rientro') or 'infortunato'}"
+                        motivo = f" {r.get('Badge_Rientro') or 'infortunato'}"
                     elif st_disp == 'Squalificato':
-                        motivo = "🟥 squalificato"
+                        motivo = " squalificato"
                     elif r.get('Stato_Prestito') == 'Prestito OUT':
-                        motivo = "📤 prestito OUT"
+                        motivo = " prestito OUT"
                     else:
-                        motivo = "🚫 fuori Serie A"
+                        motivo = " fuori Serie A"
                     desc_items.append(f"**{r['Giocatore']}** ({motivo})")
-                st.caption(f"🚫 **Esclusi automaticamente ({len(uneligible_rows)}):** {' · '.join(desc_items)}")
+                st.caption(f" **Esclusi automaticamente ({len(uneligible_rows)}):** {' · '.join(desc_items)}")
             eligible_roster = eligible_roster[eligible_roster['Schierabile'] == True]
 
         # Predict xFV for current squad (automatically enriched with prob_cache)
@@ -675,7 +676,7 @@ with tab_formazione:
                     df_opt_input.at[idx_r, 'P_Voto'] = min(0.10, float(r['P_Voto']))
 
         # Optimize lineup
-        allowed_forms = None if selected_modulo_override == "✨ Consigliato dall'AI (Migliore)" else [selected_modulo_override]
+        allowed_forms = None if selected_modulo_override == "Consigliato dall'AI (Migliore)" else [selected_modulo_override]
         if is_classic:
             opt_res = optimize_best_classic_lineup(df_opt_input, allowed_formations=allowed_forms)
         else:
@@ -706,11 +707,11 @@ with tab_formazione:
             cambio_mod_slots = opt_res.get('Slot_Coperti_Cambio_Modulo', [])
 
             if has_issues:
-                cop_badge = '<span style="color:#ef4444; font-weight:700;">🚨 Rischio Inferiorità</span>'
+                cop_badge = '<span style="color:#ef4444; font-weight:700;"> Rischio Inferiorità</span>'
             elif cambio_mod_slots:
-                cop_badge = '<span style="color:#38bdf8; font-weight:700;">🔄 Cambio Modulo OK</span>'
+                cop_badge = '<span style="color:#38bdf8; font-weight:700;"> Cambio Modulo OK</span>'
             else:
-                cop_badge = '<span style="color:#34d399; font-weight:700;">🛡️ Copertura Blindata</span>'
+                cop_badge = '<span style="color:#34d399; font-weight:700;"> Copertura Blindata</span>'
 
             hud_html = f"""
             <div style="display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: space-between; background: linear-gradient(90deg, rgba(15,23,42,0.90) 0%, rgba(30,41,59,0.90) 100%); border: 1px solid #1e293b; border-radius: 8px; padding: 10px 18px; margin: 4px 0 10px 0;">
@@ -727,7 +728,7 @@ with tab_formazione:
             if has_issues:
                 uncovered_list = opt_res.get('Slot_Scoperti', [])
                 uncovered_badges = " ".join([f"`{s}`" for s in uncovered_list])
-                with st.expander(f"🚨 Attenzione: possibile inferiorità numerica nello slot {uncovered_badges} — Clicca per alternative", expanded=False):
+                with st.expander(f" Attenzione: possibile inferiorità numerica nello slot {uncovered_badges} — Clicca per alternative", expanded=False):
                     if safe_alts:
                         cols_alt = st.columns(len(safe_alts))
                         for idx_a, safe_alt in enumerate(safe_alts):
@@ -736,13 +737,13 @@ with tab_formazione:
                                 render_html(f"""
                                 <div style="background: rgba(16, 185, 129, 0.08); border: 1.5px solid #10b981; border-radius: 8px; padding: 10px 14px; height: 100%;">
                                     <div style="display: flex; justify-content: space-between; align-items: center;">
-                                        <span style="font-weight: 800; font-size: 1.05rem; color: #34d399;">🛡️ {safe_alt['Modulo']}</span>
+                                        <span style="font-weight: 800; font-size: 1.05rem; color: #34d399;"> {safe_alt['Modulo']}</span>
                                         <span style="font-weight: 700; color: #ffffff;">{safe_alt['Punti_Totali']} pt <span style="color: {delta_c}; font-size: 0.85rem;">({safe_alt['Delta_Punti']:+.2f} pt)</span></span>
                                     </div>
                                     <div style="color: #cbd5e1; font-size: 0.82rem; margin-top: 5px;">{safe_alt['Dettaglio']}</div>
                                 </div>
                                 """, unsafe_allow_html=True)
-                        st.caption("💡 *Puoi selezionare il modulo alternativo direttamente dal menu a tendina in alto se vuoi evitare il rischio di giocare in 10.*")
+                        st.caption(" *Puoi selezionare il modulo alternativo direttamente dal menu a tendina in alto se vuoi evitare il rischio di giocare in 10.*")
 
             titolari_list = opt_res['Titolari']
 
@@ -759,7 +760,7 @@ with tab_formazione:
                 p_voto_pct = int(float(p.get('P_Voto', 0.90)) * 100)
                 bal_info = str(p.get('Ballottaggio_Info', '')).strip()
                 if bal_info:
-                    tit_str = f"⚖️ {p_voto_pct}% (Bal)"
+                    tit_str = f" {p_voto_pct}% (Bal)"
                 elif p_voto_pct >= 85:
                     tit_str = f"🟢 {p_voto_pct}%"
                 elif p_voto_pct >= 60:
@@ -821,7 +822,7 @@ with tab_formazione:
                 })
             df_bench_display = pd.DataFrame(bench_rows)
 
-            st.caption("💡 *Clicca su qualsiasi calciatore in campo, sui pulsanti rapidi o in panchina per aprire il popup con la Scheda Dettagliata.*")
+            st.caption(" *Clicca su qualsiasi calciatore in campo, sui pulsanti rapidi o in panchina per aprire il popup con la Scheda Dettagliata.*")
 
             # Official Mantra Experience 2026/2027 Coordinate Layouts (x% from left, y% from top)
             MANTRA_OFFICIAL_COORDS = {
@@ -1077,8 +1078,8 @@ with tab_formazione:
             st.markdown(
                 f"<div style='display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;'>"
                 f"<div>"
-                f"<span style='font-weight: 800; font-size: 1.05rem; color: #f8fafc;'>🏟️ Lavagna Tattica Ufficiale ({cur_modulo})</span>"
-                f"<span style='font-size: 0.76rem; color: #38bdf8; margin-left: 8px;'>(⚡ Passa il mouse per scheda rapida)</span>"
+                f"<span style='font-weight: 800; font-size: 1.05rem; color: #f8fafc;'>Lavagna Tattica Ufficiale ({cur_modulo})</span>"
+                f"<span style='font-size: 0.76rem; color: #38bdf8; margin-left: 8px;'>( Passa il mouse per scheda rapida)</span>"
                 f"</div>"
                 f"<span style='color: #38bdf8; font-weight: 700; font-size: 0.90rem;'>Punti Attesi Totali: {opt_res['Punti_Attesi_Totali']:.2f} pt</span>"
                 f"</div>",
@@ -1164,30 +1165,30 @@ with tab_formazione:
                     p_voto_pct = int(p_voto * 100)
                     bal_badge = ""
                     if p_voto < 0.70 or str(pl.get('Ballottaggio_Info', '')).strip():
-                        bal_badge = f"<span style='color: #f59e0b; font-size: 0.65rem; margin-left: 2px;' title='Ballottaggio ({p_voto_pct}%)'>⚖️</span>"
+                        bal_badge = f"<span style='color: #f59e0b; font-size: 0.65rem; margin-left: 2px;' title='Ballottaggio ({p_voto_pct}%)'>🟡</span>"
                     xfv_val = float(pl.get('xFV', 0.0))
                     pred_v = float(pl.get('Pred_Voto', 6.0))
-                    match_txt = f"{pl.get('Squadra', '')} {pl.get('Match', '')}"
+                    match_3letter = format_match_3letter(pl)
 
                     p_name = pl['Giocatore']
                     p_escaped = html.escape(p_name, quote=True)
-                    hover_json = _build_hover_json(pl, slot_label, slot_c, fdr, fdr_c, match_txt, pred_v, xfv_val, p_voto_pct)
+                    hover_json = _build_hover_json(pl, slot_label, slot_c, fdr, fdr_c, match_3letter, pred_v, xfv_val, p_voto_pct)
 
                     chip_html = (
                         f"<div class='pitch-player-card pitch-player-card-abs' data-player='{p_escaped}' data-info='{hover_json}' "
                         f"style='position: absolute; left: {c['x']}%; top: {c['y']}%; transform: translate(-50%, -50%); "
-                        f"width: 104px; z-index: 10; cursor: pointer; background: rgba(15,23,42,0.92); "
-                        f"border: 1.5px solid {slot_c}; border-radius: 7px; padding: 4px 6px; text-align: center; "
+                        f"width: 114px; z-index: 10; cursor: pointer; background: rgba(15,23,42,0.94); "
+                        f"border: 1.5px solid {slot_c}; border-radius: 8px; padding: 5px 6px; text-align: center; "
                         f"box-shadow: 0 4px 12px rgba(0,0,0,0.65); backdrop-filter: blur(4px);'>"
                         f"<div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;'>"
-                        f"<span style='background: {slot_c}; color: #ffffff; padding: 1px 4px; border-radius: 3px; font-size: 0.65rem; font-weight: 800;'>{slot_label}</span>"
-                        f"<span style='font-size: 0.65rem; color: {fdr_c}; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 62px;'>{match_txt}</span>"
+                        f"<span style='background: {slot_c}; color: #ffffff; padding: 1px 5px; border-radius: 3px; font-size: 0.65rem; font-weight: 800;'>{slot_label}</span>"
+                        f"<span style='color: #38bdf8; font-weight: 800; font-size: 0.70rem;'>xFV {xfv_val:.2f}</span>"
                         f"</div>"
-                        f"<div style='font-weight: 700; font-size: 0.82rem; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'>"
+                        f"<div style='font-weight: 800; font-size: 0.82rem; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 2px 0;'>"
                         f"{p_name}{bal_badge}</div>"
-                        f"<div style='display: flex; justify-content: space-between; align-items: center; margin-top: 2px; font-size: 0.70rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 2px;'>"
-                        f"<span style='color: #94a3b8;'>V {pred_v:.1f}</span>"
-                        f"<span style='color: #38bdf8; font-weight: 800;'>xFV {xfv_val:.2f}</span>"
+                        f"<div style='display: flex; justify-content: space-between; align-items: center; margin-top: 2px; font-size: 0.68rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 2px;'> "
+                        f"<span style='color: {fdr_c}; font-weight: 800; letter-spacing: 0.5px;'>{match_3letter}</span>"
+                        f"<span style='color: #94a3b8; font-weight: 600;'>V {pred_v:.1f}</span>"
                         f"</div></div>"
                     )
                     player_chips.append(chip_html)
@@ -1241,19 +1242,20 @@ with tab_formazione:
                     xfv_val = float(pl.get('xFV', 0.0))
                     fb_name = pl['Giocatore']
                     fb_escaped = html.escape(fb_name, quote=True)
-                    fb_hover_json = _build_hover_json(pl, pl['Slot_Assegnato'], slot_c, fdr, fdr_c, f"{pl.get('Squadra','')} {pl.get('Match','')}", pred_v, xfv_val, int(float(pl.get('P_Voto', 0.90))*100))
+                    fb_m3 = format_match_3letter(pl)
+                    fb_hover_json = _build_hover_json(pl, pl['Slot_Assegnato'], slot_c, fdr, fdr_c, fb_m3, pred_v, xfv_val, int(float(pl.get('P_Voto', 0.90))*100))
                     return (
                         f"<div class='pitch-player-card pitch-player-card-flex' data-player='{fb_escaped}' data-info='{fb_hover_json}' "
-                        f"style='background: rgba(15,23,42,0.92); border: 1.5px solid {slot_c}; border-radius: 8px; "
-                        f"padding: 6px 8px; width: 124px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.6); flex-shrink: 0; cursor: pointer;'>"
+                        f"style='background: rgba(15,23,42,0.94); border: 1.5px solid {slot_c}; border-radius: 8px; "
+                        f"padding: 5px 8px; width: 120px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.6); flex-shrink: 0; cursor: pointer;'>"
                         f"<div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;'>"
                         f"<span style='background: {slot_c}; color: #ffffff; padding: 1px 5px; border-radius: 4px; font-size: 0.68rem; font-weight: 800;'>{pl['Slot_Assegnato']}</span>"
-                        f"<span style='font-size: 0.68rem; color: {fdr_c}; font-weight: 700;'>{pl.get('Squadra','')} {pl.get('Match','')}</span>"
+                        f"<span style='color: #38bdf8; font-weight: 800; font-size: 0.72rem;'>xFV {xfv_val:.2f}</span>"
                         f"</div>"
-                        f"<div style='font-weight: 700; font-size: 0.86rem; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'>{fb_name}</div>"
-                        f"<div style='display: flex; justify-content: space-between; align-items: center; margin-top: 3px; font-size: 0.74rem;'>"
-                        f"<span style='color: #94a3b8;'>Voto {pred_v:.1f}</span>"
-                        f"<span style='color: #38bdf8; font-weight: 800;'>xFV {xfv_val:.2f}</span>"
+                        f"<div style='font-weight: 800; font-size: 0.84rem; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 2px 0;'>{fb_name}</div>"
+                        f"<div style='display: flex; justify-content: space-between; align-items: center; margin-top: 3px; font-size: 0.70rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 2px;'> "
+                        f"<span style='color: {fdr_c}; font-weight: 800; letter-spacing: 0.5px;'>{fb_m3}</span>"
+                        f"<span style='color: #94a3b8; font-weight: 600;'>V {pred_v:.1f}</span>"
                         f"</div></div>"
                     )
                 def _render_fb_row(players):
@@ -1296,7 +1298,7 @@ with tab_formazione:
             # Quick-access starter pills bar
             starter_names = [p['Giocatore'] for p in titolari_list]
             selected_starter_pill = st.pills(
-                "🔍 Scheda Rapida Titolari:",
+                " Scheda Rapida Titolari:",
                 options=starter_names,
                 key=f"pill_starter_{current_active_team}"
             )
@@ -1352,7 +1354,7 @@ with tab_formazione:
 
             # Ballottaggi Chiave Decisi dall'Algoritmo (Disponibile come expander pulito)
             if 'Panchina' in opt_res and opt_res['Panchina']:
-                with st.expander("⚖️ Ballottaggi Chiave Decisi dall'Algoritmo (Chi è rimasto fuori e perché)", expanded=False):
+                with st.expander("Ballottaggi Chiave Decisi dall'Algoritmo (Chi è rimasto fuori e perché)", expanded=False):
                     ballottaggi = []
                     por_tit = [t for t in titolari_list if t['Slot_Assegnato'] in ['Por', 'P']]
                     por_bench = [b for b in opt_res['Panchina'] if ('Por' in b.get('RuoloMantra', '')) or (b.get('RuoloClassic') == 'P')]
@@ -1361,7 +1363,7 @@ with tab_formazione:
                         pb = por_bench[0]
                         diff = round(float(pt.get('xFV', 0)) - float(pb.get('xFV', 0)), 2)
                         ballottaggi.append(
-                            f"🧤 **Portiere**: **{pt['Giocatore']}** ({pt['xFV']} xFV) preferito a **{pb['Giocatore']}** ({pb['xFV']} xFV, diff: +{diff} pt) "
+                            f" **Portiere**: **{pt['Giocatore']}** ({pt['xFV']} xFV) preferito a **{pb['Giocatore']}** ({pb['xFV']} xFV, diff: +{diff} pt) "
                             f"per miglior proiezione complessiva contro {pt.get('Match')}."
                         )
                     if is_classic:
@@ -1372,7 +1374,7 @@ with tab_formazione:
                             first_bench_att = att_bench[0]
                             diff_att = round(float(lowest_tit_att.get('xFV', 0)) - float(first_bench_att.get('xFV', 0)), 2)
                             ballottaggi.append(
-                                f"⚽ **Reparto Attacco**: **{lowest_tit_att['Giocatore']}** ({lowest_tit_att['xFV']} xFV) "
+                                f" **Reparto Attacco**: **{lowest_tit_att['Giocatore']}** ({lowest_tit_att['xFV']} xFV) "
                                 f"preferito a **{first_bench_att['Giocatore']}** ({first_bench_att['xFV']} xFV, diff: {diff_att:+} pt)."
                             )
                     else:
@@ -1383,7 +1385,7 @@ with tab_formazione:
                             first_bench_att = att_bench[0]
                             diff_att = round(float(lowest_tit_att.get('xFV', 0)) - float(first_bench_att.get('xFV', 0)), 2)
                             ballottaggi.append(
-                                f"⚽ **Reparto Offensivo**: **{lowest_tit_att['Giocatore']}** ({lowest_tit_att['xFV']} xFV) "
+                                f" **Reparto Offensivo**: **{lowest_tit_att['Giocatore']}** ({lowest_tit_att['xFV']} xFV) "
                                 f"ha superato **{first_bench_att['Giocatore']}** ({first_bench_att['xFV']} xFV, diff: {diff_att:+} pt) "
                                 f"nel modulo **{opt_res['Modulo']}**."
                             )
@@ -1391,7 +1393,7 @@ with tab_formazione:
                         st.markdown(f"- {b_text}")
 
             # 2. Probable Lineups & Field Notes Table (Collapsed by Default)
-            with st.expander("📋 Tabellone Probabili Formazioni, Ballottaggi & Ultime dai Campi (La Tua Rosa)", expanded=False):
+            with st.expander(" Tabellone Probabili Formazioni, Ballottaggi & Ultime dai Campi (La Tua Rosa)", expanded=False):
                 prob_rows = []
                 for _, prow in df_my_proj.iterrows():
                     p_info_det = prow.get('Dettaglio_Indisponibile', '') or prow.get('Ballottaggio_Info', '') or 'Nessun ballottaggio segnalato'
@@ -1409,8 +1411,8 @@ with tab_formazione:
                 st.dataframe(pd.DataFrame(prob_rows), width='stretch', hide_index=True)
 
             # 3. Interactive Substitution Simulator & Modules Comparison (Collapsed by Default)
-            with st.expander(f"🛡️ Simulatore Sostituzioni & Confronto Altri Moduli {'Classic' if is_classic else 'Mantra'}", expanded=False):
-                st.markdown("##### 🎮 Simulatore Interattivo Forfait / S.V. in Tempo Reale")
+            with st.expander(f" Simulatore Sostituzioni & Confronto Altri Moduli {'Classic' if is_classic else 'Mantra'}", expanded=False):
+                st.markdown("#####  Simulatore Interattivo Forfait / S.V. in Tempo Reale")
                 starter_options = [t['Giocatore'] for t in titolari_list]
                 sim_absent = st.multiselect(
                     "Simula assenza di uno o più titolari:",
@@ -1429,21 +1431,21 @@ with tab_formazione:
                         )
                     st.markdown(f"**Esito Simulazione: {sim_result['Cambi_Effettuati']} cambi effettuati su {len(sim_absent)} assenze simulate**")
                     for idx, sub in enumerate(sim_result['Sostituzioni']):
-                        if '✅' in sub['Status']:
+                        if '' in sub['Status']:
                             st.success(
-                                f"**Cambio #{idx+1}**: Esce **{sub['Out']}** ({sub['Out_Slot']}) ➔ "
+                                f"**Cambio #{idx+1}**: Esce **{sub['Out']}** ({sub['Out_Slot']})  "
                                 f"Subentra **{sub['In']}** (Pos #{sub['In_Pos']} - `{sub['In_Roles']}`). _{sub['Dettaglio']}_"
                             )
                         else:
-                            st.error(f"**Cambio #{idx+1}**: Esce **{sub['Out']}** ({sub['Out_Slot']}) ➔ **{sub['In']}**. _{sub['Dettaglio']}_")
+                            st.error(f"**Cambio #{idx+1}**: Esce **{sub['Out']}** ({sub['Out_Slot']})  **{sub['In']}**. _{sub['Dettaglio']}_")
                     col_mod1, col_mod2, col_mod3 = st.columns(3)
                     col_mod1.metric("Modulo di Partenza", opt_res['Modulo'])
                     col_mod2.metric("Modulo Finale in Campo", sim_result['Modulo_Finale'])
                     all_covered = (sim_result['Cambi_Effettuati'] == len(sim_absent))
-                    col_mod3.metric("Stato Formazione", "✅ Modulo Legale Completo" if all_covered else "⚠️ Squadra Incompleta")
+                    col_mod3.metric("Stato Formazione", " Modulo Legale Completo" if all_covered else " Squadra Incompleta")
 
                 st.markdown("---")
-                st.markdown(f"##### 📊 Confronto con gli altri moduli {'Classic' if is_classic else 'Mantra'} valutati")
+                st.markdown(f"#####  Confronto con gli altri moduli {'Classic' if is_classic else 'Mantra'} valutati")
                 df_all_moduli = pd.DataFrame(opt_res['Tutti_Moduli_Valutati'])
                 display_cols = ['Modulo', 'Punti_Totali', 'Delta_vs_Top', 'Stato_Copertura', 'xFV_Titolari', 'D_Factor', 'Punti_Robusti']
                 cols_to_show = [c for c in display_cols if c in df_all_moduli.columns]
@@ -1454,13 +1456,13 @@ with tab_rosa:
     meta_roster = get_league_metadata()
     t_head_col1, t_head_col2 = st.columns([2.2, 1.0])
     with t_head_col1:
-        st.subheader(f"📋 La Mia Rosa {'Classic' if is_classic else 'Mantra'} — {current_active_team}")
-        st.caption(f"📅 Ultimo aggiornamento rose: **{meta_roster.get('last_updated')}** • Clicca su qualsiasi calciatore in tabella per aprire la scheda profilo completa.")
+        st.subheader(f" La Mia Rosa {'Classic' if is_classic else 'Mantra'} — {current_active_team}")
+        st.caption(f" Ultimo aggiornamento rose: **{meta_roster.get('last_updated')}** • Clicca su qualsiasi calciatore in tabella per aprire la scheda profilo completa.")
     with t_head_col2:
         if league_teams:
             cur_idx = league_teams.index(current_active_team) if current_active_team in league_teams else 0
             main_team_choice = st.selectbox(
-                "🏆 Cambia Squadra Attiva:",
+                " Cambia Squadra Attiva:",
                 options=league_teams,
                 index=cur_idx,
                 key=f"main_team_picker_{current_active_team}"
@@ -1507,21 +1509,21 @@ with tab_rosa:
     with c3:
         st.markdown(f"""
         <div class="metric-card">
-            <div class="metric-title">Indisponibili 🚑/🟥</div>
+            <div class="metric-title">Indisponibili /</div>
             <div class="metric-val" style="color: #f87171;">{num_inf + num_squ}</div>
         </div>
         """, unsafe_allow_html=True)
     with c4:
         st.markdown(f"""
         <div class="metric-card">
-            <div class="metric-title">Prestiti (IN / OUT) 🔄</div>
+            <div class="metric-title">Prestiti (IN / OUT) </div>
             <div class="metric-val" style="color: #38bdf8;">{len(loans_in)} IN · {len(loans_out)} OUT</div>
         </div>
         """, unsafe_allow_html=True)
     with c5:
         st.markdown(f"""
         <div class="metric-card">
-            <div class="metric-title">Spesa Asta 💰</div>
+            <div class="metric-title">Spesa Asta </div>
             <div class="metric-val" style="color: #facc15;">{costo_tot_rosa} cr</div>
         </div>
         """, unsafe_allow_html=True)
@@ -1530,19 +1532,19 @@ with tab_rosa:
     if not out_serie_a.empty:
         svincoli_tot_cr = int(out_serie_a['Costo'].sum())
         out_names = ", ".join([f"**{r['Giocatore']}** ({r['Costo']} cr)" for _, r in out_serie_a.iterrows()])
-        st.warning(f"🚫 **Calciatori fuori dalla Serie A da svincolare (+{svincoli_tot_cr} cr recuperabili):** {out_names}")
+        st.warning(f" **Calciatori fuori dalla Serie A da svincolare (+{svincoli_tot_cr} cr recuperabili):** {out_names}")
 
     # 2. Compact Collapsible Loan Management
     cur_team_name = get_active_my_team()
     if not loans_in.empty or not loans_out.empty:
-        with st.expander(f"📑 Accordi di Prestito Attivi ({len(loans_in)} in entrata, {len(loans_out)} in uscita) — Gestisci / Risolvi", expanded=False):
+        with st.expander(f" Accordi di Prestito Attivi ({len(loans_in)} in entrata, {len(loans_out)} in uscita) — Gestisci / Risolvi", expanded=False):
             col_l1, col_l2 = st.columns(2)
             with col_l1:
-                st.markdown("**📥 Prestiti in Entrata (IN - Schierabili):**")
+                st.markdown("** Prestiti in Entrata (IN - Schierabili):**")
                 if not loans_in.empty:
                     for _, r in loans_in.iterrows():
                         p_name_t = r['Giocatore']
-                        st.markdown(f"- 📥 **{p_name_t}** ({r['RuoloClassic'] if is_classic else r['RuoloMantra']}): *{r['Dettaglio_Prestito']}*")
+                        st.markdown(f"-  **{p_name_t}** ({r['RuoloClassic'] if is_classic else r['RuoloMantra']}): *{r['Dettaglio_Prestito']}*")
                         if st.button(f"🔴 Risolvi prestito di {p_name_t}", key=f"t1_term_in_{p_name_t}"):
                             ok, msg = terminate_loan(p_name_t, cur_team_name)
                             if ok:
@@ -1553,12 +1555,12 @@ with tab_rosa:
                 else:
                     st.caption("Nessun prestito in entrata.")
             with col_l2:
-                st.markdown("**📤 Prestiti in Uscita (OUT - Non schierabili):**")
+                st.markdown("** Prestiti in Uscita (OUT - Non schierabili):**")
                 if not loans_out.empty:
                     for _, r in loans_out.iterrows():
                         p_name_t = r['Giocatore']
                         borrower_t = r.get('Controparte', '')
-                        st.markdown(f"- 📤 **{p_name_t}** ({r['RuoloClassic'] if is_classic else r['RuoloMantra']}): *{r['Dettaglio_Prestito']}* (asta: {r['Costo']} cr)")
+                        st.markdown(f"-  **{p_name_t}** ({r['RuoloClassic'] if is_classic else r['RuoloMantra']}): *{r['Dettaglio_Prestito']}* (asta: {r['Costo']} cr)")
                         if st.button(f"🟢 Richiama alla base {p_name_t}", key=f"t1_term_out_{p_name_t}"):
                             ok, msg = terminate_loan(p_name_t, borrower_t)
                             if ok:
@@ -1585,16 +1587,16 @@ with tab_rosa:
                 "TUTTI",
                 "SOLO SCHIERABILI (TUTTI)",
                 "🟢 SOLO PROBABILI TITOLARI",
-                "🪑 SOLO PROBABILI PANCHINARI",
-                "🔄 TUTTI I PRESTITI (IN & OUT)",
-                "🚑 INFORTUNATI / SQUALIFICATI",
-                "🚫 FUORI SERIE A (DA SVINCOLARE)"
+                " SOLO PROBABILI PANCHINARI",
+                " TUTTI I PRESTITI (IN & OUT)",
+                " INFORTUNATI / SQUALIFICATI",
+                " FUORI SERIE A (DA SVINCOLARE)"
             ],
             index=0
         )
     with f_col3:
         st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
-        show_adv_cols = st.checkbox("🔬 Mostra metriche avanzate (xG, Tiri, KP)", value=False, key="chk_rosa_adv_cols")
+        show_adv_cols = st.checkbox(" Mostra metriche avanzate (xG, Tiri, KP)", value=False, key="chk_rosa_adv_cols")
     
     display_df = df_my_roster.copy()
     if ruoli_filter:
@@ -1608,13 +1610,13 @@ with tab_rosa:
         display_df = display_df[display_df['Schierabile'] == True]
     elif stato_filter == "🟢 SOLO PROBABILI TITOLARI" and 'Categoria_Schierabile' in display_df.columns:
         display_df = display_df[(display_df['Schierabile'] == True) & (display_df['Categoria_Schierabile'] == 'Probabile Titolare')]
-    elif stato_filter == "🪑 SOLO PROBABILI PANCHINARI" and 'Categoria_Schierabile' in display_df.columns:
+    elif stato_filter == " SOLO PROBABILI PANCHINARI" and 'Categoria_Schierabile' in display_df.columns:
         display_df = display_df[(display_df['Schierabile'] == True) & (display_df['Categoria_Schierabile'] == 'Probabile Panchinaro')]
-    elif stato_filter == "🔄 TUTTI I PRESTITI (IN & OUT)" and 'Stato_Prestito' in display_df.columns:
+    elif stato_filter == " TUTTI I PRESTITI (IN & OUT)" and 'Stato_Prestito' in display_df.columns:
         display_df = display_df[display_df['Stato_Prestito'].isin(['Prestito IN', 'Prestito OUT'])]
-    elif stato_filter == "🚑 INFORTUNATI / SQUALIFICATI" and 'Stato_Disponibilita' in display_df.columns:
+    elif stato_filter == " INFORTUNATI / SQUALIFICATI" and 'Stato_Disponibilita' in display_df.columns:
         display_df = display_df[display_df['Stato_Disponibilita'].isin(['Infortunato', 'Squalificato', 'In dubbio'])]
-    elif stato_filter == "🚫 FUORI SERIE A (DA SVINCOLARE)" and 'Da_Svincolare' in display_df.columns:
+    elif stato_filter == " FUORI SERIE A (DA SVINCOLARE)" and 'Da_Svincolare' in display_df.columns:
         display_df = display_df[display_df['Da_Svincolare'] == True]
         
     role_col = 'RuoloClassic' if is_classic else 'RuoloMantra'
@@ -1661,7 +1663,7 @@ with tab_rosa:
                 df_roster=df_my_roster
             )
         else:
-            if st.button(f"🔍 Riapri Scheda Profilo: {clicked_player}", type="primary", key="btn_reopen_dlg"):
+            if st.button(f" Riapri Scheda Profilo: {clicked_player}", type="primary", key="btn_reopen_dlg"):
                 show_player_profile_dialog(
                     clicked_player,
                     df_master,
@@ -1673,14 +1675,14 @@ with tab_rosa:
     exp_c1, exp_c2, _ = st.columns([1, 1, 2])
     with exp_c1:
         st.download_button(
-            "📥 Scarica Rosa in CSV",
+            " Scarica Rosa in CSV",
             data=display_df[cols_to_show].to_csv(index=False),
             file_name=f"mia_rosa_{'classic' if is_classic else 'mantra'}.csv",
             mime="text/csv"
         )
     with exp_c2:
         st.download_button(
-            "📥 Backup Rosa (JSON)",
+            " Backup Rosa (JSON)",
             data=json.dumps(user_squad_names, indent=2, ensure_ascii=False),
             file_name="user_roster.json",
             mime="application/json"
@@ -1688,23 +1690,23 @@ with tab_rosa:
 
 # =============================================================
 with tab_scambi:
-    st.subheader(f"🔄 Trade Center & Ottimizzazione Scambi {'Classic' if is_classic else 'Mantra'}")
+    st.subheader(f" Trade Center & Ottimizzazione Scambi {'Classic' if is_classic else 'Mantra'}")
     st.caption(
         "Valuta qualsiasi scambio con il modello ibrido a 4 pilastri, scopri le proposte Win-Win automatiche o cerca un obiettivo specifico."
     )
     
     subtab_sim, subtab_radar, subtab_target, subtab_diag = st.tabs([
-        "⚖️ Valutatore Scambio Libero",
-        "🤝 Proposte Automatiche (Win-Win)",
-        "🎯 Cerca un Obiettivo",
-        "🏥 Diagnosi Rosa & Esuberi"
+        " Valutatore Scambio Libero",
+        " Proposte Automatiche (Win-Win)",
+        " Cerca un Obiettivo",
+        " Diagnosi Rosa & Esuberi"
     ])
 
     # -------------------------------------------------------------
     # SUBTAB 1: DIAGNOSI PUNTI DEBOLI & ASSET
     # -------------------------------------------------------------
     with subtab_diag:
-        st.subheader("🏥 Check-up Strutturale & Analisi Carenze di Modulo")
+        st.subheader(" Check-up Strutturale & Analisi Carenze di Modulo")
         st.caption(
             f"L'algoritmo analizza la distribuzione dei ruoli {'Classic' if is_classic else 'Mantra'}, i giocatori con presenze continuative, "
             "la qualità media e la copertura del D-Factor per evidenziare rischi di squilibrio tattico."
@@ -1749,10 +1751,10 @@ with tab_scambi:
             st.markdown("---")
             
             # Punti Deboli Section
-            st.subheader("🚨 Punti Deboli & Bottleneck Strutturali")
+            st.subheader(" Punti Deboli & Bottleneck Strutturali")
             weaknesses = diag_res.get('Punti_Deboli', [])
             if not weaknesses:
-                st.success("✅ Congratulazioni! La rosa presenta una struttura bilanciata in tutti i reparti chiave.")
+                st.success(" Congratulazioni! La rosa presenta una struttura bilanciata in tutti i reparti chiave.")
             else:
                 for w in weaknesses:
                     sev = w.get('Severita', 'MEDIA')
@@ -1784,7 +1786,7 @@ with tab_scambi:
                         </div>
                         <p style="margin: 4px 0 8px 0; color: #cbd5e1; font-size: 0.92rem;">{w['Diagnosi']}</p>
                         <div style="font-size: 0.88rem; color: #38bdf8; font-weight: 600;">
-                            🎯 Obiettivo di Mercato: {w['Obiettivo_Mercato']}
+                             Obiettivo di Mercato: {w['Obiettivo_Mercato']}
                         </div>
                     </div>
                     """, unsafe_allow_html=True)
@@ -1794,11 +1796,11 @@ with tab_scambi:
             if strengths:
                 with st.expander("⭐ Punti di Forza & Certezze della Rosa", expanded=False):
                     for s in strengths:
-                        st.markdown(f"- ✅ **{s}**")
+                        st.markdown(f"-  **{s}**")
                         
             # Surplus Assets Table
             st.markdown("---")
-            st.subheader("💰 Asset Spendibili sul Mercato (Esuberi di Fanta-Valore)")
+            st.subheader(" Asset Spendibili sul Mercato (Esuberi di Fanta-Valore)")
             st.caption(
                 "Calciatori di valore (o con segnale SELL-HIGH) che attualmente siedono in panchina o fanno parte "
                 "di reparti sovraffollati. Sono la tua moneta di scambio ideale da offrire per colmare i punti deboli sopra evidenziati."
@@ -1816,7 +1818,7 @@ with tab_scambi:
                 st.info("Nessun calciatore di rilievo attualmente in esubero.")
                 
             # Quota Coverage Matrix
-            with st.expander(f"📐 Matrice di Copertura Ruoli {'Classic' if is_classic else 'Mantra'} (Quote Consigliate vs Attivi)", expanded=False):
+            with st.expander(f" Matrice di Copertura Ruoli {'Classic' if is_classic else 'Mantra'} (Quote Consigliate vs Attivi)", expanded=False):
                 matrix_rows = []
                 c_all = diag_res.get('Conteggio_Totale', {})
                 c_act = diag_res.get('Conteggio_Attivi', {})
@@ -1831,13 +1833,13 @@ with tab_scambi:
                         min_q = 2
                     
                     if act < min_q:
-                        status = "🚨 Carente"
+                        status = " Carente"
                     elif act == min_q:
-                        status = "⚠️ Al Minimo"
+                        status = " Al Minimo"
                     elif act >= tgt + 2:
-                        status = "➕ Esubero"
+                        status = " Esubero"
                     else:
-                        status = "✅ Coperto"
+                        status = " Coperto"
                         
                     matrix_rows.append({
                         'Ruolo': role,
@@ -1854,7 +1856,7 @@ with tab_scambi:
     # SUBTAB 2: RADAR SCAMBI INTELLIGENTI (WIN-WIN)
     # -------------------------------------------------------------
     with subtab_radar:
-        st.subheader("🤝 Radar Scambi Intelligenti (Win-Win Reciproco)")
+        st.subheader(" Radar Scambi Intelligenti (Win-Win Reciproco)")
         st.markdown(
             "L'algoritmo incrocia la diagnosi della tua squadra con le rose di tutti gli 11 avversari di lega. "
             "Identifica opportunità a **somma positiva** dove tu cedi un giocatore spendibile e ricevi un elemento che "
@@ -1903,9 +1905,9 @@ with tab_scambi:
             )
         with r_col4:
             format_filter_map = {
-                "🎯 Tutti i Formati (1x1, 2x2, 2x1, 1x2)": "TUTTI",
-                "🔄 Solo Scambi Multipli (2x2, 2x1, 1x2)": "SOLO_MULTIPLI",
-                "⚖️ Solo Scambi Singoli (1x1)": "SOLO_SINGOLI"
+                " Tutti i Formati (1x1, 2x2, 2x1, 1x2)": "TUTTI",
+                " Solo Scambi Multipli (2x2, 2x1, 1x2)": "SOLO_MULTIPLI",
+                " Solo Scambi Singoli (1x1)": "SOLO_SINGOLI"
             }
             selected_format_label = st.selectbox(
                 "Formato Scambio:",
@@ -1968,14 +1970,14 @@ with tab_scambi:
         if not proposals:
             st.warning("Nessuna proposta Win-Win trovata con i filtri correnti. Prova a impostare 'TUTTI' nei filtri per allargare la ricerca.")
         else:
-            st.success(f"🎯 Trovate **{len(proposals)} proposte di scambio Win-Win** su misura per la tua rosa!")
+            st.success(f" Trovate **{len(proposals)} proposte di scambio Win-Win** su misura per la tua rosa!")
             
             for idx, prop in enumerate(proposals[:15], 1):
                 opp = prop['Squadra_Avversaria']
                 score = prop['Score']
                 give_list = prop.get('Tu_Cedi_List', [prop['Tu_Cedi']])
                 rec_list = prop.get('Tu_Ricevi_List', [prop['Tu_Ricevi']])
-                label_tipo = prop.get('Label_Tipo', '⚖️ Scambio Diretto (1x1)')
+                label_tipo = prop.get('Label_Tipo', ' Scambio Diretto (1x1)')
                 tipo_scambio = prop.get('Tipo_Scambio', '1x1')
                 tot_c_give = prop.get('Tot_Costo_Cedi', sum(safe_int(p.get('Costo', 0)) for p in give_list))
                 tot_c_rec = prop.get('Tot_Costo_Ricevi', sum(safe_int(p.get('Costo', 0)) for p in rec_list))
@@ -2047,7 +2049,7 @@ with tab_scambi:
                                 'MARGINALE': '#dc2626'
                             }.get(status_tit, '#64748b')
                             tit_badge = f"<span style='background:{tit_color};color:white;padding:1px 6px;border-radius:4px;font-size:0.75rem;font-weight:bold;'>{ricevi.get('Badge_Titolarita', status_tit)}</span>"
-                            stash_badge = f"<span style='background:#d97706;color:white;padding:1px 6px;border-radius:4px;font-size:0.75rem;font-weight:bold;'>🩹 STASH INFORTUNIO</span>" if ricevi.get('Is_Stash_Injury') else ""
+                            stash_badge = f"<span style='background:#d97706;color:white;padding:1px 6px;border-radius:4px;font-size:0.75rem;font-weight:bold;'> STASH INFORTUNIO</span>" if ricevi.get('Is_Stash_Injury') else ""
 
                             role_disp_rec = ricevi.get('RuoloClassic' if is_classic else 'RuoloMantra', ricevi.get('RuoloMantra', ''))
                             render_html(f"""
@@ -2063,30 +2065,30 @@ with tab_scambi:
                             </div>
                             """, unsafe_allow_html=True)
                         
-                    st.markdown("<div style='margin-top: 10px; font-weight: 600; font-size: 0.9rem; color: #e2e8f0;'>💡 Perché ha senso per entrambi:</div>", unsafe_allow_html=True)
+                    st.markdown("<div style='margin-top: 10px; font-weight: 600; font-size: 0.9rem; color: #e2e8f0;'> Perché ha senso per entrambi:</div>", unsafe_allow_html=True)
                     for m in prop['Motivazioni']:
                         st.markdown(f"<div style='font-size: 0.85rem; color: #94a3b8; margin-left: 8px;'>• {m}</div>", unsafe_allow_html=True)
                         
                     # WhatsApp Pitch Box
                     st.markdown("<div style='margin-top: 12px;'></div>", unsafe_allow_html=True)
-                    with st.expander("💬 Messaggio Pronto da Inviare su WhatsApp", expanded=False):
+                    with st.expander(" Messaggio Pronto da Inviare su WhatsApp", expanded=False):
                         st.caption("Copia e incolla direttamente nella chat privata o di lega con il tuo avversario:")
                         st.code(prop['Messaggio_Trattativa'], language="text")
                         
                     # Action button to prefill simulator
                     btn_col1, btn_col2 = st.columns([1, 3])
                     with btn_col1:
-                        if st.button(f"⚖️ Simula nel Valutatore", key=f"btn_sim_{idx}"):
+                        if st.button(f" Simula nel Valutatore", key=f"btn_sim_{idx}"):
                             g_names = [p['Giocatore'] for p in give_list]
                             r_names = [p['Giocatore'] for p in rec_list]
                             st.session_state['sim_prefill_give'] = g_names
                             st.session_state['sim_prefill_receive'] = r_names
                             st.session_state['sim_prefill_opp'] = opp
-                            st.session_state['sim_prefill_mode'] = "🤝 Trattativa di Lega (Inter-Squadra)"
+                            st.session_state['sim_prefill_mode'] = " Trattativa di Lega (Inter-Squadra)"
                             st.session_state['sim_last_trade_res'] = evaluate_trade(
                                 g_names, r_names, df_master, start_matchday=selected_giornata, horizon=None, calendar=calendar
                             )
-                            st.success(f"✅ Scambio con {opp} caricato e calcolato! Clicca sulla scheda '⚖️ Valutatore Scambio Libero' per il verdetto completo.")
+                            st.success(f" Scambio con {opp} caricato e calcolato! Clicca sulla scheda ' Valutatore Scambio Libero' per il verdetto completo.")
                             
                     st.markdown("</div>", unsafe_allow_html=True)
 
@@ -2094,7 +2096,7 @@ with tab_scambi:
     # SUBTAB 3: SCAMBIO MIRATO SU OBIETTIVO (REVERSE TRADE FINDER)
     # -------------------------------------------------------------
     with subtab_target:
-        st.subheader("🎯 Scambio Mirato su Obiettivo (Reverse Trade Finder)")
+        st.subheader(" Scambio Mirato su Obiettivo (Reverse Trade Finder)")
         st.markdown(
             "Cerca uno o più calciatori che desideri strappare a un avversario di lega. "
             "L'algoritmo valuta l'**intera rosa senza discriminazioni** (titolari, panchinari ed esuberi) "
@@ -2173,7 +2175,7 @@ with tab_scambi:
             chosen_pkg_types = pkg_types_map[pkg_size_label]
 
             # Show Instant Rival Check-up Card
-            with st.expander(f"🔍 Check-up Immediato Carenze di {target_opp_team} (Perché dovrebbero accettare)", expanded=False):
+            with st.expander(f" Check-up Immediato Carenze di {target_opp_team} (Perché dovrebbero accettare)", expanded=False):
                 opp_diag = cached_analyze_squad_weaknesses(
                     target_opp_team, _league_signature(league_dict, active_league_type),
                     selected_giornata, current_code_version, league_dict, df_master,
@@ -2192,7 +2194,7 @@ with tab_scambi:
 
             # Execution
             if not selected_target_pnames:
-                st.info("👆 Seleziona almeno un calciatore dal menu a tendina sopra per generare le proposte di offerta su misura.")
+                st.info(" Seleziona almeno un calciatore dal menu a tendina sopra per generare le proposte di offerta su misura.")
             else:
                 with st.spinner("Analisi delle criticità dell'avversario e formulazione offerte intelligenti in corso..."):
                     try:
@@ -2217,7 +2219,7 @@ with tab_scambi:
                         "Prova a selezionare una rosa o un obiettivo differente."
                     )
                 else:
-                    st.success(f"🎯 Trovate **{len(target_proposals)} proposte di scambio migliorative** per acquisire **{', '.join(selected_target_pnames)}**!")
+                    st.success(f" Trovate **{len(target_proposals)} proposte di scambio migliorative** per acquisire **{', '.join(selected_target_pnames)}**!")
 
                     for p_idx, prop in enumerate(target_proposals):
                         delta_pts = prop['Delta_Punti_Titolari']
@@ -2235,11 +2237,11 @@ with tab_scambi:
                                         {fmt_badge}
                                     </span>
                                     <span style="margin-left: 6px; background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; border-radius: 6px; padding: 3px 10px; font-weight: 800; font-size: 0.85rem; color: #34d399;">
-                                        📈 +{delta_pts:.2f} pt attesi
+                                         +{delta_pts:.2f} pt attesi
                                     </span>
                                 </div>
                                 <div style="display: flex; gap: 12px; align-items: center;">
-                                    <span style="font-weight: 700; font-size: 0.95rem; color: #f59e0b;">🎯 Appetibilità Avversario: {prop['Appetibilita_Avversario']}%</span>
+                                    <span style="font-weight: 700; font-size: 0.95rem; color: #f59e0b;"> Appetibilità Avversario: {prop['Appetibilita_Avversario']}%</span>
                                 </div>
                             </div>
                         """, unsafe_allow_html=True)
@@ -2270,14 +2272,14 @@ with tab_scambi:
                             st.caption(f"Totale xFV Ricevuto: **{prop['Totale_xFV_Ricevuti']}** (Δ xFV: **{prop['Delta_xFV']:+.2f}**)")
 
                         # Tactical rationale & opponent leverage
-                        st.markdown("<div style='margin-top: 10px; font-weight: 700; font-size: 0.92rem; color: #38bdf8;'>💡 Perché l'avversario accetta (Leva di Trattativa):</div>", unsafe_allow_html=True)
+                        st.markdown("<div style='margin-top: 10px; font-weight: 700; font-size: 0.92rem; color: #38bdf8;'> Perché l'avversario accetta (Leva di Trattativa):</div>", unsafe_allow_html=True)
                         st.markdown(f"<div style='font-size: 0.88rem; color: #cbd5e1; margin-bottom: 6px;'>{prop['Leva_di_Trattativa']}</div>", unsafe_allow_html=True)
 
                         col_imp1, col_imp2 = st.columns(2)
                         with col_imp1:
                             render_html(f"""
                             <div style='background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 8px 12px; margin-bottom: 8px;'>
-                                <div style='font-size: 0.78rem; text-transform: uppercase; color: #94a3b8; font-weight: 700;'>📊 La Tua Formazione Titolare</div>
+                                <div style='font-size: 0.78rem; text-transform: uppercase; color: #94a3b8; font-weight: 700;'> La Tua Formazione Titolare</div>
                                 <div style='font-size: 0.95rem; font-weight: 700; color: #ffffff; margin: 2px 0;'>
                                     {prop['Punti_Titolari_Nuovi']:.2f} pt <span style='font-size: 0.85rem; color: {'#10b981' if prop['Delta_Punti_Titolari'] >= 0 else '#f97316'};'>({prop['Delta_Punti_Titolari']:+.2f} pt)</span>
                                 </div>
@@ -2291,11 +2293,11 @@ with tab_scambi:
                             opp_delta_txt = f"{opp_delta_val:+.2f} pt"
                             opp_delta_color = "#10b981" if opp_delta_val >= 0 else "#f59e0b"
                             opp_mod = prop.get('Modulo_Avversario_Nuovo', 'N/D')
-                            reassure_msg = prop['Reassurances_Avversario'][0] if prop.get('Reassurances_Avversario') else "✅ Nessuna nuova criticità creata per l'avversario"
+                            reassure_msg = prop['Reassurances_Avversario'][0] if prop.get('Reassurances_Avversario') else " Nessuna nuova criticità creata per l'avversario"
 
                             render_html(f"""
                             <div style='background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 8px 12px; margin-bottom: 8px;'>
-                                <div style='font-size: 0.78rem; text-transform: uppercase; color: #94a3b8; font-weight: 700;'>👔 Formazione {target_opp_team} Post-Scambio</div>
+                                <div style='font-size: 0.78rem; text-transform: uppercase; color: #94a3b8; font-weight: 700;'> Formazione {target_opp_team} Post-Scambio</div>
                                 <div style='font-size: 0.95rem; font-weight: 700; color: #ffffff; margin: 2px 0;'>
                                     {opp_pts_txt} <span style='font-size: 0.85rem; color: {opp_delta_color};'>({opp_delta_txt})</span>
                                 </div>
@@ -2306,7 +2308,7 @@ with tab_scambi:
                         # Pairwise Matching & Titolarita Breakdown
                         pairs = prop.get('Accoppiamento_Coppie', [])
                         if pairs and len(pairs) >= 1:
-                            with st.expander("⚖️ Dettaglio Accoppiamento a Coppie & Titolarità Reale (Vasi Comunicanti)", expanded=False):
+                            with st.expander(" Dettaglio Accoppiamento a Coppie & Titolarità Reale (Vasi Comunicanti)", expanded=False):
                                 st.caption("Ogni calciatore richiesto viene confrontato direttamente con una contropartita di pari status. Il minutaggio e la titolarità reale pesano il valore di mercato effettivo.")
                                 for p_match in pairs:
                                     g_pct = int(p_match['give_itit'] * 100)
@@ -2328,22 +2330,22 @@ with tab_scambi:
                                 st.caption(f"Valore Mercato Effettivo Complessivo: Offerto **{prop.get('Valore_Mercato_Ceduti', 0):.2f}** vs Richiesto **{prop.get('Valore_Mercato_Ricevuti', 0):.2f}** (Δ **{prop.get('Delta_Valore_Mercato', 0):+.2f}**)")
 
                         # WhatsApp Box
-                        with st.expander("💬 Messaggio Pronto da Inviare su WhatsApp all'Avversario", expanded=False):
+                        with st.expander(" Messaggio Pronto da Inviare su WhatsApp all'Avversario", expanded=False):
                             st.caption("Copia e incolla direttamente nella chat per proporre lo scambio:")
                             st.code(prop['Messaggio_Trattativa'], language="text")
 
                         # Prefill Simulator Button
-                        if st.button(f"⚖️ Simula nel Valutatore", key=f"btn_sim_target_{p_idx}"):
+                        if st.button(f" Simula nel Valutatore", key=f"btn_sim_target_{p_idx}"):
                             g_names_t = prop['Simulazione_Payload']['give_names']
                             r_names_t = prop['Simulazione_Payload']['receive_names']
                             st.session_state['sim_prefill_give'] = g_names_t
                             st.session_state['sim_prefill_receive'] = r_names_t
                             st.session_state['sim_prefill_opp'] = target_opp_team
-                            st.session_state['sim_prefill_mode'] = "🤝 Trattativa di Lega (Inter-Squadra)"
+                            st.session_state['sim_prefill_mode'] = " Trattativa di Lega (Inter-Squadra)"
                             st.session_state['sim_last_trade_res'] = evaluate_trade(
                                 g_names_t, r_names_t, df_master, start_matchday=selected_giornata, horizon=None, calendar=calendar
                             )
-                            st.success("✅ Scambio caricato e calcolato! Clicca sulla scheda '⚖️ Valutatore Scambio Libero' per il verdetto completo.")
+                            st.success(" Scambio caricato e calcolato! Clicca sulla scheda ' Valutatore Scambio Libero' per il verdetto completo.")
 
                         st.markdown("</div>", unsafe_allow_html=True)
 
@@ -2356,7 +2358,7 @@ with tab_scambi:
         render_html("""
         <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px;">
             <div>
-                <span style="font-size: 1.15rem; font-weight: 800; color: #f8fafc;">⚖️ Simulatore Scambi Libero</span>
+                <span style="font-size: 1.15rem; font-weight: 800; color: #f8fafc;"> Simulatore Scambi Libero</span>
                 <span style="font-size: 0.82rem; color: #94a3b8; margin-left: 8px;">(1v1, 2v2, Pacchetti Asimmetrici)</span>
             </div>
             <div style="font-size: 0.78rem; color: #64748b;">Consenso Multi-Algoritmo a 4 Pilastri • Proiezione fine stagione</div>
@@ -2364,7 +2366,7 @@ with tab_scambi:
         """)
 
         # Check prefill from radar
-        prefill_mode = st.session_state.get('sim_prefill_mode', "🤝 Trattativa di Lega (Inter-Squadra)")
+        prefill_mode = st.session_state.get('sim_prefill_mode', " Trattativa di Lega (Inter-Squadra)")
         prefill_give = st.session_state.get('sim_prefill_give', [])
         prefill_receive = st.session_state.get('sim_prefill_receive', [])
         prefill_opp = st.session_state.get('sim_prefill_opp', None)
@@ -2379,13 +2381,13 @@ with tab_scambi:
             with col_ctrl1:
                 trade_mode = st.radio(
                     "Modalità Selezione Scambio:",
-                    options=["🤝 Trattativa di Lega (Inter-Squadra)", "🔍 Ricerca Libera (Tutta la Serie A)"],
-                    index=0 if prefill_mode == "🤝 Trattativa di Lega (Inter-Squadra)" else 1,
+                    options=[" Trattativa di Lega (Inter-Squadra)", " Ricerca Libera (Tutta la Serie A)"],
+                    index=0 if prefill_mode == " Trattativa di Lega (Inter-Squadra)" else 1,
                     horizontal=True,
                     key="sim_trade_mode_radio"
                 )
             with col_ctrl2:
-                if trade_mode == "🤝 Trattativa di Lega (Inter-Squadra)":
+                if trade_mode == " Trattativa di Lega (Inter-Squadra)":
                     opp_teams = [t for t in league_teams if t != my_team]
                     opp_index = opp_teams.index(prefill_opp) if (prefill_opp and prefill_opp in opp_teams) else 0
                     selected_opp = st.selectbox(
@@ -2396,15 +2398,15 @@ with tab_scambi:
                     )
                 else:
                     selected_opp = None
-                    st.caption("🔍 Modalità libera: puoi selezionare qualsiasi calciatore della Serie A da entrambe le parti.")
+                    st.caption(" Modalità libera: puoi selezionare qualsiasi calciatore della Serie A da entrambe le parti.")
         else:
-            trade_mode = "🔍 Ricerca Libera (Tutta la Serie A)"
+            trade_mode = " Ricerca Libera (Tutta la Serie A)"
             selected_opp = None
 
         # Row 2: Give and Receive Multiselects side-by-side
         col_sc1, col_sc2 = st.columns(2)
 
-        if trade_mode == "🤝 Trattativa di Lega (Inter-Squadra)" and league_teams and selected_opp:
+        if trade_mode == " Trattativa di Lega (Inter-Squadra)" and league_teams and selected_opp:
             with col_sc1:
                 my_team_df = get_team_roster_df(my_team, df_master)
                 # Exclude borrowed players and players to release from tradeable give list
@@ -2482,9 +2484,9 @@ with tab_scambi:
         with col_hor1:
             render_html(f"""
             <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid #334155; border-radius: 6px; padding: 7px 10px; margin-bottom: 2px;">
-                <div style="font-size: 0.70rem; text-transform: uppercase; color: #94a3b8; font-weight: 700;">📅 Orizzonte</div>
+                <div style="font-size: 0.70rem; text-transform: uppercase; color: #94a3b8; font-weight: 700;"> Orizzonte</div>
                 <div style="font-size: 0.86rem; color: #38bdf8; font-weight: 700;">
-                    {rem_giornate} turni ({selected_giornata}ª ➔ 38ª)
+                    {rem_giornate} turni ({selected_giornata}ª  38ª)
                 </div>
             </div>
             """)
@@ -2492,22 +2494,22 @@ with tab_scambi:
             weight_mode_label = st.selectbox(
                 "Ponderazione Pacchetti Multipli:",
                 options=[
-                    "⚖️ Media Ponderata (Priorità Star)",
-                    "📊 Media Semplice (Equiparati)",
-                    "➕ Somma Grezza (Cumulativa)"
+                    " Media Ponderata (Priorità Star)",
+                    " Media Semplice (Equiparati)",
+                    " Somma Grezza (Cumulativa)"
                 ],
                 index=0,
                 key="sim_weight_mode_select",
                 help="Negli scambi multipli, la media ponderata bilancia i valori normalizzandoli a livello di singolo slot titolare evitando che la pura somma condanni ingiustamente gli scambi asimmetrici."
             )
             weight_mode_map = {
-                "⚖️ Media Ponderata (Priorità Star)": "rank_decay",
-                "📊 Media Semplice (Equiparati)": "simple_mean",
-                "➕ Somma Grezza (Cumulativa)": "raw_sum"
+                " Media Ponderata (Priorità Star)": "rank_decay",
+                " Media Semplice (Equiparati)": "simple_mean",
+                " Somma Grezza (Cumulativa)": "raw_sum"
             }
             chosen_weight_mode = weight_mode_map[weight_mode_label]
         with col_hor3:
-            eval_clicked = st.button("⚡ Valuta Scambio", type="primary", use_container_width=True, key="sim_eval_button")
+            eval_clicked = st.button(" Valuta Scambio", type="primary", use_container_width=True, key="sim_eval_button")
 
         if eval_clicked:
             if not give_selection or not receive_selection:
@@ -2553,8 +2555,8 @@ with tab_scambi:
                 delta_sign = '+' if delta_tot > 0 else ''
                 delta_p_sign = '+' if delta_p > 0 else ''
                 idx_conv = int(trade_res.get('Indice_Convenienza', 50))
-                badge_lbl = trade_res.get('Verdict_Badge', '⚖️')
-                archetipo_tit = trade_res.get('Archetipo_Titolo', '⚖️ Baratto Tattico')
+                badge_lbl = trade_res.get('Verdict_Badge', '')
+                archetipo_tit = trade_res.get('Archetipo_Titolo', ' Baratto Tattico')
                 archetipo_desc = trade_res.get('Archetipo_Descrizione', '')
                 tier_desc_txt = trade_res.get('Tier_Desc', '')
 
@@ -2614,7 +2616,7 @@ with tab_scambi:
                             cond_items = "".join(f"<div style='margin-bottom: 2px;'>• {c}</div>" for c in conds)
                             render_html(f"""
                             <div style="background: rgba(30, 41, 59, 0.6); border: 1px solid #334155; border-left: 3px solid {v_color}; border-radius: 6px; padding: 7px 11px; margin-bottom: 8px; font-size: 0.80rem; color: #cbd5e1;">
-                                <b style="color: #f8fafc; display: block; margin-bottom: 3px;">💡 Consiglio Strategico (Condizioni per concludere):</b>
+                                <b style="color: #f8fafc; display: block; margin-bottom: 3px;"> Consiglio Strategico (Condizioni per concludere):</b>
                                 {cond_items}
                             </div>
                             """)
@@ -2622,7 +2624,7 @@ with tab_scambi:
                             note_items = "".join(f"<div style='margin-bottom: 2px;'>• {nc}</div>" for nc in notes_clin)
                             render_html(f"""
                             <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.3); border-left: 3px solid #ef4444; border-radius: 6px; padding: 7px 11px; margin-bottom: 8px; font-size: 0.80rem; color: #fecaca;">
-                                <b style="color: #f87171; display: block; margin-bottom: 3px;">🚑 Aggiornamento Infermeria & Squalifiche:</b>
+                                <b style="color: #f87171; display: block; margin-bottom: 3px;"> Aggiornamento Infermeria & Squalifiche:</b>
                                 {note_items}
                             </div>
                             """)
@@ -2630,21 +2632,21 @@ with tab_scambi:
                         cond_items = "".join(f"<div style='margin-bottom: 2px;'>• {c}</div>" for c in conds)
                         render_html(f"""
                         <div style="background: rgba(30, 41, 59, 0.6); border: 1px solid #334155; border-left: 3px solid {v_color}; border-radius: 6px; padding: 7px 12px; margin-bottom: 8px; font-size: 0.82rem; color: #cbd5e1;">
-                            <b style="color: #f8fafc; margin-right: 6px;">💡 Consiglio Strategico:</b> {cond_items}
+                            <b style="color: #f8fafc; margin-right: 6px;"> Consiglio Strategico:</b> {cond_items}
                         </div>
                         """)
                     elif notes_clin:
                         note_items = "".join(f"<div style='margin-bottom: 2px;'>• {nc}</div>" for nc in notes_clin)
                         render_html(f"""
                         <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.3); border-left: 3px solid #ef4444; border-radius: 6px; padding: 7px 12px; margin-bottom: 8px; font-size: 0.82rem; color: #fecaca;">
-                            <b style="color: #f87171; margin-right: 6px;">🚑 Aggiornamento Infermeria & Squalifiche:</b> {note_items}
+                            <b style="color: #f87171; margin-right: 6px;"> Aggiornamento Infermeria & Squalifiche:</b> {note_items}
                         </div>
                         """)
 
                 # 2. CONFRONTO DIRETTO CALCIATORI (Ultra-Compact Cards)
                 render_html("""
                 <div style="font-size: 0.82rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #94a3b8; margin: 6px 0 4px 0; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 2px;">
-                    👥 Confronto Diretto Calciatori
+                     Confronto Diretto Calciatori
                 </div>
                 """)
 
@@ -2702,7 +2704,7 @@ with tab_scambi:
                 # 3. I 4 PILASTRI DI VALUTAZIONE (Side-by-Side 4 Columns)
                 render_html("""
                 <div style="font-size: 0.82rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #94a3b8; margin: 8px 0 4px 0; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 2px;">
-                    🏛️ I 4 Pilastri di Valutazione (Consenso Multi-Algoritmo)
+                     I 4 Pilastri di Valutazione (Consenso Multi-Algoritmo)
                 </div>
                 """)
 
@@ -2794,7 +2796,7 @@ with tab_scambi:
                 # 4. DETAILED STRATEGIC ANALYSIS (Side-by-Side High-Density Executive Cards)
                 render_html("""
                 <div style="font-size: 0.82rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #94a3b8; margin: 8px 0 4px 0; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 2px;">
-                    📋 Analisi Strategica Dettagliata
+                     Analisi Strategica Dettagliata
                 </div>
                 """)
 
@@ -2838,9 +2840,9 @@ with tab_scambi:
                     """)
 
                 # 6. COLLAPSED ADVANCED STATISTICAL EXPANDER
-                with st.expander("📊 Approfondimento Statistico Completo & Proiezione Temporale (Per Esperti)", expanded=False):
+                with st.expander(" Approfondimento Statistico Completo & Proiezione Temporale (Per Esperti)", expanded=False):
                     if is_multi_pkg and chosen_weight_mode != 'raw_sum':
-                        st.markdown("**🔍 Pesi e Bilanciamento del Pacchetto Multiplo:**")
+                        st.markdown("** Pesi e Bilanciamento del Pacchetto Multiplo:**")
                         col_pw1, col_pw2 = st.columns(2)
                         with col_pw1:
                             st.markdown("**🔴 Pesi Calciatori Ceduti:**")
@@ -2911,7 +2913,7 @@ with tab_scambi:
                         st.metric("Media Voto D-Factor Ceduti", f"{trade_res.get('MV_Ceduti_DFactor', 0.0)}")
 
                     st.markdown("---")
-                    st.markdown("**📈 Proiezione xFV Turno per Turno:**")
+                    st.markdown("** Proiezione xFV Turno per Turno:**")
                     timeline_df = trade_res.get('Timeline')
                     if timeline_df is not None and not timeline_df.empty:
                         chart_data = timeline_df[['Giornata', 'xFV_Ceduti', 'xFV_Ricevuti']].set_index('Giornata')
@@ -2930,22 +2932,22 @@ with tab_scambi:
 # TAB 4: ESPLORA & SCOUTING
 # =============================================================
 with tab_esplora:
-    st.subheader('🔍 Esplora, Scouting & Competizione')
+    st.subheader(' Esplora, Scouting & Competizione')
     st.caption('Ricerca calciatori Serie A per metriche reali, monitoraggio infortuni/rientri, ispezione rose avversarie e calendario FDR.')
     sub_scout, sub_indisp, sub_lega_insp, sub_cal = st.tabs([
-        '🎯 Scouting & Statistiche Serie A',
-        '🚑 Indisponibili & Rientri',
-        '👥 Rose & Prestiti di Lega',
-        '📅 Calendario & Difficoltà (FDR)'
+        ' Scouting & Statistiche Serie A',
+        ' Indisponibili & Rientri',
+        ' Rose & Prestiti di Lega',
+        ' Calendario & Difficoltà (FDR)'
     ])
     with sub_scout:
         scout_view = st.radio(
             "Vista Scouting:",
             options=[
-                "📊 Classifica & Ricerca Calciatori",
-                "🎯 Opportunità Buy-Low in Lega",
-                "📉 Grafici xG vs Gol & Segnali",
-                "🛡️ Rendimento Squadre Serie A"
+                " Classifica & Ricerca Calciatori",
+                "Opportunità Buy-Low in Lega",
+                " Grafici xG vs Gol & Segnali",
+                " Rendimento Squadre Serie A"
             ],
             horizontal=True,
             key="scout_main_view_radio"
@@ -2953,7 +2955,7 @@ with tab_esplora:
         st.markdown("---")
 
         # VISTA 1: CLASSIFICA & RICERCA UNIFICATA (INCLUDE FOCUS PORTIERI)
-        if scout_view == "📊 Classifica & Ricerca Calciatori":
+        if scout_view == " Classifica & Ricerca Calciatori":
             f_c1, f_c2, f_c3, f_c4 = st.columns([1.1, 1.6, 1.1, 1.2])
             with f_c1:
                 role_classic_filter = st.selectbox("Ruolo:", options=["TUTTI", "P (Portieri)", "D (Difensori)", "C (Centrocampisti)", "A (Attaccanti)"], key="sb_rc_filter")
@@ -2980,7 +2982,7 @@ with tab_esplora:
             with f_c3:
                 min_minuti = st.slider("Minuti Minimi:", min_value=0, max_value=600, value=90, step=45, key="sb_min_mins")
             with f_c4:
-                search_name = st.text_input("🔍 Cerca Calciatore:", placeholder="es. Lautaro, Pulisic...", key="sb_srch")
+                search_name = st.text_input(" Cerca Calciatore:", placeholder="es. Lautaro, Pulisic...", key="sb_srch")
         
             df_lb = df_master.copy()
             if role_classic_filter != "TUTTI":
@@ -3010,7 +3012,7 @@ with tab_esplora:
                     'ASS', 'xA_Tot', 'xA_90', 'Tiri_90', 'Key_Passes_90', 'Signal'
                 ]
             display_cols = [c for c in display_cols if c in df_lb.columns]
-            st.caption("💡 Clicca su qualsiasi calciatore per aprire la scheda profilo dettagliata.")
+            st.caption(" Clicca su qualsiasi calciatore per aprire la scheda profilo dettagliata.")
             ev_lb = st.dataframe(
                 df_lb[display_cols].reset_index(drop=True),
                 width='stretch',
@@ -3034,7 +3036,7 @@ with tab_esplora:
                         )
 
         # VISTA 2: BERSAGLI BUY-LOW NELLE ROSE AVVERSARIE
-        elif scout_view == "🎯 Opportunità Buy-Low in Lega":
+        elif scout_view == "Opportunità Buy-Low in Lega":
             st.markdown(
                 "Calciatori nelle rose dei tuoi avversari che stanno creando molto più di quanto raccolto finora (**xG/xA superiori ai bonus reali**). "
                 "Ideali da chiedere in uno scambio prima che si sblocchino."
@@ -3068,7 +3070,7 @@ with tab_esplora:
                                 'Delta xG (Sfortuna)': d_xg,
                                 'Tiri / 90': r.get('Tiri_90', 0.0),
                                 'KP / 90': r.get('Key_Passes_90', 0.0),
-                                'Suggerimento': '🔥 Forte Buy-Low' if d_xg < -1.5 else '⚡ Sottovalutato'
+                                'Suggerimento': ' Forte Buy-Low' if d_xg < -1.5 else ' Sottovalutato'
                             })
         
                 if opp_buylow:
@@ -3116,10 +3118,10 @@ with tab_esplora:
                     st.info("Nessun calciatore con marcata sotto-performance rilevato nelle altre squadre.")
 
         # VISTA 3: GRAFICI BUY-LOW & SELL-HIGH
-        elif scout_view == "📉 Grafici xG vs Gol & Segnali":
+        elif scout_view == " Grafici xG vs Gol & Segnali":
             f_col1, f_col2 = st.columns([2, 1])
             with f_col1:
-                st.caption("💡 **Passa il cursore sui pallini** per i dettagli. Chi sta **sotto la linea tratteggiata** ha segnato meno di quanto prodotto (*Candidato Buy-Low*).")
+                st.caption(" **Passa il cursore sui pallini** per i dettagli. Chi sta **sotto la linea tratteggiata** ha segnato meno di quanto prodotto (*Candidato Buy-Low*).")
             with f_col2:
                 role_options = ["Tutti i Ruoli", "Attaccanti (A)", "Centrocampisti (C)", "Difensori (D)"]
                 sel_scatter_role = st.selectbox("Filtra per Ruolo:", options=role_options, index=0, key="sel_scat_role")
@@ -3135,7 +3137,7 @@ with tab_esplora:
             role_scale = alt.Scale(domain=['P', 'D', 'C', 'A'], range=['#f59e0b', '#10b981', '#3b82f6', '#ef4444'])
             sc_c1, sc_c2 = st.columns(2)
             with sc_c1:
-                st.markdown("##### ⚽ xG Totali vs Gol Fatti (GF)")
+                st.markdown("#####  xG Totali vs Gol Fatti (GF)")
                 max_xg = float(max(df_plot_base['xG_Tot'].max() if not df_plot_base.empty else 1.0, df_plot_base['GF'].max() if not df_plot_base.empty else 1.0) + 1.0)
                 diag_df1 = pd.DataFrame({'x': [0, max_xg], 'y': [0, max_xg]})
                 ref_line1 = alt.Chart(diag_df1).mark_line(strokeDash=[4, 4], color='#94a3b8', opacity=0.6, strokeWidth=1.5).encode(x='x:Q', y='y:Q')
@@ -3149,7 +3151,7 @@ with tab_esplora:
                 st.altair_chart((ref_line1 + points1).properties(height=380).interactive(), width='stretch', theme="streamlit")
         
             with sc_c2:
-                st.markdown("##### 🎯 xA Totali vs Assist Fatti (ASS)")
+                st.markdown("#####  xA Totali vs Assist Fatti (ASS)")
                 max_xa = float(max(df_plot_base['xA_Tot'].max() if not df_plot_base.empty else 1.0, df_plot_base['ASS'].max() if not df_plot_base.empty else 1.0) + 1.0)
                 diag_df2 = pd.DataFrame({'x': [0, max_xa], 'y': [0, max_xa]})
                 ref_line2 = alt.Chart(diag_df2).mark_line(strokeDash=[4, 4], color='#94a3b8', opacity=0.6, strokeWidth=1.5).encode(x='x:Q', y='y:Q')
@@ -3209,25 +3211,25 @@ with tab_esplora:
                 n_dub = len(df_all_unavail[df_all_unavail['Stato'].isin(['In dubbio', 'Diffidato'])])
                 st.markdown(
                     f"**Totale Segnalati:** `{len(df_all_unavail)}` calciatori · "
-                    f"<span style='color:#ef4444; font-weight:700;'>🚑 {n_inf} Infortunati</span> · "
-                    f"<span style='color:#f97316; font-weight:700;'>🟥 {n_squ} Squalificati</span> · "
-                    f"<span style='color:#eab308; font-weight:700;'>⚠️ {n_dub} In dubbio/Diffidati</span>",
+                    f"<span style='color:#ef4444; font-weight:700;'> {n_inf} Infortunati</span> · "
+                    f"<span style='color:#f97316; font-weight:700;'> {n_squ} Squalificati</span> · "
+                    f"<span style='color:#eab308; font-weight:700;'> {n_dub} In dubbio/Diffidati</span>",
                     unsafe_allow_html=True
                 )
             else:
                 st.info("Nessun calciatore indisponibile registrato.")
         with top_c2:
-            if st.button("🔄 Aggiorna Live", key="btn_sync_inj_esplora", type="primary", width='stretch'):
+            if st.button(" Aggiorna Live", key="btn_sync_inj_esplora", type="primary", width='stretch'):
                 with st.spinner("Scaricamento dati live in corso..."):
                     fetch_live_injuries_from_fantacalcio()
                     st.cache_data.clear()
-                st.success("✅ Dati aggiornati!")
+                st.success(" Dati aggiornati!")
                 st.rerun()
 
         if not df_all_unavail.empty:
             fb1, fb2, fb3 = st.columns([2, 2, 2])
             with fb1:
-                search_p = st.text_input("🔍 Cerca calciatore:", key="search_indisp_p")
+                search_p = st.text_input(" Cerca calciatore:", key="search_indisp_p")
             with fb2:
                 all_teams = ["TUTTE LE SQUADRE"] + sorted(df_all_unavail['Squadra'].unique().tolist())
                 sel_sq = st.selectbox("Filtra per squadra:", options=all_teams, key="filter_indisp_sq")
@@ -3252,7 +3254,7 @@ with tab_esplora:
             show_cols = ['Giocatore', 'Ruolo', 'Squadra', 'Stato', 'Diagnosi', 'Rientro Stimato', 'Giornata Prevista']
             st.dataframe(df_filtered_indisp[show_cols], width='stretch', hide_index=True)
 
-            with st.expander("📄 Consulta bollettini clinici estesi da Fantacalcio.it", expanded=False):
+            with st.expander(" Consulta bollettini clinici estesi da Fantacalcio.it", expanded=False):
                 for _, r in df_filtered_indisp.iterrows():
                     raw_txt = r.get('Dettaglio Completo', '')
                     if raw_txt:
@@ -3262,7 +3264,7 @@ with tab_esplora:
     with sub_lega_insp:
         cur_insp_idx = league_teams.index(current_active_team) if current_active_team in league_teams else 0
         selected_inspect_team = st.selectbox(
-            "🔍 Seleziona Squadra della Lega da Ispezionare:",
+            " Seleziona Squadra della Lega da Ispezionare:",
             options=league_teams,
             index=cur_insp_idx,
             key=f"inspect_team_select_{current_active_team}"
@@ -3284,7 +3286,7 @@ with tab_esplora:
                 'MV_Stagione', 'FM_Stagione', 'GF', 'ASS', 'Signal'
             ]
             cols_inspect = [c for c in cols_inspect if c in df_inspect.columns]
-            st.caption("💡 Clicca su qualsiasi riga per aprire la Scheda Profilo dettagliata.")
+            st.caption(" Clicca su qualsiasi riga per aprire la Scheda Profilo dettagliata.")
             event_insp = st.dataframe(
                 df_inspect[cols_inspect],
                 width='stretch',
@@ -3309,12 +3311,12 @@ with tab_esplora:
         st.markdown("---")
         df_league_summary = get_league_summary(df_master)
         if not df_league_summary.empty:
-            with st.expander("📊 Panoramica & Confronto Tutte le Squadre della Lega", expanded=True):
+            with st.expander(" Panoramica & Confronto Tutte le Squadre della Lega", expanded=True):
                 st.dataframe(df_league_summary, width='stretch', hide_index=True)
 
         loan_map_all, df_all_loans = build_loan_registry()
         if not df_all_loans.empty:
-            with st.expander(f"📑 Registro Prestiti di Lega ({len(df_all_loans)} attivi) & Gestione Accordi", expanded=False):
+            with st.expander(f" Registro Prestiti di Lega ({len(df_all_loans)} attivi) & Gestione Accordi", expanded=False):
                 st.dataframe(
                     df_all_loans[['Calciatore', 'Ruolo', 'Squadra', 'Proprietario', 'In_Prestito_A', 'Costo_Asta', 'Tipo']],
                     width='stretch',
@@ -3322,8 +3324,8 @@ with tab_esplora:
                 )
                 m_col1, m_col2 = st.columns(2)
                 with m_col1:
-                    st.markdown("##### ❌ Termina un Prestito Esistente")
-                    loan_options = [f"{r['Calciatore']} ({r['Proprietario']} ➔ {r['In_Prestito_A']})" for _, r in df_all_loans.iterrows()]
+                    st.markdown("#####  Termina un Prestito Esistente")
+                    loan_options = [f"{r['Calciatore']} ({r['Proprietario']}  {r['In_Prestito_A']})" for _, r in df_all_loans.iterrows()]
                     selected_loan_to_term = st.selectbox("Seleziona il prestito da risolvere:", options=loan_options, key=f"select_loan_term_{active_league}")
                     if st.button("Termina Prestito Selezionato", type="secondary", key="btn_term_loan_tab4", width='stretch'):
                         sel_idx = loan_options.index(selected_loan_to_term)
@@ -3335,7 +3337,7 @@ with tab_esplora:
                         else:
                             st.error(msg)
                 with m_col2:
-                    st.markdown("##### ➕ Registra Nuovo Prestito Manuale")
+                    st.markdown("#####  Registra Nuovo Prestito Manuale")
                     owner_team_new = st.selectbox("Squadra Proprietaria:", options=league_teams, key="new_loan_owner_tab4")
                     all_rosters_dict = load_league_rosters()
                     avail_owner_players = sorted([p['Giocatore'] for p in all_rosters_dict.get(owner_team_new, []) if p.get('Costo', 0) > 0])
@@ -3352,7 +3354,7 @@ with tab_esplora:
 
         df_out_league = get_out_of_serie_a_summary()
         if not df_out_league.empty:
-            with st.expander(f"🚫 Calciatori Fuori dalla Serie A in Lega ({len(df_out_league)} da svincolare)", expanded=False):
+            with st.expander(f" Calciatori Fuori dalla Serie A in Lega ({len(df_out_league)} da svincolare)", expanded=False):
                 st.dataframe(
                     df_out_league[['Calciatore', 'Squadra_Lega', 'Ruolo', 'Costo_Asta', 'Stato', 'Consiglio']],
                     width='stretch',
@@ -3381,7 +3383,7 @@ with tab_esplora:
             st.markdown("##### 🔴 Top 5 Calendari Più Ostici")
             st.dataframe(matrix_df.tail(5)[['Squadra', 'Power_Dinamico', 'Posizione_Attuale', 'FDR_Medio']], width='stretch', hide_index=True)
 
-        with st.expander("📊 Classifica Reale Serie A & Power Rating Dinamico Squadre", expanded=False):
+        with st.expander(" Classifica Reale Serie A & Power Rating Dinamico Squadre", expanded=False):
             ratings_dict, df_ratings = compute_dynamic_team_ratings(selected_giornata)
             cols_ratings = ['Posizione_Attuale', 'Squadra', 'Punti_Attuali', 'DR_Attuale', 'Power_Attuale', 'Power_Triennio', 'Power_Dinamico']
             st.dataframe(df_ratings[cols_ratings].sort_values(by='Posizione_Attuale', ascending=True), width='stretch', hide_index=True)
@@ -3390,19 +3392,19 @@ with tab_esplora:
 # TAB 5: IMPOSTAZIONI & SYNC
 # =============================================================
 with tab_impostazioni:
-    st.header('⚙️ Impostazioni, Leghe & Sincronizzazione Dati')
+    st.header(' Impostazioni, Leghe & Sincronizzazione Dati')
     st.caption('Pannello centralizzato per configurare le leghe, sincronizzare i dati e gestire gli accessi.')
     sub_imp_leghe, sub_imp_sync, sub_imp_admin = st.tabs([
-        '🏆 Gestione Leghe',
-        '🔄 Sincronizzazione Dati & File',
-        '👑 Pannello Admin & Utenti'
+        ' Gestione Leghe',
+        ' Sincronizzazione Dati & File',
+        ' Pannello Admin & Utenti'
     ])
     with sub_imp_leghe:
-        st.caption(f"🔗 Link diretto a questa lega: `?league={active_league}&mode={active_league_type}`")
+        st.caption(f" Link diretto a questa lega: `?league={active_league}&mode={active_league_type}`")
 
         if is_current_user_admin() or current_user.get('can_create_leagues', False):
             st.markdown("---")
-            st.markdown("**➕ Crea Nuova Lega**")
+            st.markdown("** Crea Nuova Lega**")
             with st.form("new_league_form"):
                 new_lg_name = st.text_input("Nome della nuova lega:", placeholder="es. Fanta Amici 2026")
                 new_lg_mode = st.radio("Tipologia lega:", ["Mantra", "Classic"], horizontal=True, key="new_lg_mode_radio")
@@ -3418,18 +3420,18 @@ with tab_impostazioni:
                         else:
                             st.error(msg)
         else:
-            st.caption("🔒 Solo l'amministratore o gli utenti abilitati possono creare nuove leghe.")
+            st.caption(" Solo l'amministratore o gli utenti abilitati possono creare nuove leghe.")
                 
         if is_current_user_admin() and len(league_ids) > 1:
             st.markdown("---")
-            st.markdown("**🗑️ Elimina Lega**")
+            st.markdown("** Elimina Lega**")
             del_target = st.selectbox(
                 "Seleziona lega da eliminare:",
                 options=[lid for lid in league_ids if lid != active_league],
                 format_func=lambda x: leagues_dict.get(x, {}).get('name', x),
                 key="del_league_target"
             )
-            if st.button("🗑️ Elimina Definitivamente", type="secondary"):
+            if st.button("Elimina Definitivamente", type="secondary"):
                 ok_del, del_msg = delete_league(del_target)
                 if ok_del:
                     st.success(del_msg)
@@ -3440,58 +3442,58 @@ with tab_impostazioni:
         # -------------------------------------------------------------
 
         st.markdown('---')
-        st.markdown('**🔄 Riconfigurazione Rapida:**')
-        if st.button('⚙️ Riconfigura Lega / Ricarica File Excel', key='btn_reconfig_tab_imp'):
+        st.markdown('** Riconfigurazione Rapida:**')
+        if st.button('Riconfigura Lega / Ricarica File Excel', key='btn_reconfig_tab_imp'):
             st.session_state['setup_mode'] = True
             st.rerun()
         meta_sidebar = get_league_metadata()
-        st.caption(f"📅 Rose di Lega aggiornate al: {meta_sidebar.get('last_updated')}")
+        st.caption(f" Rose di Lega aggiornate al: {meta_sidebar.get('last_updated')}")
     with sub_imp_sync:
-        render_league_upload_section("tab_imp", df_master, label_title="📥 Carica / Aggiorna File Rose della Lega (.xlsx, .xls, .csv)")
+        render_league_upload_section("tab_imp", df_master, label_title="Carica / Aggiorna File Rose della Lega (.xlsx, .xls, .csv)")
         st.markdown("---")
 
         current_sync = get_sync_state()
         sync_dt_disp = format_last_sync_display(current_sync)
         sync_rem_disp = format_remaining_time(current_sync.get('remaining_seconds', 0))
-        sync_status_badge = "🟢 Sincronizzato con Successo" if current_sync.get('status') == 'success' else "⚠️ Attenzione o In Attesa"
+        sync_status_badge = "🟢 Sincronizzato con Successo" if current_sync.get('status') == 'success' else "🟡 In Attesa"
 
         st.markdown(f"""
         <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 10px; padding: 14px 18px; margin-bottom: 16px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                <span style="font-weight: 700; color: #38bdf8; font-size: 1.05rem;">🔄 Auto-Sincronizzazione Database (Ogni 12 Ore)</span>
+                <span style="font-weight: 700; color: #38bdf8; font-size: 1.05rem;">Auto-Sincronizzazione Database (Ogni 12 Ore)</span>
                 <span style="font-size: 0.8rem; background: rgba(56, 189, 248, 0.15); color: #7dd3fc; border: 1px solid rgba(56, 189, 248, 0.3); padding: 3px 8px; border-radius: 6px;">Auto-Check all'Avvio: <b>Attivo</b></span>
             </div>
             <div style="font-size: 0.88rem; color: #cbd5e1; margin-bottom: 8px;">
                 Il sistema verifica all'avvio dell'app se sono trascorse più di <b>12 ore</b> dall'ultimo aggiornamento. Se necessario, scarica automaticamente i nuovi voti, le statistiche ufficiali da Fantacalcio.it, le metriche Understat (xG, xA) e il bollettino infortuni.
             </div>
             <div style="display: flex; gap: 20px; font-size: 0.82rem; color: #94a3b8; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px; flex-wrap: wrap;">
-                <div>⏱️ Ultimo Aggiornamento: <b style="color: #f8fafc;">{current_sync.get('last_sync_datetime', 'N/D')}</b> ({sync_dt_disp})</div>
-                <div>⏳ Prossimo Controllo Automatico: <b style="color: #38bdf8;">tra {sync_rem_disp}</b></div>
-                <div>📡 Stato: <b style="color: #4ade80;">{sync_status_badge}</b></div>
+                <div>Ultimo Aggiornamento: <b style="color: #f8fafc;">{current_sync.get('last_sync_datetime', 'N/D')}</b> ({sync_dt_disp})</div>
+                <div>Prossimo Controllo Automatico: <b style="color: #38bdf8;">tra {sync_rem_disp}</b></div>
+                <div> Stato: <b style="color: #4ade80;">{sync_status_badge}</b></div>
             </div>
         </div>
         """, unsafe_allow_html=True)
 
         col_sync1, col_sync2 = st.columns([2, 1])
         with col_sync1:
-            if st.button("🚀 Sincronizza Tutti i Dati Live Adesso (Fantacalcio.it + Understat + Infortuni)", type="primary", width='stretch'):
+            if st.button("Sincronizza Tutti i Dati Live Adesso (Fantacalcio.it + Understat + Infortuni)", type="primary", width='stretch'):
                 st.cache_data.clear()
                 st.cache_resource.clear()
                 with st.spinner("Sincronizzazione completa in corso da Fantacalcio.it e Understat..."):
                     ok_sync, msg_sync = run_full_sync_pipeline(force_live_scrape=True, source="manual_settings")
                 if ok_sync:
-                    st.success("✅ Database, statistiche, metriche Understat e infortuni aggiornati con successo!")
+                    st.success(" Database, statistiche, metriche Understat e infortuni aggiornati con successo!")
                 else:
                     st.error(f"Errore durante la sincronizzazione: {msg_sync}")
                 st.rerun()
         with col_sync2:
-            if st.button("🧹 Svuota Cache", width='stretch'):
+            if st.button("Svuota Cache", width='stretch'):
                 st.cache_data.clear()
                 st.cache_resource.clear()
                 st.success("Cache svuotata!")
                 st.rerun()
 
-        with st.expander("🛠️ Opzioni Avanzate & Caricamento Manuale File Statistiche", expanded=False):
+        with st.expander(" Opzioni Avanzate & Caricamento Manuale File Statistiche", expanded=False):
             st.markdown("**Carica manualmente file Statistiche_Fantacalcio (.xlsx):**")
             uploaded_stats_file = st.file_uploader(
                 "Carica Statistiche_Fantacalcio (.xlsx):",
@@ -3509,15 +3511,15 @@ with tab_impostazioni:
                         save_sync_state(status="success", details="Caricamento manuale file Excel statistiche", source="manual_excel")
                         st.cache_data.clear()
                     st.session_state['last_processed_stats_sig'] = file_sig
-                    st.success("✅ Statistiche e ruoli ufficiali caricati con successo!")
+                    st.success(" Statistiche e ruoli ufficiali caricati con successo!")
                     st.rerun()
                 else:
-                    st.success("✅ File statistiche sincronizzato e attivo!")
+                    st.success(" File statistiche sincronizzato e attivo!")
 
             st.markdown("---")
             c_adv1, c_adv2 = st.columns(2)
             with c_adv1:
-                if st.button("🔄 Aggiorna Solo Understat (xG/xA)", key="sync_understat_btn", width='stretch'):
+                if st.button(" Aggiorna Solo Understat (xG/xA)", key="sync_understat_btn", width='stretch'):
                     with st.spinner("Aggiornamento metriche Understat in corso..."):
                         df_updated = sync_understat_metrics(df_master)
                         from engine.data_loader import compute_sufficiency_metrics
@@ -3528,11 +3530,11 @@ with tab_impostazioni:
                     st.success("Dati Understat aggiornati!")
                     st.rerun()
             with c_adv2:
-                if st.button("🚑 Aggiorna Solo Infortuni Live", key="btn_sync_injuries_sidebar", width='stretch'):
+                if st.button(" Aggiorna Solo Infortuni Live", key="btn_sync_injuries_sidebar", width='stretch'):
                     with st.spinner("Scraping indisponibili in tempo reale..."):
                         fetch_live_injuries_from_fantacalcio()
                         st.cache_data.clear()
-                    st.success("✅ Infortuni e squalifiche aggiornati!")
+                    st.success(" Infortuni e squalifiche aggiornati!")
                     st.rerun()
 
     with sub_imp_admin:
@@ -3545,7 +3547,7 @@ with tab_impostazioni:
             full_db_obj = load_users_db()
             users_db = full_db_obj.get("users", {})
 
-            st.markdown("**👥 Utenti Registrati:**")
+            st.markdown("** Utenti Registrati:**")
             for uname_k, u_info in users_db.items():
                 u_leagues = u_info.get("allowed_leagues", [])
                 if "*" in u_leagues or u_info.get("role") == "admin":
@@ -3559,19 +3561,19 @@ with tab_impostazioni:
                 st.markdown(
                     f"<div style='background:rgba(15,23,42,0.75); border-left:3px solid {'#f59e0b' if u_info.get('role')=='admin' else '#38bdf8'}; padding:6px 9px; border-radius:5px; margin-bottom:5px; font-size:0.78rem;'>"
                     f"<b>{u_info.get('display_name', uname_k)}</b> (<code>{uname_k}</code>) — <i>{u_info.get('role', 'user')}</i><br>"
-                    f"<span style='color:#94a3b8;'>🏆 Leghe: {lg_str}{def_t_str}</span></div>",
+                    f"<span style='color:#94a3b8;'> Leghe: {lg_str}{def_t_str}</span></div>",
                     unsafe_allow_html=True
                 )
 
             st.markdown("---")
-            st.markdown("**➕ Crea / Aggiorna Utente**")
+            st.markdown("** Crea / Aggiorna Utente**")
             edit_mode_sel = st.selectbox(
                 "Azione:",
-                options=["➕ Nuovo Utente"] + [f"✏️ Modifica: {u}" for u in users_db.keys()],
+                options=[" Nuovo Utente"] + [f" Modifica: {u}" for u in users_db.keys()],
                 key="admin_user_edit_mode"
             )
-            is_editing_existing = edit_mode_sel.startswith("✏️ Modifica: ")
-            target_uname_prefill = edit_mode_sel.replace("✏️ Modifica: ", "").strip() if is_editing_existing else ""
+            is_editing_existing = edit_mode_sel.startswith(" Modifica: ")
+            target_uname_prefill = edit_mode_sel.replace(" Modifica: ", "").strip() if is_editing_existing else ""
             existing_u_obj = users_db.get(target_uname_prefill, {}) if is_editing_existing else {}
 
             with st.form("admin_create_update_user_form"):
@@ -3620,7 +3622,7 @@ with tab_impostazioni:
                     index=def_team_idx
                 )
 
-                if st.form_submit_button("💾 Salva Utente", type="primary", width='stretch'):
+                if st.form_submit_button(" Salva Utente", type="primary", width='stretch'):
                     def_team_dict = dict(existing_u_obj.get("default_team_by_league", {}) or {})
                     if f_def_team != "(Nessuna predefinita)":
                         def_team_dict[active_league] = f_def_team
@@ -3646,9 +3648,9 @@ with tab_impostazioni:
             non_admin_users = [u for u in users_db.keys() if u != "admin"]
             if non_admin_users:
                 st.markdown("---")
-                st.markdown("**🗑️ Rimuovi Utente**")
+                st.markdown("** Rimuovi Utente**")
                 del_u_sel = st.selectbox("Utente da eliminare:", options=non_admin_users, key="admin_del_user_sel")
-                if st.button("🗑️ Elimina Utente", key="admin_btn_del_user", type="secondary", width='stretch'):
+                if st.button(" Elimina Utente", key="admin_btn_del_user", type="secondary", width='stretch'):
                     ok_du, msg_du = delete_user_account(del_u_sel)
                     if ok_du:
                         st.session_state['_admin_panel_expanded'] = True
@@ -3658,30 +3660,30 @@ with tab_impostazioni:
                         st.error(msg_du)
 
             st.markdown("---")
-            st.markdown("**💾 Backup & Sincronizzazione Cloud**")
+            st.markdown("** Backup & Sincronizzazione Cloud**")
             st.download_button(
-                "📥 Scarica Backup Utenti (JSON)",
+                " Scarica Backup Utenti (JSON)",
                 data=json.dumps(full_db_obj, indent=2, ensure_ascii=False),
                 file_name="users_db_backup.json",
                 mime="application/json",
                 width='stretch'
             )
-            uploaded_users_bk = st.file_uploader("📤 Ripristina Utenti da file JSON:", type=["json"], key="admin_restore_users_json")
+            uploaded_users_bk = st.file_uploader(" Ripristina Utenti da file JSON:", type=["json"], key="admin_restore_users_json")
             if uploaded_users_bk is not None:
                 try:
                     loaded_bk = json.loads(uploaded_users_bk.read().decode('utf-8'))
                     if isinstance(loaded_bk, dict) and "users" in loaded_bk:
                         save_users_db(loaded_bk, trigger_git_sync=True)
                         st.session_state['_admin_panel_expanded'] = True
-                        st.session_state['_admin_user_saved_msg'] = "✅ Backup utenti ripristinato e sincronizzato!"
+                        st.session_state['_admin_user_saved_msg'] = " Backup utenti ripristinato e sincronizzato!"
                         st.rerun()
                 except Exception as ex_bk:
                     st.error(f"File JSON non valido: {ex_bk}")
 
             if is_running_on_localhost():
-                if st.button("🚀 Forza Push Utenti & Leghe sul Cloud", key="admin_btn_sync_cloud", width='stretch'):
+                if st.button(" Forza Push Utenti & Leghe sul Cloud", key="admin_btn_sync_cloud", width='stretch'):
                     with st.spinner("Sincronizzazione con GitHub (Streamlit Cloud) in corso..."):
                         sync_users_and_leagues_to_github(background=False)
-                        st.success("✅ Utenti e leghe pubblicati su Streamlit Cloud (`master` e `dev`)!")
+                        st.success(" Utenti e leghe pubblicati su Streamlit Cloud (`master` e `dev`)!")
 
         # Calcolo automatico della giornata in base a data odierna e calendario ufficiale Serie A

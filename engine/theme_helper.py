@@ -176,11 +176,12 @@ def get_global_theme_css():
        4. TABS
        ════════════════════════════════════════════════════════════════ */
     button[data-baseweb="tab"] {{
-        font-size: 1.15rem !important;
+        font-size: 1.02rem !important;
         font-weight: 800 !important;
         color: #94a3b8 !important;
-        padding: 10px 22px !important;
+        padding: 8px 16px !important;
         transition: all 0.2s ease !important;
+        white-space: nowrap !important;
     }}
     button[data-baseweb="tab"] p {{
         color: inherit !important;
@@ -192,7 +193,7 @@ def get_global_theme_css():
         background: rgba(0, 240, 255, 0.12) !important;
         border-bottom: 4px solid #00f0ff !important;
         border-radius: 8px 8px 0 0 !important;
-        font-size: 1.18rem !important;
+        font-size: 1.04rem !important;
         text-shadow: 0 0 12px rgba(0, 240, 255, 0.7) !important;
         box-shadow: inset 0 -2px 10px rgba(0, 240, 255, 0.25) !important;
     }}
@@ -434,7 +435,7 @@ def get_global_theme_css():
     /* ════════════════════════════════════════════════════════════════
        9. BUTTONS (High-Impact Neon Cyan & Deep Navy)
        ════════════════════════════════════════════════════════════════ */
-    /* Primary Action Buttons */
+    /* Primary Action Buttons (Never cut text) */
     button[kind="primary"],
     div.stButton > button[data-testid="baseButton-primary"],
     div.stButton > button[kind="primary"] {{
@@ -442,7 +443,14 @@ def get_global_theme_css():
         border: none !important;
         border-radius: 8px !important;
         box-shadow: 0 0 20px rgba(0, 240, 255, 0.5) !important;
-        padding: 9px 20px !important;
+        padding: 8px 16px !important;
+        white-space: normal !important;
+        word-break: break-word !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
+        height: auto !important;
+        min-height: 2.3rem !important;
+        line-height: 1.35 !important;
         transition: all 0.2s ease-in-out !important;
     }}
     button[kind="primary"] *,
@@ -452,8 +460,11 @@ def get_global_theme_css():
     div.stButton > button[data-testid="baseButton-primary"] p,
     div.stButton > button[data-testid="baseButton-primary"] span {{
         color: #031326 !important;
-        font-size: 1.08rem !important;
+        font-size: 0.98rem !important;
         font-weight: 900 !important;
+        white-space: normal !important;
+        word-break: break-word !important;
+        overflow: visible !important;
     }}
     button[kind="primary"]:hover,
     div.stButton > button[data-testid="baseButton-primary"]:hover {{
@@ -462,7 +473,7 @@ def get_global_theme_css():
         transform: translateY(-2px) !important;
     }}
 
-    /* Secondary / Default Buttons */
+    /* Secondary / Default Buttons (Never cut text) */
     button[kind="secondary"],
     div.stButton > button[data-testid="baseButton-secondary"],
     div.stButton > button {{
@@ -470,7 +481,14 @@ def get_global_theme_css():
         border: 1.5px solid #0284c7 !important;
         border-radius: 8px !important;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
-        padding: 9px 18px !important;
+        padding: 8px 16px !important;
+        white-space: normal !important;
+        word-break: break-word !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
+        height: auto !important;
+        min-height: 2.3rem !important;
+        line-height: 1.35 !important;
         transition: all 0.2s ease-in-out !important;
     }}
     button[kind="secondary"] *,
@@ -480,8 +498,32 @@ def get_global_theme_css():
     div.stButton > button p,
     div.stButton > button span {{
         color: #38bdf8 !important;
-        font-size: 1.05rem !important;
+        font-size: 0.95rem !important;
         font-weight: 800 !important;
+        white-space: normal !important;
+        word-break: break-word !important;
+        overflow: visible !important;
+    }}
+    
+    /* Compact size for sidebar buttons to avoid cut-off */
+    section[data-testid="stSidebar"] div.stButton > button {{
+        padding: 6px 10px !important;
+        min-height: 2.0rem !important;
+    }}
+    section[data-testid="stSidebar"] div.stButton > button p,
+    section[data-testid="stSidebar"] div.stButton > button span {{
+        font-size: 0.88rem !important;
+        font-weight: 700 !important;
+    }}
+
+    /* Global prevention of cut text in containers, metrics and dialogs */
+    div[data-testid="stMetricValue"],
+    div[data-testid="stMetricLabel"],
+    .stAlert,
+    div[data-testid="stExpander"] summary {{
+        white-space: normal !important;
+        word-break: break-word !important;
+        overflow: visible !important;
     }}
     button[kind="secondary"]:hover,
     div.stButton > button[data-testid="baseButton-secondary"]:hover,
