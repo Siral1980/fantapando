@@ -7,11 +7,10 @@ sys.path.insert(0, r"C:\Users\gdeluca\.gemini\antigravity\scratch\fantacalcio")
 from engine.roster_manager import load_user_roster
 
 df = pd.read_csv(r"C:\Users\gdeluca\.gemini\antigravity\scratch\fantacalcio\data\players_master.csv")
-tot_giornate = 7.0
-
-records = []
 user_p = load_user_roster()
 sub = df[df['Giocatore'].isin(user_p)].copy()
+tot_giornate = float(max(sub['Presenze'].max() if not sub.empty else 1, 10.0))
+records = []
 
 for _, r in sub.iterrows():
     p = float(r.get('Presenze', 0))

@@ -14,7 +14,7 @@ cal = get_or_create_calendar()
 df_my_roster = get_roster_dataframe(df_master)
 eligible_roster = df_my_roster[df_my_roster['Schierabile'] == True]
 
-tot_giornate = 7.0
+tot_giornate = float(max(eligible_roster['Presenze'].max() if not eligible_roster.empty else 1, 10.0))
 
 # Predict with Titolarità & Sample Size adjustments
 results = []

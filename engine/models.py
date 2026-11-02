@@ -157,20 +157,32 @@ def predict_player_xfv(player_row, matchday=6, calendar=None, ratings_cache=None
             p_voto = float(np.clip(0.75 * live_p + 0.25 * p_voto, 0.02, 0.98))
         status_titolarita = prob_info.get('Status_Badge', status_titolarita)
 
-    # Medical Availability & Suspension Override (Manual or Official Bulletin)
+    # Medical Availability & Suspension Override (Calendar & Matchday Aware)
     try:
-        from engine.injuries_manager import classify_injury_status
-        inj_info = classify_injury_status(giocatore)
-        if inj_info.get('Is_Injured', False):
-            if inj_info.get('Is_Long_Term', False):
+        from engine.injuries_manager import get_player_status, parse_injury_details
+        raw_inj = get_player_status(giocatore)
+        st_inj = raw_inj.get('Stato', 'Disponibile')
+        if st_inj in ['Infortunato', 'Squalificato', 'In dubbio']:
+            parsed = parse_injury_details(raw_inj.get('Dettaglio', ''), st_inj, current_giornata=10)
+            target_g = parsed.get('Giornata_Target')
+            
+            # Check if player is still unavailable for the specific projection matchday
+            is_still_out = False
+            if st_inj == 'Infortunato':
+                if target_g is not None and matchday < target_g:
+                    is_still_out = True
+                elif target_g is None:
+                    is_still_out = True
+            elif st_inj == 'Squalificato':
+                if matchday <= 10:  # Suspended for current round only
+                    is_still_out = True
+            
+            if is_still_out:
                 p_voto = 0.01
-                status_titolarita = "🔴 INFORTUNATO (LUNGO STOP)"
-            elif inj_info.get('Stato') == 'Squalificato':
-                p_voto = 0.01
-                status_titolarita = "🔴 SQUALIFICATO"
-            elif not prob_info or prob_info.get('Tier_Code') not in ('TITOLARE_CERTO', 'BALLOTTAGGIO'):
+                status_titolarita = "🔴 INFORTUNATO" if st_inj == 'Infortunato' else "🔴 SQUALIFICATO"
+            elif st_inj == 'In dubbio' and matchday == 10:
                 p_voto = min(0.35, p_voto * 0.40)
-                status_titolarita = "🟠 IN DUBBIO (INFORTUNIO)"
+                status_titolarita = "🟠 IN DUBBIO"
     except Exception:
         pass
 

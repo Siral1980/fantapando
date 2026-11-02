@@ -2537,64 +2537,254 @@ with tab_scambi:
         if st.button("⚡ Valuta Scambio", type="primary", key="sim_eval_button"):
             if not give_selection or not receive_selection:
                 st.error("Seleziona almeno un giocatore da cedere e uno da ricevere.")
+                st.session_state.pop('sim_last_trade_res', None)
             else:
-                trade_res = evaluate_trade(
-                    give_selection,
-                    receive_selection,
-                    df_master,
-                    start_matchday=selected_giornata,
-                    horizon=None,
-                    calendar=calendar,
-                    weight_mode=chosen_weight_mode
-                )
-            
-                if 'error' in trade_res:
-                    st.error(trade_res['error'])
-                else:
-                    st.markdown("---")
-                
-                    # Verdict Banner
-                    verdict_color = {
-                        'green': '#15803d',
-                        'lightgreen': '#16a34a',
-                        'gray': '#475569',
-                        'orange': '#ea580c',
-                        'red': '#dc2626'
-                    }.get(trade_res['StatusColor'], '#334155')
-                
-                    is_multi_pkg = trade_res.get('Is_Multi', False)
-                    pkg_badge = f"Pacchetto {trade_res.get('Num_Ceduti', 1)} vs {trade_res.get('Num_Ricevuti', 1)}" if is_multi_pkg else "Scambio Singolo 1 vs 1"
-                    sub_title_mode = "Valutazione a Media Ponderata Bilanciata" if chosen_weight_mode != "raw_sum" else "Valutazione a Somma Grezza Cumulativa"
+                with st.spinner("Valutazione multi-algoritmo (4 Pilastri) in corso..."):
+                    st.session_state['sim_last_trade_res'] = evaluate_trade(
+                        give_selection,
+                        receive_selection,
+                        df_master,
+                        start_matchday=selected_giornata,
+                        horizon=None,
+                        calendar=calendar,
+                        weight_mode=chosen_weight_mode
+                    )
 
+        trade_res = st.session_state.get('sim_last_trade_res')
+        if trade_res:
+            if 'error' in trade_res:
+                st.error(trade_res['error'])
+            else:
+                st.markdown("---")
+
+                # 1. VERDICT HERO BANNER
+                verdict_cfg = {
+                    'green': ('#10b981', 'rgba(16, 185, 129, 0.12)', 'border: 1px solid rgba(16, 185, 129, 0.4)'),
+                    'lightgreen': ('#34d399', 'rgba(52, 211, 153, 0.10)', 'border: 1px solid rgba(52, 211, 153, 0.35)'),
+                    'gray': ('#94a3b8', 'rgba(148, 163, 184, 0.08)', 'border: 1px solid rgba(148, 163, 184, 0.25)'),
+                    'orange': ('#f59e0b', 'rgba(245, 158, 11, 0.12)', 'border: 1px solid rgba(245, 158, 11, 0.4)'),
+                    'red': ('#ef4444', 'rgba(239, 68, 68, 0.12)', 'border: 1px solid rgba(239, 68, 68, 0.4)')
+                }
+                v_color, v_bg, v_border = verdict_cfg.get(trade_res.get('StatusColor', 'gray'), ('#94a3b8', 'rgba(148, 163, 184, 0.08)', 'border: 1px solid #334155'))
+                is_multi_pkg = trade_res.get('Is_Multi', False)
+                pkg_badge = f"Pacchetto {trade_res.get('Num_Ceduti', 1)} vs {trade_res.get('Num_Ricevuti', 1)}" if is_multi_pkg else "Scambio Singolo 1 vs 1"
+                sub_title_mode = "Media Ponderata Decrescente (Priorità Star)" if chosen_weight_mode == "rank_decay" else ("Media Semplice" if chosen_weight_mode == "simple_mean" else "Somma Grezza")
+
+                delta_tot = trade_res.get('Delta_Totale_xFV', 0.0)
+                delta_p = trade_res.get('Delta_Medio_Partita', 0.0)
+                delta_sign = '+' if delta_tot > 0 else ''
+                delta_p_sign = '+' if delta_p > 0 else ''
+
+                st.markdown(f"""
+                <div style="background: {v_bg}; {v_border}; border-radius: 12px; padding: 20px 24px; margin-top: 15px; margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <span style="font-size: 0.80rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: {v_color}; background: rgba(0,0,0,0.25); padding: 3px 8px; border-radius: 4px;">
+                            {pkg_badge} • {sub_title_mode}
+                        </span>
+                        <span style="font-size: 0.85rem; color: #94a3b8;">
+                            Orizzonte: <b>{trade_res.get('Giornate_Valutate', 1)} turni</b> (fino alla 38ª)
+                        </span>
+                    </div>
+                    <h2 style="color: {v_color}; margin: 0 0 8px 0; font-size: 1.85rem; font-weight: 800; letter-spacing: -0.5px;">
+                        {trade_res.get('Verdetto', 'VALUTAZIONE')}
+                    </h2>
+                    <div style="color: #f1f5f9; font-size: 1.05rem; line-height: 1.45; margin-bottom: 12px; font-weight: 500;">
+                        {trade_res.get('Sintesi_Umana', '')}
+                    </div>
+                    <div style="display: flex; gap: 20px; align-items: center; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.08); font-size: 0.95rem;">
+                        <div>
+                            <span style="color: #94a3b8;">Differenziale Totale:</span> 
+                            <b style="color: {v_color}; font-size: 1.1rem; margin-left: 4px;">{delta_sign}{delta_tot:.1f} xFV</b>
+                        </div>
+                        <div style="color: #64748b;">•</div>
+                        <div>
+                            <span style="color: #94a3b8;">Impatto Medio a Gara:</span> 
+                            <b style="color: {v_color}; font-size: 1.1rem; margin-left: 4px;">{delta_p_sign}{delta_p:.2f} xFV/partita</b>
+                        </div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+
+                # 2. CLINICAL & SUSPENSION NOTES (if any)
+                if trade_res.get('Note_Cliniche'):
+                    st.markdown("""
+                    <div style="background: rgba(239, 68, 68, 0.08); border-left: 4px solid #ef4444; border-radius: 6px; padding: 10px 14px; margin-bottom: 18px;">
+                        <div style="font-weight: 700; color: #f87171; font-size: 0.9rem; margin-bottom: 4px;">
+                            🚑 Aggiornamento Infermeria & Squalifiche (Impatto sulle proiezioni):
+                        </div>
+                    """, unsafe_allow_html=True)
+                    for nc in trade_res['Note_Cliniche']:
+                        st.markdown(f"<div style='font-size: 0.85rem; color: #cbd5e1; margin-left: 10px;'>• {nc}</div>", unsafe_allow_html=True)
+                    st.markdown("</div>", unsafe_allow_html=True)
+
+                # 3. SIDE-BY-SIDE COCKPIT
+                st.markdown("### 👥 Confronto Diretto Calciatori")
+                def _render_cockpit_card(card, is_give=True):
+                    border_accent = "#f87171" if is_give else "#4ade80"
+                    bg_card = "rgba(30, 41, 59, 0.70)"
+                    sig = card.get('Signal', '')
+                    sig_badge = f"<span style='background:rgba(56,189,248,0.2); color:#38bdf8; font-size:0.75rem; padding:2px 6px; border-radius:4px; margin-left:6px;'>{sig}</span>" if sig else ""
+                    role = card.get('RuoloClassic' if is_classic else 'RuoloMantra', card.get('RuoloMantra', ''))
+                    
+                    return f"""
+                    <div style="background: {bg_card}; border: 1px solid #334155; border-left: 4px solid {border_accent}; border-radius: 8px; padding: 12px 14px; margin-bottom: 10px;">
+                        <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px;">
+                            <div>
+                                <b style="color: #f8fafc; font-size: 1.05rem;">{card.get('Giocatore')}</b>
+                                <span style="color: #94a3b8; font-size: 0.85rem; margin-left: 6px;">({card.get('Squadra')} · <code style='color:#38bdf8;'>{role}</code>)</span>
+                                {sig_badge}
+                            </div>
+                            <span style="font-size: 0.75rem; font-weight: 700; color: {card.get('Status_Color', '#10b981')}; background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px;">
+                                {card.get('Status_Badge', 'Disponibile')}
+                            </span>
+                        </div>
+                        <div style="font-size: 0.82rem; color: #cbd5e1; margin-bottom: 8px;">
+                            {card.get('Titolarita_Label', 'Titolare')}
+                        </div>
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap; font-size: 0.78rem;">
+                            <span style="background: rgba(15,23,42,0.6); padding: 3px 7px; border-radius: 4px; color: #94a3b8;">
+                                FM: <b style="color: #f1f5f9;">{card.get('FM_Stagione', 0.0):.2f}</b>
+                            </span>
+                            <span style="background: rgba(15,23,42,0.6); padding: 3px 7px; border-radius: 4px; color: #94a3b8;">
+                                MV: <b style="color: #f1f5f9;">{card.get('MV_Stagione', 0.0):.2f}</b>
+                            </span>
+                            <span style="background: rgba(15,23,42,0.6); padding: 3px 7px; border-radius: 4px; color: #94a3b8;">
+                                Gol/Ass: <b style="color: #f1f5f9;">{card.get('GF', 0)}G / {card.get('ASS', 0)}A</b>
+                            </span>
+                            <span style="background: rgba(15,23,42,0.6); padding: 3px 7px; border-radius: 4px; color: #94a3b8;">
+                                Sufficienza: <b style="color: #f1f5f9;">{card.get('Pct_Sufficienza', 0.0):.0f}%</b>
+                            </span>
+                            <span style="background: rgba(15,23,42,0.6); padding: 3px 7px; border-radius: 4px; color: #94a3b8;">
+                                FVM: <b style="color: #38bdf8;">{int(card.get('FVM', 0))}</b>
+                            </span>
+                        </div>
+                    </div>
+                    """
+
+                c_give_col, c_rec_col = st.columns(2)
+                with c_give_col:
+                    st.markdown(f"**🔴 Calciatori Ceduti ({len(trade_res['Cards_Give'])})**")
+                    for c in trade_res['Cards_Give']:
+                        st.markdown(_render_cockpit_card(c, is_give=True), unsafe_allow_html=True)
+                with c_rec_col:
+                    st.markdown(f"**🟢 Calciatori Ricevuti ({len(trade_res['Cards_Rec'])})**")
+                    for c in trade_res['Cards_Rec']:
+                        st.markdown(_render_cockpit_card(c, is_give=False), unsafe_allow_html=True)
+
+                # 4. 4 PILLARS CONSENSUS COCKPIT
+                st.markdown("### 🏛️ I 4 Pilastri di Valutazione (Consenso Multi-Algoritmo)")
+                p1 = trade_res.get('Pilastro1', {})
+                p2 = trade_res.get('Pilastro2', {})
+                p3 = trade_res.get('Pilastro3', {})
+                p4 = trade_res.get('Pilastro4', {})
+
+                def _pillar_badge(winner):
+                    if winner == 'RICEVI':
+                        return "<span style='color: #4ade80; font-weight: 700;'>🟢 Vince Ricevi</span>"
+                    elif winner == 'CEDI':
+                        return "<span style='color: #f87171; font-weight: 700;'>🔴 Vince Cedi</span>"
+                    return "<span style='color: #94a3b8; font-weight: 700;'>⚪ Sostanziale Parità</span>"
+
+                pil_c1, pil_c2 = st.columns(2)
+                with pil_c1:
                     st.markdown(f"""
-                    <div style="background-color: {verdict_color}; padding: 18px; border-radius: 10px; color: white; text-align: center; margin-bottom: 20px;">
-                        <div style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-bottom: 4px;">{pkg_badge} • {sub_title_mode}</div>
-                        <h2 style="margin: 0; color: white;">{trade_res['Verdetto']}</h2>
-                        <p style="margin: 5px 0 0 0; font-size: 1.15rem;">
-                            Differenziale Atteso: <b>{'+' if trade_res['Delta_Totale_xFV'] > 0 else ''}{trade_res['Delta_Totale_xFV']} xFV</b> 
-                            sulle prossime {trade_res['Giornate_Valutate']} giornate 
-                            (<b>{'+' if trade_res.get('Delta_Medio_Partita', 0) > 0 else ''}{trade_res.get('Delta_Medio_Partita', 0):.2f} xFV/partita</b> a slot)
-                        </p>
+                    <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid #334155; border-radius: 8px; padding: 14px; margin-bottom: 12px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                            <b style="color: #38bdf8; font-size: 0.95rem;">1. {p1.get('Nome', 'Valore Netto Effettivo')} (35%)</b>
+                            {_pillar_badge(p1.get('Winner', 'PARI'))}
+                        </div>
+                        <div style="font-size: 0.88rem; color: #f1f5f9; margin-bottom: 6px;">
+                            {p1.get('Descrizione', '')}
+                        </div>
+                        <div style="font-size: 0.78rem; color: #94a3b8;">
+                            Partite saltate per infortunio/squalifica: Ceduti: <b>{p1.get('Missed_Games_Give', 0)}</b> vs Ricevuti: <b>{p1.get('Missed_Games_Rec', 0)}</b>
+                        </div>
                     </div>
                     """, unsafe_allow_html=True)
-                
-                    # Package Weights Breakdown (if multi-player)
-                    if is_multi_pkg and chosen_weight_mode != 'raw_sum':
-                        with st.expander("🔍 Dettaglio Pesi e Bilanciamento del Pacchetto", expanded=False):
-                            col_pw1, col_pw2 = st.columns(2)
-                            with col_pw1:
-                                st.markdown("**🔴 Pesi Assegnati ai Calciatori Ceduti:**")
-                                for p, w in trade_res.get('Pesi_Ceduti', {}).items():
-                                    st.write(f"- **{p}**: peso `{w*100:.1f}%`")
-                                st.caption(f"Somma cumulativa grezza ceduti: **{trade_res.get('xFV_Ceduti_Raw_Tot', 0)} xFV**")
-                            with col_pw2:
-                                st.markdown("**🟢 Pesi Assegnati ai Calciatori Ricevuti:**")
-                                for p, w in trade_res.get('Pesi_Ricevuti', {}).items():
-                                    st.write(f"- **{p}**: peso `{w*100:.1f}%`")
-                                st.caption(f"Somma cumulativa grezza ricevuti: **{trade_res.get('xFV_Ricevuti_Raw_Tot', 0)} xFV**")
-                            st.info("💡 La media ponderata tutela il valore degli scambi multipli (es. 2v1 o 4v4): il confronto avviene a livello di rendimento per slot titolare, pesando maggiormente il calciatore di vertice di ciascun gruppo.")
+                    
+                    st.markdown(f"""
+                    <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid #334155; border-radius: 8px; padding: 14px; margin-bottom: 12px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                            <b style="color: #38bdf8; font-size: 0.95rem;">3. {p3.get('Nome', 'Solidità Rosa & Garanzia Voto')} (20%)</b>
+                            {_pillar_badge(p3.get('Winner', 'PARI'))}
+                        </div>
+                        <div style="font-size: 0.88rem; color: #f1f5f9;">
+                            {p3.get('Descrizione', '')}
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
 
-                    # Metric comparison
+                with pil_c2:
+                    st.markdown(f"""
+                    <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid #334155; border-radius: 8px; padding: 14px; margin-bottom: 12px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                            <b style="color: #38bdf8; font-size: 0.95rem;">2. {p2.get('Nome', 'Momentum & Trend Recente')} (25%)</b>
+                            {_pillar_badge(p2.get('Winner', 'PARI'))}
+                        </div>
+                        <div style="font-size: 0.88rem; color: #f1f5f9;">
+                            {p2.get('Descrizione', '')}
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+                    st.markdown(f"""
+                    <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid #334155; border-radius: 8px; padding: 14px; margin-bottom: 12px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                            <b style="color: #38bdf8; font-size: 0.95rem;">4. {p4.get('Nome', 'Gerarchia Star & FVM')} (20%)</b>
+                            {_pillar_badge(p4.get('Winner', 'PARI'))}
+                        </div>
+                        <div style="font-size: 0.88rem; color: #f1f5f9;">
+                            {p4.get('Descrizione', '')}
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+                # 5. DETAILED STRATEGIC ANALYSIS
+                st.markdown("### 📋 Analisi Strategica Dettagliata")
+                van_col, ris_col = st.columns(2)
+                with van_col:
+                    st.markdown("""
+                    <div style="background: rgba(16, 185, 129, 0.08); border-left: 3px solid #10b981; border-radius: 6px; padding: 10px 14px; margin-bottom: 10px;">
+                        <b style="color: #34d399; font-size: 0.95rem;">🟢 Vantaggi dello Scambio:</b>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    vantaggi_list = trade_res.get('Vantaggi', [])
+                    if vantaggi_list:
+                        for v in vantaggi_list:
+                            st.markdown(f"- {v}")
+                    else:
+                        st.caption("Nessun vantaggio evidente segnalato dal modello.")
+                with ris_col:
+                    st.markdown("""
+                    <div style="background: rgba(239, 68, 68, 0.08); border-left: 3px solid #ef4444; border-radius: 6px; padding: 10px 14px; margin-bottom: 10px;">
+                        <b style="color: #f87171; font-size: 0.95rem;">🔴 Rischi e Controindicazioni:</b>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    rischi_list = trade_res.get('Rischi', [])
+                    if rischi_list:
+                        for r in rischi_list:
+                            st.markdown(f"- {r}")
+                    else:
+                        st.caption("Nessuna controindicazione critica segnalata dal modello.")
+
+                # 6. COLLAPSED ADVANCED STATISTICAL EXPANDER
+                with st.expander("📊 Approfondimento Statistico Completo & Proiezione Temporale (Per Esperti)", expanded=False):
+                    if is_multi_pkg and chosen_weight_mode != 'raw_sum':
+                        st.markdown("**🔍 Pesi e Bilanciamento del Pacchetto Multiplo:**")
+                        col_pw1, col_pw2 = st.columns(2)
+                        with col_pw1:
+                            st.markdown("**🔴 Pesi Calciatori Ceduti:**")
+                            for p, w in trade_res.get('Pesi_Ceduti', {}).items():
+                                st.write(f"- **{p}**: peso `{w*100:.1f}%`")
+                            st.caption(f"Somma cumulativa grezza ceduti: **{trade_res.get('xFV_Ceduti_Raw_Tot', 0)} xFV**")
+                        with col_pw2:
+                            st.markdown("**🟢 Pesi Calciatori Ricevuti:**")
+                            for p, w in trade_res.get('Pesi_Ricevuti', {}).items():
+                                st.write(f"- **{p}**: peso `{w*100:.1f}%`")
+                            st.caption(f"Somma cumulativa grezza ricevuti: **{trade_res.get('xFV_Ricevuti_Raw_Tot', 0)} xFV**")
+                        st.markdown("---")
+
+                    st.markdown("**Rendimento di Partenza & FDR:**")
                     t1, t2, t3, t4 = st.columns(4)
                     with t1:
                         lbl_r = "xFV Ponderato Ricevuti" if chosen_weight_mode != "raw_sum" else "Totale xFV Ricevuti"
@@ -2607,7 +2797,6 @@ with tab_scambi:
                     with t4:
                         st.metric("FDR Medio Ceduti", f"{trade_res['FDR_Medio_Ceduti']} / 5")
 
-                    # If Goalkeepers are involved in the trade, display specialized shot-stopping metrics
                     if trade_res.get('Has_GK'):
                         tg1, tg2, tg3, tg4 = st.columns(4)
                         with tg1:
@@ -2623,23 +2812,23 @@ with tab_scambi:
 
                     ts1, ts2, ts3, ts4 = st.columns(4)
                     with ts1:
-                        st.metric("Tiri/90 Ricevuti (pond.)", f"{trade_res.get('Tiri_Ricevuti_90', 0.0)} / 90")
+                        st.metric("Tiri/90 Ricevuti", f"{trade_res.get('Tiri_Ricevuti_90', 0.0)} / 90")
                     with ts2:
-                        st.metric("Tiri/90 Ceduti (pond.)", f"{trade_res.get('Tiri_Ceduti_90', 0.0)} / 90")
+                        st.metric("Tiri/90 Ceduti", f"{trade_res.get('Tiri_Ceduti_90', 0.0)} / 90")
                     with ts3:
-                        st.metric("xG/90 Ricevuti (pond.)", f"{trade_res.get('xG_Ricevuti_90', 0.0)}")
+                        st.metric("xG/90 Ricevuti", f"{trade_res.get('xG_Ricevuti_90', 0.0)}")
                     with ts4:
-                        st.metric("xG/90 Ceduti (pond.)", f"{trade_res.get('xG_Ceduti_90', 0.0)}")
+                        st.metric("xG/90 Ceduti", f"{trade_res.get('xG_Ceduti_90', 0.0)}")
 
                     ta1, ta2, ta3, ta4 = st.columns(4)
                     with ta1:
-                        st.metric("xA/90 Ricevuti (pond.)", f"{trade_res.get('xA_Ricevuti_90', 0.0)}")
+                        st.metric("xA/90 Ricevuti", f"{trade_res.get('xA_Ricevuti_90', 0.0)}")
                     with ta2:
-                        st.metric("xA/90 Ceduti (pond.)", f"{trade_res.get('xA_Ceduti_90', 0.0)}")
+                        st.metric("xA/90 Ceduti", f"{trade_res.get('xA_Ceduti_90', 0.0)}")
                     with ta3:
-                        st.metric("Delta xG Ricevuti", f"{trade_res.get('Delta_xG_Ricevuti', 0.0):+.2f}", help="Negativo = Buy-low (sfortuna)")
+                        st.metric("Delta xG Ricevuti", f"{trade_res.get('Delta_xG_Ricevuti', 0.0):+.2f}", help="Negativo = Buy-low")
                     with ta4:
-                        st.metric("Delta xG Ceduti", f"{trade_res.get('Delta_xG_Ceduti', 0.0):+.2f}", help="Positivo = Sell-high (fortuna)")
+                        st.metric("Delta xG Ceduti", f"{trade_res.get('Delta_xG_Ceduti', 0.0):+.2f}", help="Positivo = Sell-high")
 
                     td1, td2, td3, td4 = st.columns(4)
                     with td1:
@@ -2650,25 +2839,18 @@ with tab_scambi:
                         st.metric("Media Voto D-Factor Ricevuti", f"{trade_res.get('MV_Ricevuti_DFactor', 0.0)}")
                     with td4:
                         st.metric("Media Voto D-Factor Ceduti", f"{trade_res.get('MV_Ceduti_DFactor', 0.0)}")
-                    
-                    st.subheader("💡 Analisi e Motivazioni Statistiche")
-                    for mot in trade_res['Motivazioni']:
-                        st.markdown(f"- {mot}")
-                    
-                    st.subheader("📈 Proiezione Giornata per Giornata")
-                    timeline_df = trade_res['Timeline']
-                
-                    # Chart
-                    chart_data = timeline_df[['Giornata', 'xFV_Ceduti', 'xFV_Ricevuti']].set_index('Giornata')
-                    st.bar_chart(chart_data)
-                
-                    # Detailed breakdown table
-                    st.dataframe(
-                        timeline_df[['Giornata', 'xFV_Ceduti', 'xFV_Ricevuti', 'Delta_Giornata', 'Match_Ceduti', 'Match_Ricevuti']],
-                        width='stretch',
-                        hide_index=True
-                    )
 
+                    st.markdown("---")
+                    st.markdown("**📈 Proiezione xFV Turno per Turno:**")
+                    timeline_df = trade_res.get('Timeline')
+                    if timeline_df is not None and not timeline_df.empty:
+                        chart_data = timeline_df[['Giornata', 'xFV_Ceduti', 'xFV_Ricevuti']].set_index('Giornata')
+                        st.bar_chart(chart_data)
+                        st.dataframe(
+                            timeline_df[['Giornata', 'xFV_Ceduti', 'xFV_Ricevuti', 'Delta_Giornata', 'Match_Ceduti', 'Match_Ricevuti']],
+                            width='stretch',
+                            hide_index=True
+                        )
 
     with subtab_sim:
         render_free_trade_simulator()
