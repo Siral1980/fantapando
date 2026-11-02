@@ -2557,15 +2557,20 @@ with tab_scambi:
             else:
                 st.markdown("---")
 
-                # 1. VERDICT HERO BANNER
+                # 1. VERDICT HERO BANNER WITH GRADUAL NUANCES & GAUGE
                 verdict_cfg = {
+                    'emerald': ('#059669', 'rgba(5, 150, 105, 0.15)', 'border: 1px solid rgba(5, 150, 105, 0.5)'),
                     'green': ('#10b981', 'rgba(16, 185, 129, 0.12)', 'border: 1px solid rgba(16, 185, 129, 0.4)'),
-                    'lightgreen': ('#34d399', 'rgba(52, 211, 153, 0.10)', 'border: 1px solid rgba(52, 211, 153, 0.35)'),
-                    'gray': ('#94a3b8', 'rgba(148, 163, 184, 0.08)', 'border: 1px solid rgba(148, 163, 184, 0.25)'),
-                    'orange': ('#f59e0b', 'rgba(245, 158, 11, 0.12)', 'border: 1px solid rgba(245, 158, 11, 0.4)'),
-                    'red': ('#ef4444', 'rgba(239, 68, 68, 0.12)', 'border: 1px solid rgba(239, 68, 68, 0.4)')
+                    'teal': ('#0d9488', 'rgba(13, 148, 136, 0.12)', 'border: 1px solid rgba(13, 148, 136, 0.4)'),
+                    'lime': ('#84cc16', 'rgba(132, 204, 22, 0.12)', 'border: 1px solid rgba(132, 204, 22, 0.4)'),
+                    'slate': ('#94a3b8', 'rgba(148, 163, 184, 0.10)', 'border: 1px solid rgba(148, 163, 184, 0.3)'),
+                    'gray': ('#94a3b8', 'rgba(148, 163, 184, 0.10)', 'border: 1px solid rgba(148, 163, 184, 0.3)'),
+                    'amber': ('#eab308', 'rgba(234, 179, 8, 0.12)', 'border: 1px solid rgba(234, 179, 8, 0.4)'),
+                    'orange': ('#f97316', 'rgba(249, 115, 22, 0.12)', 'border: 1px solid rgba(249, 115, 22, 0.4)'),
+                    'rose': ('#f43f5e', 'rgba(244, 63, 94, 0.12)', 'border: 1px solid rgba(244, 63, 94, 0.4)'),
+                    'red': ('#ef4444', 'rgba(239, 68, 68, 0.14)', 'border: 1px solid rgba(239, 68, 68, 0.5)')
                 }
-                v_color, v_bg, v_border = verdict_cfg.get(trade_res.get('StatusColor', 'gray'), ('#94a3b8', 'rgba(148, 163, 184, 0.08)', 'border: 1px solid #334155'))
+                v_color, v_bg, v_border = verdict_cfg.get(trade_res.get('StatusColor', 'slate'), ('#94a3b8', 'rgba(148, 163, 184, 0.10)', 'border: 1px solid #334155'))
                 is_multi_pkg = trade_res.get('Is_Multi', False)
                 pkg_badge = f"Pacchetto {trade_res.get('Num_Ceduti', 1)} vs {trade_res.get('Num_Ricevuti', 1)}" if is_multi_pkg else "Scambio Singolo 1 vs 1"
                 sub_title_mode = "Media Ponderata Decrescente (Priorità Star)" if chosen_weight_mode == "rank_decay" else ("Media Semplice" if chosen_weight_mode == "simple_mean" else "Somma Grezza")
@@ -2574,36 +2579,76 @@ with tab_scambi:
                 delta_p = trade_res.get('Delta_Medio_Partita', 0.0)
                 delta_sign = '+' if delta_tot > 0 else ''
                 delta_p_sign = '+' if delta_p > 0 else ''
+                idx_conv = int(trade_res.get('Indice_Convenienza', 50))
+                badge_lbl = trade_res.get('Verdict_Badge', '⚖️')
+                archetipo_tit = trade_res.get('Archetipo_Titolo', '⚖️ Baratto Tattico')
+                archetipo_desc = trade_res.get('Archetipo_Descrizione', '')
+                tier_desc_txt = trade_res.get('Tier_Desc', '')
 
                 st.markdown(f"""
-                <div style="background: {v_bg}; {v_border}; border-radius: 12px; padding: 20px 24px; margin-top: 15px; margin-bottom: 20px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                        <span style="font-size: 0.80rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: {v_color}; background: rgba(0,0,0,0.25); padding: 3px 8px; border-radius: 4px;">
-                            {pkg_badge} • {sub_title_mode}
-                        </span>
+                <div style="background: {v_bg}; {v_border}; border-radius: 12px; padding: 20px 24px; margin-top: 15px; margin-bottom: 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <span style="font-size: 0.80rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: {v_color}; background: rgba(0,0,0,0.25); padding: 3px 8px; border-radius: 4px;">
+                                {pkg_badge} • {sub_title_mode}
+                            </span>
+                            <span style="font-size: 0.80rem; font-weight: 700; color: #38bdf8; background: rgba(56,189,248,0.12); padding: 3px 8px; border-radius: 4px; border: 1px solid rgba(56,189,248,0.25);">
+                                {archetipo_tit}
+                            </span>
+                        </div>
                         <span style="font-size: 0.85rem; color: #94a3b8;">
                             Orizzonte: <b>{trade_res.get('Giornate_Valutate', 1)} turni</b> (fino alla 38ª)
                         </span>
                     </div>
-                    <h2 style="color: {v_color}; margin: 0 0 8px 0; font-size: 1.85rem; font-weight: 800; letter-spacing: -0.5px;">
-                        {trade_res.get('Verdetto', 'VALUTAZIONE')}
+                    <h2 style="color: {v_color}; margin: 2px 0 8px 0; font-size: 1.85rem; font-weight: 800; letter-spacing: -0.5px;">
+                        {badge_lbl} — {trade_res.get('Verdetto', 'VALUTAZIONE')}
                     </h2>
-                    <div style="color: #f1f5f9; font-size: 1.05rem; line-height: 1.45; margin-bottom: 12px; font-weight: 500;">
+                    <div style="color: #f1f5f9; font-size: 1.05rem; line-height: 1.45; margin-bottom: 14px; font-weight: 500;">
                         {trade_res.get('Sintesi_Umana', '')}
                     </div>
-                    <div style="display: flex; gap: 20px; align-items: center; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.08); font-size: 0.95rem;">
+
+                    <!-- Gradual Convenience Gauge (0 - 100) -->
+                    <div style="background: rgba(15, 23, 42, 0.45); border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.06);">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 700; color: #cbd5e1; margin-bottom: 6px;">
+                            <span>Indice di Convenienza dello Scambio:</span>
+                            <span style="color: {v_color}; font-size: 0.95rem;"><b>{idx_conv} / 100</b> <span style="font-weight: 400; color: #94a3b8; font-size: 0.82rem;">({tier_desc_txt})</span></span>
+                        </div>
+                        <div style="background: rgba(15, 23, 42, 0.9); border-radius: 999px; height: 10px; width: 100%; overflow: hidden; border: 1px solid rgba(255,255,255,0.12);">
+                            <div style="background: {v_color}; height: 100%; width: {idx_conv}%; border-radius: 999px;"></div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 20px; align-items: center; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.08); font-size: 0.92rem; flex-wrap: wrap;">
                         <div>
                             <span style="color: #94a3b8;">Differenziale Totale:</span> 
-                            <b style="color: {v_color}; font-size: 1.1rem; margin-left: 4px;">{delta_sign}{delta_tot:.1f} xFV</b>
+                            <b style="color: {v_color}; font-size: 1.08rem; margin-left: 4px;">{delta_sign}{delta_tot:.1f} xFV</b>
                         </div>
                         <div style="color: #64748b;">•</div>
                         <div>
                             <span style="color: #94a3b8;">Impatto Medio a Gara:</span> 
-                            <b style="color: {v_color}; font-size: 1.1rem; margin-left: 4px;">{delta_p_sign}{delta_p:.2f} xFV/partita</b>
+                            <b style="color: {v_color}; font-size: 1.08rem; margin-left: 4px;">{delta_p_sign}{delta_p:.2f} xFV/partita</b>
+                        </div>
+                        <div style="color: #64748b;">•</div>
+                        <div>
+                            <span style="color: #94a3b8;">Sfumatura Tattica:</span> 
+                            <span style="color: #e2e8f0; font-style: italic; margin-left: 4px;">{archetipo_desc}</span>
                         </div>
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
+
+                # Strategic Conditions & Tactical Guidelines
+                conds = trade_res.get('Condizioni_Strategiche', [])
+                if conds:
+                    st.markdown(f"""
+                    <div style="background: rgba(30, 41, 59, 0.65); border: 1px solid #334155; border-left: 4px solid {v_color}; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px;">
+                        <div style="font-weight: 700; color: #f8fafc; font-size: 0.92rem; margin-bottom: 6px;">
+                            💡 Il Consiglio Strategico del Modello (Condizioni Chiave per Concludere):
+                        </div>
+                    """, unsafe_allow_html=True)
+                    for c in conds:
+                        st.markdown(f"<div style='font-size: 0.86rem; color: #cbd5e1; margin-left: 6px; margin-bottom: 4px;'>• {c}</div>", unsafe_allow_html=True)
+                    st.markdown("</div>", unsafe_allow_html=True)
 
                 # 2. CLINICAL & SUSPENSION NOTES (if any)
                 if trade_res.get('Note_Cliniche'):

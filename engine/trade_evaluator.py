@@ -143,6 +143,99 @@ def _build_player_card(p_row, meta):
     }
 
 
+def _detect_trade_archetype(give_df, receive_df, p1_delta_tot, p1_delta_per_game, p2_delta, p3_delta, p4_delta, give_missed, rec_missed):
+    """
+    Detects the strategic archetype and applicability conditions of the proposed trade.
+    Returns: (archetipo_titolo, archetipo_desc, condizioni_strategiche)
+    """
+    num_give = len(give_df)
+    num_rec = len(receive_df)
+
+    rec_delta_xg = float(receive_df.get('Delta_xG', pd.Series([0.0])).mean() or 0.0)
+    give_delta_xg = float(give_df.get('Delta_xG', pd.Series([0.0])).mean() or 0.0)
+
+    if rec_missed > 0 and (p2_delta > 5.0 or p1_delta_per_game > 0.10):
+        return (
+            "🎰 Scommessa High-Risk / High-Reward",
+            "Accetti un'assenza per infortunio o squalifica in cambio di un picco di bonus molto più elevato una volta che il calciatore sarà a regime.",
+            [
+                "Accetta se: la tua rosa ha già alternative solide per coprire i prossimi turni di stop senza andare in emergenza.",
+                "Rifiuta se: ti trovi in una situazione di emergenza numerica immediata e rischi di giocare con l'uomo in meno."
+            ]
+        )
+    elif give_missed > 0 and rec_missed == 0:
+        return (
+            "🚑 Azzeramento Emergenza Infermeria",
+            "Ti liberi di tempi di recupero pendenti acquisendo calciatori sani, arruolabili e pronti al voto da subito.",
+            [
+                "Ideale se: hai urgenza immediata di punti e certezze di formazione senza attendere i report medici.",
+                "Valuta bene se: il giocatore ceduto è un top assoluto in procinto di rientrare nel giro di una settimana."
+            ]
+        )
+    elif num_give > num_rec and p4_delta > 8.0:
+        return (
+            "👑 Upgrade Top di Reparto (Qualità vs Quantità)",
+            "Concentri il fanta-valore su un unico fuoriclasse di prima fascia, massimizzando lo slot titolare e liberando posti in rosa.",
+            [
+                "Consigliato se: hai una panchina profonda e puoi sacrificare due titolari medi per un fuoriclasse decisivo.",
+                "Sconsigliato se: la tua rosa è corta e togliendo due titolari rischi buchi di copertura nei turn-over."
+            ]
+        )
+    elif num_give < num_rec and p4_delta < -8.0:
+        return (
+            "📦 Allargamento Rosa (Profondità vs Vertice)",
+            "Sacrifichi una stella per acquisire due o più titolari affidabili e colmare lacune gravi in ruoli scoperti.",
+            [
+                "Strategia corretta se: hai buchi cronici nella formazione che ti causano voti persi o riserve d'ufficio.",
+                "Evita se: possiedi già titolari sufficienti: a fine stagione i singoli fuoriclasse portano più vittorie dei comprimari."
+            ]
+        )
+    elif rec_delta_xg < -0.35:
+        return (
+            "🎯 Opportunità Buy-Low (Valore Inespresso)",
+            "Sfrutti la sfortuna realizzativa recente della controparte: prendi calciatori che producono tanti tiri e xG, destinati a sbloccarsi.",
+            [
+                "Consigliatissimo: la legge dei grandi numeri premia chi calcia tanto in porta con regolarità.",
+                "Tempismo perfetto: compri al minimo storico prima che i gol facciano risalire le richieste."
+            ]
+        )
+    elif give_delta_xg > 0.40:
+        return (
+            "💰 Operazione Sell-High (Cessione al Picco)",
+            "Monetizzi al massimo valore un calciatore che ha overperformato rispetto alla qualità dei suoi tiri, prima della fisiologica normalizzazione.",
+            [
+                "Mossa astuta: scambi un momento di grazia straordinario per valore strutturale duraturo.",
+                "Attenzione solo se: il giocatore ha cambiato stabilmente ruolo tattico (es. avanzato a seconda punta o rigorista)."
+            ]
+        )
+    elif p3_delta >= 10.0:
+        return (
+            "🛡️ Consolidamento & Affidabilità (Safety First)",
+            "Sacrifichi la discontinuità o scommesse sporadiche per comprare certezze assolute di voto, minutaggio pieno e sufficienze costanti.",
+            [
+                "Ideale se: giochi con il Modificatore Difesa / D-Factor Mantra o se punti su un'ossatura granitica.",
+                "Non farlo se: ti mancano disperatamente gol ed estro in attacco per vincere gli scontri diretti."
+            ]
+        )
+    elif p2_delta >= 10.0:
+        return (
+            "📈 Operazione sul Momentum (Cavalchi la Forma)",
+            "Punti sulla forma smagliante e sulla fiducia del momento, cedendo calciatori in fase calante o involuzione tattica.",
+            [
+                "Vantaggioso nel breve-medio termine per sfruttare il trend positivo delle prossime gare.",
+                "Verifica sempre che: il calendario (FDR) delle prossime 4 giornate non sia proibitivo."
+            ]
+        )
+    else:
+        return (
+            "⚖️ Baratto Tattico Ruolo-su-Ruolo",
+            "Scambio simmetrico tra calciatori di pari caratura: non altera gli equilibri complessivi e risponde a scelte tattiche individuali.",
+            [
+                "Criterio di scelta: analizza i matchup e il calendario FDR delle prossime 5 giornate.",
+                "Utile per: sdoppiare coppie della stessa squadra o diversificare il rischio infortuni."
+            ]
+        )
+
 def evaluate_trade(
     give_names, 
     receive_names, 
@@ -470,47 +563,108 @@ def evaluate_trade(
         p4_desc = "Fanta-valore di mercato e appeal complessivo speculari"
 
     # -------------------------------------------------------------
-    # SINTESI IBRIDA & VERDETTO GLOBALE
+    # SINTESI IBRIDA GRADUALE & VERDETTO A 9 LIVELLI
     # -------------------------------------------------------------
-    # Normalized composite delta:
+    # Calibrated Normalized Contributions:
     # 35% P1 (Punti effettivi/gara), 25% P2 (Momentum), 20% P3 (Solidità), 20% P4 (Qualità Star)
-    p1_contrib = float(np.clip((p1_delta_per_game / 0.50) * 35.0, -45.0, 45.0))
-    p2_contrib = float(np.clip((p2_delta / 20.0) * 25.0, -30.0, 30.0))
-    p3_contrib = float(np.clip((p3_delta / 20.0) * 20.0, -25.0, 25.0))
-    p4_contrib = float(np.clip((p4_delta / 20.0) * 20.0, -25.0, 25.0))
+    p1_contrib = float(np.clip((p1_delta_per_game / 0.50) * 35.0, -35.0, 35.0))
+    p2_contrib = float(np.clip((p2_delta / 50.0) * 25.0, -25.0, 25.0))
+    p3_contrib = float(np.clip((p3_delta / 50.0) * 20.0, -20.0, 20.0))
+    p4_contrib = float(np.clip((p4_delta / 50.0) * 20.0, -20.0, 20.0))
 
     composite_score = round(p1_contrib + p2_contrib + p3_contrib + p4_contrib, 1)
 
-    if composite_score >= 22.0:
-        verdict = "SCAMBIO CONSIGLIATISSIMO"
+    # Indice di Convenienza FantaMantra su scala continua 0 - 100 (50 = perfetto equilibrio)
+    indice_convenienza = int(np.clip(round(50.0 + (composite_score / 60.0) * 50.0), 0, 100))
+
+    # 9-Tier Nuanced Verdict Spectrum
+    if composite_score >= 28.0:
+        verdict = "GRANDE AFFARE (Fortemente Consigliato)"
+        verdict_badge = "💎 GRANDE AFFARE"
+        status_color = "emerald"
+        tier_level = 1
+        tier_desc = "Guadagno netto e indiscutibile: rinforzo di altissimo profilo sotto ogni aspetto."
+    elif composite_score >= 16.0:
+        verdict = "SCAMBIO MOLTO FAVOREVOLE"
+        verdict_badge = "🟢 MOLTO FAVOREVOLE"
         status_color = "green"
+        tier_level = 2
+        tier_desc = "Operazione decisamente vantaggiosa: ottimo incremento di potenziale e punti attesi."
     elif composite_score >= 7.0:
-        verdict = "SCAMBIO FAVOREVOLE"
-        status_color = "lightgreen"
+        verdict = "LEGGERO VANTAGGIO (Favorevole)"
+        verdict_badge = "🟢 FAVOREVOLE"
+        status_color = "teal"
+        tier_level = 3
+        tier_desc = "Il piatto della bilancia pende a tuo favore: scambio intelligente per consolidare la rosa."
+    elif composite_score >= 2.0:
+        verdict = "LEGGERMENTE FAVOREVOLE (Margine Positivo)"
+        verdict_badge = "🟡 MARGINE POSITIVO"
+        status_color = "lime"
+        tier_level = 4
+        tier_desc = "Piccolo margine positivo sulla carta: scambio approvato, ma privo di scompensi decisivi."
+    elif composite_score >= -2.0:
+        verdict = "SOSTANZIALE EQUILIBRIO (Scambio alla Pari)"
+        verdict_badge = "⚪ ALLA PARI"
+        status_color = "slate"
+        tier_level = 5
+        tier_desc = "Scambio speculare: rendimenti quasi identici. Ha senso se risponde a specifiche esigenze di ruolo o calendario."
     elif composite_score >= -7.0:
-        verdict = "SCAMBIO EQUILIBRATO"
-        status_color = "gray"
-    elif composite_score >= -22.0:
-        verdict = "SCAMBIO SFAVOREVOLE"
+        verdict = "LEGGERMENTE SFAVOREVOLE (Prudenza)"
+        verdict_badge = "🟡 PRUDENZA"
+        status_color = "amber"
+        tier_level = 6
+        tier_desc = "Piccola perdita di rendimento teorico: accettabile solo per tamponare un'emergenza di titolarità."
+    elif composite_score >= -16.0:
+        verdict = "LEGGERO SVANTAGGIO (Sconsigliato)"
+        verdict_badge = "🟠 SCONSIGLIATO"
         status_color = "orange"
+        tier_level = 7
+        tier_desc = "Cedi più valore di quanto ricevi: conviene rifiutare o rilanciare chiedendo un conguaglio migliore."
+    elif composite_score >= -28.0:
+        verdict = "SCAMBIO SCONSIGLIATO (Perdita di Valore)"
+        verdict_badge = "🔴 PERDITA DI VALORE"
+        status_color = "rose"
+        tier_level = 8
+        tier_desc = "Operazione che indebolisce lo slot titolare: stai sacrificando un elemento solido per alternative inferiori."
     else:
-        verdict = "SCAMBIO DA EVITARE"
+        verdict = "PESSIMO AFFARE (Scambio da Evitare)"
+        verdict_badge = "⛔ DA EVITARE"
         status_color = "red"
+        tier_level = 9
+        tier_desc = "Cessione fortemente a perdere: svendita ingiustificata del patrimonio di rosa."
 
-    # High-level human synthesis
-    winners_count = [p1_winner, p2_winner, p3_winner, p4_winner].count('RICEVI')
-    losers_count = [p1_winner, p2_winner, p3_winner, p4_winner].count('CEDI')
+    # Detect Tactical Archetype & Strategic Conditions
+    archetipo_titolo, archetipo_desc, condizioni_strategiche = _detect_trade_archetype(
+        give_df=give_df,
+        receive_df=receive_df,
+        p1_delta_tot=p1_delta_tot,
+        p1_delta_per_game=p1_delta_per_game,
+        p2_delta=p2_delta,
+        p3_delta=p3_delta,
+        p4_delta=p4_delta,
+        give_missed=give_missed_games,
+        rec_missed=rec_missed_games
+    )
 
-    if composite_score >= 12.0:
-        sintesi_umana = f"Scambio chiaramente vantaggioso: guadagni circa {p1_delta_tot:+.1f} xFV netti nel resto della stagione, migliorando la qualità del reparto."
-    elif composite_score >= 4.0:
-        sintesi_umana = f"Operazione favorevole: leggero incremento di rendimento atteso ({p1_delta_per_game:+.2f} xFV/gara) con profilo statistico superiore."
-    elif composite_score >= -4.0:
-        sintesi_umana = "Scambio sostanzialmente alla pari: le due contropartite offrono rendimenti equivalenti, la scelta dipende dalle preferenze tattiche."
-    elif composite_score >= -12.0:
-        sintesi_umana = f"Operazione a rischio: cedi calciatori con continuità o punteggio potenziale superiore ({abs(p1_delta_per_game):.2f} xFV/gara persi)."
+    # Narrative Human Synthesis with nuance and context
+    if composite_score >= 28.0:
+        sintesi_umana = f"Grande affare: guadagni circa {p1_delta_tot:+.1f} xFV netti (+{p1_delta_per_game:.2f}/gara). L'operazione è fortemente consigliata sotto ogni profilo statistico, clinico e qualitativo."
+    elif composite_score >= 16.0:
+        sintesi_umana = f"Scambio molto favorevole: solido incremento di rendimento atteso ({p1_delta_tot:+.1f} xFV complessivi) che rafforza chiaramente il tuo scacchiere titolare."
+    elif composite_score >= 7.0:
+        sintesi_umana = f"Leggero vantaggio: il saldo pende a tuo favore ({p1_delta_per_game:+.2f} xFV/gara). Buona operazione per consolidare il reparto con rischio contenuto."
+    elif composite_score >= 2.0:
+        sintesi_umana = f"Margine positivo: piccolo incremento teorico (+{p1_delta_per_game:.2f} xFV/gara). Scambio vantaggioso ma privo di scompensi decisivi, valido se conforme alle tue idee tattiche."
+    elif composite_score >= -2.0:
+        sintesi_umana = f"Sostanziale parità: i due pacchetti offrono rendimenti speculari (differenza minima di {p1_delta_per_game:+.2f} xFV/gara). La decisione dipende dalle tue preferenze di calendario e moduli."
+    elif composite_score >= -7.0:
+        sintesi_umana = f"Leggera prudenza: perdi qualcosina sulla carta ({abs(p1_delta_per_game):.2f} xFV/gara in meno). Ha senso procedere solo se risponde a un'urgenza specifica di titolarità o copertura."
+    elif composite_score >= -16.0:
+        sintesi_umana = f"Leggero svantaggio: cedi più continuità o valore di quanto ricevi ({p1_delta_tot:.1f} xFV netti persi). Conviene chiedere un conguaglio o un ritocco prima di accettare."
+    elif composite_score >= -28.0:
+        sintesi_umana = f"Scambio sconsigliato: perdita sensibile di potenziale ({abs(p1_delta_tot):.1f} xFV totali). Rinunci a un calciatore di riferimento per contropartite che non offrono adeguate garanzie."
     else:
-        sintesi_umana = f"Scambio fortemente sconsigliato: perdi circa {abs(p1_delta_tot):.1f} xFV complessivi o stai cedendo un top per giocatori non all'altezza."
+        sintesi_umana = f"Pessimo affare: cedi un elemento di vertice per giocatori non all'altezza, lasciando per strada circa {abs(p1_delta_tot):.1f} xFV netti. Proposta da respingere al mittente."
 
     # Rationales, Advantages, and Risks
     vantaggi = []
@@ -598,7 +752,14 @@ def evaluate_trade(
 
     return {
         'Verdetto': verdict,
+        'Verdict_Badge': verdict_badge,
+        'Tier_Level': tier_level,
+        'Tier_Desc': tier_desc,
+        'Indice_Convenienza': indice_convenienza,
         'StatusColor': status_color,
+        'Archetipo_Titolo': archetipo_titolo,
+        'Archetipo_Descrizione': archetipo_desc,
+        'Condizioni_Strategiche': condizioni_strategiche,
         'Sintesi_Umana': sintesi_umana,
         'Vantaggi': vantaggi,
         'Rischi': rischi,
