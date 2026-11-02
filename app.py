@@ -655,225 +655,359 @@ with tab_formazione:
         if not opt_res:
             st.error("Impossibile schierare un modulo legale (verifica di avere almeno 1 Portiere e abbastanza difensori/attaccanti).")
         else:
-            # Score KPIs
-            k1, k2, k3, k4 = st.columns(4)
-            with k1:
-                st.markdown(f"""
-                <div class="metric-card">
-                    <div class="metric-title">Punti Attesi Totali</div>
-                    <div class="metric-val">{opt_res['Punti_Attesi_Totali']}</div>
-                </div>
-                """, unsafe_allow_html=True)
-            with k2:
-                st.markdown(f"""
-                <div class="metric-card">
-                    <div class="metric-title">Modulo Consigliato</div>
-                    <div class="metric-val" style="color: #34d399;">{opt_res['Modulo']}</div>
-                </div>
-                """, unsafe_allow_html=True)
-            with k3:
-                st.markdown(f"""
-                <div class="metric-card">
-                    <div class="metric-title">Somma xFV Titolari</div>
-                    <div class="metric-val">{opt_res['Somma_xFV_Titolari']}</div>
-                </div>
-                """, unsafe_allow_html=True)
-            with k4:
-                st.markdown(f"""
-                <div class="metric-card">
-                    <div class="metric-title">{'Bonus Modif. Difesa' if is_classic else 'Bonus D-Factor Atteso'}</div>
-                    <div class="metric-val" style="color: #f59e0b;">+{opt_res['D_Factor_Atteso']} pts</div>
-                </div>
-                """, unsafe_allow_html=True)
-
-            st.markdown("---")
-            
-            # Coverage Warning & Safe Alternatives Callout
+            # 1. Compact Matchday HUD Strip
+            d_label = "Bonus Difesa" if is_classic else "D-Factor"
             has_issues = opt_res.get('Ha_Problemi_Copertura', False)
             safe_alts = opt_res.get('Moduli_Sicuri_Alternativi', [])
             cambio_mod_slots = opt_res.get('Slot_Coperti_Cambio_Modulo', [])
 
             if has_issues:
+                cop_badge = '<span style="color:#ef4444; font-weight:700;">🚨 Rischio Inferiorità</span>'
+            elif cambio_mod_slots:
+                cop_badge = '<span style="color:#38bdf8; font-weight:700;">🔄 Cambio Modulo OK</span>'
+            else:
+                cop_badge = '<span style="color:#34d399; font-weight:700;">🛡️ Copertura Blindata</span>'
+
+            hud_html = f"""
+            <div style="display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: space-between; background: linear-gradient(90deg, rgba(15,23,42,0.90) 0%, rgba(30,41,59,0.90) 100%); border: 1px solid #1e293b; border-radius: 8px; padding: 10px 18px; margin: 4px 0 10px 0;">
+                <div><span style="color:#94a3b8; font-size:0.75rem; text-transform:uppercase; font-weight:700;">Modulo Tattico</span><br><b style="color:#38bdf8; font-size:1.15rem;">{opt_res['Modulo']}</b></div>
+                <div><span style="color:#94a3b8; font-size:0.75rem; text-transform:uppercase; font-weight:700;">Punti Attesi Totali</span><br><b style="color:#34d399; font-size:1.20rem;">{opt_res['Punti_Attesi_Totali']} pt</b></div>
+                <div><span style="color:#94a3b8; font-size:0.75rem; text-transform:uppercase; font-weight:700;">xFV 11 Titolari</span><br><b style="color:#f1f5f9; font-size:1.15rem;">{opt_res['Somma_xFV_Titolari']}</b></div>
+                <div><span style="color:#94a3b8; font-size:0.75rem; text-transform:uppercase; font-weight:700;">{d_label}</span><br><b style="color:#f59e0b; font-size:1.15rem;">+{opt_res['D_Factor_Atteso']} pt</b></div>
+                <div><span style="color:#94a3b8; font-size:0.75rem; text-transform:uppercase; font-weight:700;">Stato Copertura</span><br>{cop_badge}</div>
+            </div>
+            """
+            st.markdown(hud_html, unsafe_allow_html=True)
+
+            # 2. Compact Coverage Alert (only if needed)
+            if has_issues:
                 uncovered_list = opt_res.get('Slot_Scoperti', [])
                 uncovered_badges = " ".join([f"`{s}`" for s in uncovered_list])
-                st.error(f"""
-                🚨 **CRITICITÀ COPERTURA PANCHINA per il modulo {opt_res['Modulo']} (Rischio Inferiorità Numerica)**:
-                Questo modulo massimizza il punteggio potenziale (**{opt_res['Punti_Attesi_Totali']} pt**), ma in caso di forfait/S.V. nello slot **{uncovered_badges}** **non è possibile ottenere una formazione valida a 11 neanche effettuando il cambio modulo con i giocatori sani/a voto della panchina**!
-                """, icon="🚨")
-                
-                if safe_alts:
-                    st.markdown("<div style='font-size: 0.95rem; font-weight: 700; color: #38bdf8; margin-top: 6px; margin-bottom: 4px;'>🛡️ Moduli Alternativi Consigliati con Formazione Valida Garantita:</div>", unsafe_allow_html=True)
-                    cols_alt = st.columns(len(safe_alts))
-                    for idx_a, safe_alt in enumerate(safe_alts):
-                        with cols_alt[idx_a]:
-                            delta_c = "#34d399" if abs(safe_alt['Delta_Punti']) <= 0.8 else "#f59e0b"
-                            st.markdown(f"""
-                            <div style="background: rgba(16, 185, 129, 0.08); border: 1.5px solid #10b981; border-radius: 8px; padding: 10px 14px; height: 100%;">
-                                <div style="display: flex; justify-content: space-between; align-items: center;">
-                                    <span style="font-weight: 800; font-size: 1.05rem; color: #34d399;">🛡️ {safe_alt['Modulo']}</span>
-                                    <span style="font-weight: 700; color: #ffffff;">{safe_alt['Punti_Totali']} pt <span style="color: {delta_c}; font-size: 0.85rem;">({safe_alt['Delta_Punti']:+.2f} pt)</span></span>
+                with st.expander(f"🚨 Attenzione: possibile inferiorità numerica nello slot {uncovered_badges} — Clicca per alternative", expanded=False):
+                    if safe_alts:
+                        cols_alt = st.columns(len(safe_alts))
+                        for idx_a, safe_alt in enumerate(safe_alts):
+                            with cols_alt[idx_a]:
+                                delta_c = "#34d399" if abs(safe_alt['Delta_Punti']) <= 0.8 else "#f59e0b"
+                                st.markdown(f"""
+                                <div style="background: rgba(16, 185, 129, 0.08); border: 1.5px solid #10b981; border-radius: 8px; padding: 10px 14px; height: 100%;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <span style="font-weight: 800; font-size: 1.05rem; color: #34d399;">🛡️ {safe_alt['Modulo']}</span>
+                                        <span style="font-weight: 700; color: #ffffff;">{safe_alt['Punti_Totali']} pt <span style="color: {delta_c}; font-size: 0.85rem;">({safe_alt['Delta_Punti']:+.2f} pt)</span></span>
+                                    </div>
+                                    <div style="color: #cbd5e1; font-size: 0.82rem; margin-top: 5px;">{safe_alt['Dettaglio']}</div>
                                 </div>
-                                <div style="color: #cbd5e1; font-size: 0.82rem; margin-top: 5px;">{safe_alt['Dettaglio']}</div>
-                            </div>
-                            """, unsafe_allow_html=True)
-                    st.caption("💡 *Puoi selezionare il modulo alternativo direttamente dal menu a tendina in alto se vuoi evitare il rischio di giocare in 10.*")
-            elif cambio_mod_slots:
-                switch_details = " • ".join([
-                    f"se salta **{cm['Titolare']}** (`{cm['Slot']}`) subentra **{cm['Subentrante']}** (`{cm['Ruolo_Sub']}`) passando al **{cm['Nuovo_Modulo']}**"
-                    for cm in cambio_mod_slots
-                ])
-                st.success(
-                    f"🔄 **Copertura Garantita grazie al Cambio Modulo Automatico**: Il modulo **{opt_res['Modulo']}** massimizza i punti attesi (**{opt_res['Punti_Attesi_Totali']} pt**) "
-                    f"e ti mette al riparo dall'inferiorità numerica anche senza ricambi ruolo-per-ruolo ({switch_details}).",
-                    icon="✅"
-                )
-            else:
-                st.success(f"🛡️ **Copertura Panchina Blindata (100% Ruolo per Ruolo)**: Il modulo **{opt_res['Modulo']}** offre sia il punteggio più alto (**{opt_res['Punti_Attesi_Totali']} pt**) sia riserve dirette sane/a voto per ogni singolo ruolo!", icon="✅")
+                                """, unsafe_allow_html=True)
+                        st.caption("💡 *Puoi selezionare il modulo alternativo direttamente dal menu a tendina in alto se vuoi evitare il rischio di giocare in 10.*")
 
-            st.markdown("---")
-            
-            # Starting 11 Layout
-            st.subheader(f"🟢 Gli 11 Titolari (Modulo: {opt_res['Modulo']})")
-            
             titolari_list = opt_res['Titolari']
-            
-            # Group into tactical lines: Portiere, Difesa, Centrocampo/Trequarti, Attacco
-            por_line = [t for t in titolari_list if t['Slot_Assegnato'] in ['Por', 'P']]
-            def_line = [t for t in titolari_list if t['Slot_Assegnato'] in ['Dc', 'Dd', 'Ds', 'Dc/B', 'B', 'D']]
-            mid_line = [t for t in titolari_list if t['Slot_Assegnato'] in ['E', 'E/W', 'M', 'M/C', 'C', 'C/T', 'W', 'W/T', 'T', 'T/A']]
-            att_line = [t for t in titolari_list if t['Slot_Assegnato'] in ['A/Pc', 'W/A', 'Pc', 'A', 'T/A/Pc']]
 
-            def_title = "🛡️ DIFESA (MODIFICATORE)" if is_classic else "🛡️ DIFESA (D-FACTOR REPARTO)"
-            mid_title = "⚙️ CENTROCAMPO" if is_classic else "⚙️ CENTROCAMPO & TREQUARTI"
-            for section_name, section_players in [
-                ("🧤 PORTIERE", por_line),
-                (def_title, def_line),
-                (mid_title, mid_line),
-                ("⚽ ATTACCO", att_line)
-            ]:
-                if section_players:
-                    st.markdown(f"**{section_name}**")
-                    cols = st.columns(len(section_players))
-                    for idx, p in enumerate(section_players):
-                        with cols[idx]:
-                            fdr = p['FDR']
-                            fdr_class = f"badge-fdr-{fdr}"
-                            slot = p.get('Slot_Assegnato', '')
-                            
-                            # Concise metric line by role
-                            pct_suff = float(p.get('Pct_Sufficienza', 0.0))
-                            df_badge = str(p.get('D_Factor_Badge', ''))
-                            mv_stag = float(p.get('MV_Stagione', 6.0))
-                            
-                            if slot in ['Por', 'P']:
-                                save_pct = float(p.get('Pct_Parate', 70.0))
-                                gp = float(p.get('Goals_Prevented', 0.0))
-                                metric_html = f'<div style="font-size: 0.78rem; color: #38bdf8; margin-top: 3px;">🧤 Parate: <b>{save_pct:.0f}%</b> | Gol Evitati: <b>{gp:+.1f}</b></div>'
-                            elif any(r in slot for r in ['Dc', 'Dd', 'Ds', 'B', 'D']):
-                                metric_html = f'<div style="font-size: 0.78rem; color: #93c5fd; margin-top: 3px;">🛡️ Suff: <b>{pct_suff:.0f}%</b> | MV: <b>{mv_stag:.2f}</b></div>'
-                            elif any(r in slot for r in ['E', 'M']):
-                                kp = float(p.get('Key_Passes_90', 0.0))
-                                metric_html = f'<div style="font-size: 0.78rem; color: #93c5fd; margin-top: 3px;">🛡️ Suff: <b>{pct_suff:.0f}%</b> | KP: <b>{kp:.1f}/90</b></div>'
-                            elif any(r in slot for r in ['W', 'T', 'C']):
-                                kp = float(p.get('Key_Passes_90', 0.0))
-                                xa = float(p.get('xA_90', 0.0))
-                                metric_html = f'<div style="font-size: 0.78rem; color: #c4b5fd; margin-top: 3px;">🎯 KP: <b>{kp:.1f}/90</b> | xA/90: <b>{xa:.2f}</b></div>'
-                            else:
-                                tiri = float(p.get('Tiri_90', 0.0))
-                                xg = float(p.get('xG_90', 0.0))
-                                metric_html = f'<div style="font-size: 0.78rem; color: #6ee7b7; margin-top: 3px;">⚽ Tiri: <b>{tiri:.1f}/90</b> | xG/90: <b>{xg:.2f}</b></div>'
-                                
-                            bonus_html = ""
-                            exp_gf = float(p.get('Exp_GF', 0.0))
-                            exp_ass = float(p.get('Exp_ASS', 0.0))
-                            if slot in ['Por', 'P']:
-                                bonus_imb = float(p.get('Bonus_Imbattibilita', 0.0))
-                                exp_gs = float(p.get('Exp_GS', 0.0))
-                                if bonus_imb > 0.05:
-                                    bonus_html += f'<span style="background: #0369a1; color: #bae6fd; padding: 1px 5px; border-radius: 3px; font-size: 0.74rem; margin-right: 4px;">🛡️ CS: +{bonus_imb:.2f}</span>'
-                                bonus_html += f'<span style="background: #7f1d1d; color: #fecaca; padding: 1px 5px; border-radius: 3px; font-size: 0.74rem;">xGS: -{exp_gs:.2f}</span>'
-                            else:
-                                if exp_gf >= 0.08:
-                                    bonus_html += f'<span style="background: #064e3b; color: #6ee7b7; padding: 1px 5px; border-radius: 3px; font-size: 0.74rem; margin-right: 4px;">+GF: {exp_gf:.2f}</span>'
-                                if exp_ass >= 0.08:
-                                    bonus_html += f'<span style="background: #4c1d95; color: #c4b5fd; padding: 1px 5px; border-radius: 3px; font-size: 0.74rem;">+ASS: {exp_ass:.2f}</span>'
-                                
-                            sig = str(p.get('Signal', ''))
-                            sig_html = ""
-                            if 'BUY-LOW' in sig:
-                                sig_html = f'<div class="metric-pill-buylow">🎯 BUY-LOW (ΔxG: {p.get("Delta_xG", 0)})</div>'
-                            elif 'BOMBER PURO' in sig:
-                                sig_html = '<div class="metric-pill-attack">🔥 BOMBER PURO</div>'
-                            elif 'CREATORE ELITE' in sig:
-                                sig_html = '<div class="metric-pill-create">👑 CREATORE ELITE</div>'
-                            elif 'ANCORA' in df_badge:
-                                sig_html = f'<div class="metric-pill-def">{df_badge}</div>'
-
-                            bonus_block = f'<div style="margin-top: 3px;">{bonus_html}</div>' if bonus_html else ''
-                            p_voto_pct = int(float(p.get('P_Voto', 0.90)) * 100)
-                            tit_badge = str(p.get('Status_Titolarita', '🟢 TITOLARE'))
-                            pres_val = int(p.get('Presenze_Tot', p.get('Presenze', 0)))
-                            tot_g = int(p.get('Tot_Giornate', 0) or max(pres_val, int(selected_giornata - 1) if selected_giornata > 1 else 1))
-                            tot_g = max(tot_g, pres_val, 1)
-                            pres_txt = f"{pres_val}/{tot_g}"
-                            bal_info = str(p.get('Ballottaggio_Info', '')).strip()
-                            bal_line = f'<div style="font-size: 0.75rem; color: #fbbf24; margin-top: 2px;">⚖️ {bal_info}</div>' if bal_info else ''
-                            tit_html = f'<div style="font-size: 0.78rem; color: #94a3b8; margin-top: 2px;">{tit_badge} • <b>{p_voto_pct}%</b> ({pres_txt} pres)</div>{bal_line}'
-                            
-                            card_html = (
-                                f'<div class="player-card">'
-                                f'<div style="display: flex; justify-content: space-between; align-items: center;">'
-                                f'<strong style="color: #00f0ff; font-size: 1.05rem; text-shadow: 0 0 10px rgba(0, 240, 255, 0.4);">[{p["Slot_Assegnato"]}] {p["Giocatore"]}</strong>'
-                                f'<span class="{fdr_class}">FDR {fdr}</span>'
-                                f'</div>'
-                                f'<div style="font-size: 0.86rem; color: #f1f5f9; margin-top: 3px; font-weight: 600;">'
-                                f'{p["Squadra"]} vs <b>{p["Match"]}</b>'
-                                f'</div>'
-                                f'{tit_html}'
-                                f'{metric_html}'
-                                f'{bonus_block}'
-                                f'{sig_html}'
-                                f'<hr style="margin: 6px 0; border: none; border-top: 1.5px solid #132d4e;">'
-                                f'<div style="display: flex; justify-content: space-between; font-size: 0.90rem; color: #f8fafc;">'
-                                f'<span>Voto: <b>{p["Pred_Voto"]}</b></span>'
-                                f'<span style="color: #00f0ff; font-weight: 900; font-size: 1.12rem; text-shadow: 0 0 12px rgba(0, 240, 255, 0.6);">xFV: {p["xFV"]}</span>'
-                                f'</div>'
-                                f'</div>'
-                            )
-                            st.markdown(card_html, unsafe_allow_html=True)
-
-            # Bench Section Immediately Below Starting 11
-            st.markdown("---")
-            st.subheader(f"🟡 Panchina Consigliata {'Classic' if is_classic else 'Mantra MASTER'} (Ordine 1-12)")
-            st.caption(
-                "Ordine ottimizzato per massimizzare copertura ruoli e probabilità di voto ≥ 6 o bonus in caso di sostituzione (max 5 cambi)."
-            )
-
-            df_panchina = pd.DataFrame(opt_res['Panchina'])
-            if not df_panchina.empty:
-                bench_display = []
-                for _, b in df_panchina.iterrows():
-                    p_voto_pct = int(float(b.get('P_Voto', 0.85)) * 100)
-                    pres_b = int(b.get('Presenze_Tot', b.get('Presenze', 0)))
-                    tot_g = int(b.get('Tot_Giornate', 0) or max(pres_b, int(selected_giornata - 1) if selected_giornata > 1 else 1))
-                    tot_g = max(tot_g, pres_b, 1)
-                    score_panchina = float(b.get('Score_Panchina', b.get('EV', 5.0)))
-                    pred_v = float(b.get('Pred_Voto', 6.0))
-                    bonus_pts = float(b.get('Bonus_Atteso', 0.0))
+            # Prepare Starters Table Data
+            starter_rows = []
+            for p in titolari_list:
+                slot = p['Slot_Assegnato']
+                gn = p['Giocatore']
+                sq = p.get('Squadra', '-')
+                m = p.get('Match', '-')
+                fdr = int(p.get('FDR', 3))
+                fdr_badge = "🟢" if fdr <= 2 else ("🟡" if fdr == 3 else "🔴")
+                
+                p_voto_pct = int(float(p.get('P_Voto', 0.90)) * 100)
+                bal_info = str(p.get('Ballottaggio_Info', '')).strip()
+                if bal_info:
+                    tit_str = f"⚖️ {p_voto_pct}% (Bal)"
+                elif p_voto_pct >= 85:
+                    tit_str = f"🟢 {p_voto_pct}%"
+                elif p_voto_pct >= 60:
+                    tit_str = f"🟡 {p_voto_pct}%"
+                else:
+                    tit_str = f"🔴 {p_voto_pct}%"
+                
+                exp_gf = float(p.get('Exp_GF', 0.0))
+                exp_ass = float(p.get('Exp_ASS', 0.0))
+                bonus_imb = float(p.get('Bonus_Imbattibilita', 0.0))
+                if slot in ['Por', 'P']:
+                    bonus_str = f"CS +{bonus_imb:.2f}" if bonus_imb > 0.05 else f"xGS -{float(p.get('Exp_GS', 0.0)):.2f}"
+                else:
+                    b_parts = []
+                    if exp_gf >= 0.08:
+                        b_parts.append(f"GF {exp_gf:.2f}")
+                    if exp_ass >= 0.08:
+                        b_parts.append(f"ASS {exp_ass:.2f}")
+                    bonus_str = " + ".join(b_parts) if b_parts else "-"
                     
-                    bench_display.append({
-                        'Pos': f"#{b.get('Posizione_Panchina', '-')}",
-                        'Fascia': b.get('Fascia_Master', 'Rincalzo'),
-                        'Calciatore': b.get('Giocatore', ''),
-                        'Squadra': b.get('Squadra', ''),
-                        'Ruoli': b.get('RuoloClassic' if is_classic else 'RuoloMantra', ''),
-                        'Match (FDR)': f"{b.get('Match', '')} (FDR {b.get('FDR', 3)})",
-                        'Titolarità': f"{p_voto_pct}% ({pres_b}/{tot_g})",
-                        'Voto / Bonus Atteso': f"{pred_v:.2f} (+{bonus_pts:.2f})",
-                        'Score Panchina': round(score_panchina, 2),
-                    })
-                df_bench_view = pd.DataFrame(bench_display)
-                st.dataframe(df_bench_view, width='stretch', hide_index=True)
+                pred_v = float(p.get('Pred_Voto', 6.0))
+                xfv = float(p.get('xFV', 6.0))
+                
+                starter_rows.append({
+                    'Slot': slot,
+                    'Calciatore': gn,
+                    'Squadra': sq,
+                    'Match': f"{m} {fdr_badge}",
+                    'Titolarità': tit_str,
+                    'Voto': f"{pred_v:.2f}",
+                    'Bonus Atteso': bonus_str,
+                    'xFV': round(xfv, 2)
+                })
+            df_starters_display = pd.DataFrame(starter_rows)
+
+            # Prepare Bench Table Data
+            bench_rows = []
+            for idx_b, b in enumerate(opt_res.get('Panchina', [])):
+                pos = f"#{b.get('Posizione_Panchina', idx_b + 1)}"
+                gn = b.get('Giocatore', '')
+                sq = b.get('Squadra', '')
+                ruoli = b.get('RuoloClassic' if is_classic else 'RuoloMantra', '')
+                m = b.get('Match', '')
+                fdr = int(b.get('FDR', 3))
+                fdr_badge = "🟢" if fdr <= 2 else ("🟡" if fdr == 3 else "🔴")
+                
+                p_voto_pct = int(float(b.get('P_Voto', 0.85)) * 100)
+                tit_str = f"🟢 {p_voto_pct}%" if p_voto_pct >= 80 else (f"🟡 {p_voto_pct}%" if p_voto_pct >= 50 else f"🔴 {p_voto_pct}%")
+                score_p = round(float(b.get('Score_Panchina', b.get('EV', 5.0))), 2)
+                
+                bench_rows.append({
+                    'Ord': pos,
+                    'Calciatore': gn,
+                    'Ruolo': ruoli,
+                    'Squadra': sq,
+                    'Match': f"{m} {fdr_badge}",
+                    'Titolarità': tit_str,
+                    'Score': score_p
+                })
+            df_bench_display = pd.DataFrame(bench_rows)
+
+            # View Mode Selector
+            v_col1, v_col2 = st.columns([2.6, 1.4])
+            with v_col1:
+                lineup_view_mode = st.radio(
+                    "Modalità Formazione:",
+                    options=["⚡ Vista Compatta Affiancata (Consigliata)", "🏟️ Lavagna Tattica", "🃏 Schede Dettagliate"],
+                    horizontal=True,
+                    key=f"lineup_view_mode_{current_active_team}"
+                )
+            with v_col2:
+                st.caption("💡 *Clicca su un calciatore per aprire la scheda di approfondimento.*")
+
+            # 3. Render Lineup Based on Mode
+            if lineup_view_mode == "⚡ Vista Compatta Affiancata (Consigliata)":
+                col_starters, col_bench = st.columns([1.35, 1.0])
+                with col_starters:
+                    st.markdown(f"**🟢 11 Titolari Consigliati ({opt_res['Modulo']})**")
+                    starter_event = st.dataframe(
+                        df_starters_display,
+                        column_config={
+                            "Slot": st.column_config.TextColumn("Slot", width="small"),
+                            "Calciatore": st.column_config.TextColumn("Calciatore", width="medium"),
+                            "Squadra": st.column_config.TextColumn("Eq", width="small"),
+                            "Match": st.column_config.TextColumn("Match (FDR)", width="medium"),
+                            "Titolarità": st.column_config.TextColumn("Titolarità", width="small"),
+                            "Voto": st.column_config.TextColumn("Voto", width="small"),
+                            "Bonus Atteso": st.column_config.TextColumn("Bonus Atteso", width="small"),
+                            "xFV": st.column_config.NumberColumn("xFV", format="%.2f", width="small"),
+                        },
+                        hide_index=True,
+                        width='stretch',
+                        height=430,
+                        selection_mode="single-row",
+                        on_select="rerun",
+                        key=f"starters_table_{current_active_team}"
+                    )
+                    if starter_event and hasattr(starter_event, 'selection'):
+                        s_rows = starter_event.selection.get('rows', [])
+                        if s_rows and len(s_rows) > 0:
+                            r_idx = s_rows[0]
+                            if r_idx < len(df_starters_display):
+                                p_name = df_starters_display.iloc[r_idx]['Calciatore']
+                                show_player_profile_dialog(
+                                    p_name,
+                                    df_master,
+                                    calendar=calendar,
+                                    matchday=selected_giornata,
+                                    df_roster=df_my_roster
+                                )
+
+                with col_bench:
+                    st.markdown("**🟡 Panchina (Ordine di Subentro 1-12)**")
+                    bench_event = st.dataframe(
+                        df_bench_display,
+                        column_config={
+                            "Ord": st.column_config.TextColumn("Ord", width="small"),
+                            "Calciatore": st.column_config.TextColumn("Calciatore", width="medium"),
+                            "Ruolo": st.column_config.TextColumn("Ruolo", width="small"),
+                            "Squadra": st.column_config.TextColumn("Eq", width="small"),
+                            "Match": st.column_config.TextColumn("Match (FDR)", width="medium"),
+                            "Titolarità": st.column_config.TextColumn("Titolarità", width="small"),
+                            "Score": st.column_config.NumberColumn("Score", format="%.2f", width="small"),
+                        },
+                        hide_index=True,
+                        width='stretch',
+                        height=430,
+                        selection_mode="single-row",
+                        on_select="rerun",
+                        key=f"bench_table_{current_active_team}"
+                    )
+                    if bench_event and hasattr(bench_event, 'selection'):
+                        b_rows = bench_event.selection.get('rows', [])
+                        if b_rows and len(b_rows) > 0:
+                            r_idx = b_rows[0]
+                            if r_idx < len(df_bench_display):
+                                p_name = df_bench_display.iloc[r_idx]['Calciatore']
+                                show_player_profile_dialog(
+                                    p_name,
+                                    df_master,
+                                    calendar=calendar,
+                                    matchday=selected_giornata,
+                                    df_roster=df_my_roster
+                                )
+
+            elif lineup_view_mode == "🏟️ Lavagna Tattica":
+                por_line = [t for t in titolari_list if t['Slot_Assegnato'] in ['Por', 'P']]
+                def_line = [t for t in titolari_list if t['Slot_Assegnato'] in ['Dc', 'Dd', 'Ds', 'Dc/B', 'B', 'D']]
+                mid_line = [t for t in titolari_list if t['Slot_Assegnato'] in ['E', 'E/W', 'M', 'M/C', 'C', 'C/T', 'W', 'W/T', 'T', 'T/A']]
+                att_line = [t for t in titolari_list if t['Slot_Assegnato'] in ['A/Pc', 'W/A', 'Pc', 'A', 'T/A/Pc']]
+
+                def _render_line_chips(players):
+                    chips = []
+                    for pl in players:
+                        slot_c = "#ef4444" if any(x in pl['Slot_Assegnato'] for x in ['A', 'Pc']) else (
+                            "#a855f7" if any(x in pl['Slot_Assegnato'] for x in ['W', 'T']) else (
+                                "#3b82f6" if any(x in pl['Slot_Assegnato'] for x in ['M', 'C', 'E']) else (
+                                    "#22c55e" if any(x in pl['Slot_Assegnato'] for x in ['D', 'Dc', 'Dd', 'Ds', 'B']) else "#eab308"
+                                )
+                            )
+                        )
+                        fdr_c = "#22c55e" if pl.get('FDR', 3) <= 2 else ("#eab308" if pl.get('FDR', 3) == 3 else "#ef4444")
+                        chips.append(f"""
+                        <div style="background: rgba(15,23,42,0.88); border: 1.5px solid {slot_c}; border-radius: 8px; padding: 6px 10px; margin: 4px; min-width: 125px; text-align: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.5);">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                                <span style="background: {slot_c}; color: #ffffff; padding: 1px 5px; border-radius: 4px; font-size: 0.72rem; font-weight: 800;">{pl['Slot_Assegnato']}</span>
+                                <span style="font-size: 0.72rem; color: {fdr_c}; font-weight: 700;">{pl['Squadra']} vs {pl['Match']}</span>
+                            </div>
+                            <div style="font-weight: 700; font-size: 0.90rem; color: #f8fafc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{pl['Giocatore']}</div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 3px; font-size: 0.78rem;">
+                                <span style="color: #94a3b8;">Voto {float(pl.get('Pred_Voto', 6.0)):.1f}</span>
+                                <span style="color: #00f0ff; font-weight: 800;">xFV {pl.get('xFV')}</span>
+                            </div>
+                        </div>
+                        """)
+                    return f"<div style='display: flex; justify-content: center; gap: 8px; flex-wrap: wrap;'>{''.join(chips)}</div>"
+
+                pitch_html = f"""
+                <div style="background: radial-gradient(circle, #1e3a24 0%, #0d1f12 100%); border: 2px solid #22c55e; border-radius: 12px; padding: 16px 12px; margin-bottom: 14px; position: relative;">
+                    <div style="position: absolute; top: 50%; left: 0; right: 0; height: 1px; background: rgba(255,255,255,0.15);"></div>
+                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 70px; height: 70px; border: 1px solid rgba(255,255,255,0.15); border-radius: 50%;"></div>
+                    <div style="position: relative; z-index: 2; display: flex; flex-direction: column; gap: 14px;">
+                        <div>{_render_line_chips(att_line)}</div>
+                        <div>{_render_line_chips(mid_line)}</div>
+                        <div>{_render_line_chips(def_line)}</div>
+                        <div>{_render_line_chips(por_line)}</div>
+                    </div>
+                </div>
+                """
+                st.markdown(pitch_html, unsafe_allow_html=True)
+
+                st.markdown("**🟡 Panchina Consigliata (Ordine 1-12)**")
+                st.dataframe(df_bench_display, hide_index=True, width='stretch')
+
+            else:
+                # Detailed Tactical Cards View (Deep Dive)
+                por_line = [t for t in titolari_list if t['Slot_Assegnato'] in ['Por', 'P']]
+                def_line = [t for t in titolari_list if t['Slot_Assegnato'] in ['Dc', 'Dd', 'Ds', 'Dc/B', 'B', 'D']]
+                mid_line = [t for t in titolari_list if t['Slot_Assegnato'] in ['E', 'E/W', 'M', 'M/C', 'C', 'C/T', 'W', 'W/T', 'T', 'T/A']]
+                att_line = [t for t in titolari_list if t['Slot_Assegnato'] in ['A/Pc', 'W/A', 'Pc', 'A', 'T/A/Pc']]
+
+                def def_title_lbl():
+                    return "🛡️ DIFESA (MODIFICATORE)" if is_classic else "🛡️ DIFESA (D-FACTOR REPARTO)"
+                def mid_title_lbl():
+                    return "⚙️ CENTROCAMPO" if is_classic else "⚙️ CENTROCAMPO & TREQUARTI"
+                for section_name, section_players in [
+                    ("🧤 PORTIERE", por_line),
+                    (def_title_lbl(), def_line),
+                    (mid_title_lbl(), mid_line),
+                    ("⚽ ATTACCO", att_line)
+                ]:
+                    if section_players:
+                        st.markdown(f"**{section_name}**")
+                        cols = st.columns(len(section_players))
+                        for idx, p in enumerate(section_players):
+                            with cols[idx]:
+                                fdr = p['FDR']
+                                fdr_class = f"badge-fdr-{fdr}"
+                                slot = p.get('Slot_Assegnato', '')
+                                
+                                pct_suff = float(p.get('Pct_Sufficienza', 0.0))
+                                df_badge = str(p.get('D_Factor_Badge', ''))
+                                mv_stag = float(p.get('MV_Stagione', 6.0))
+                                
+                                if slot in ['Por', 'P']:
+                                    save_pct = float(p.get('Pct_Parate', 70.0))
+                                    gp = float(p.get('Goals_Prevented', 0.0))
+                                    metric_html = f'<div style="font-size: 0.78rem; color: #38bdf8; margin-top: 3px;">🧤 Parate: <b>{save_pct:.0f}%</b> | Gol Evitati: <b>{gp:+.1f}</b></div>'
+                                elif any(r in slot for r in ['Dc', 'Dd', 'Ds', 'B', 'D']):
+                                    metric_html = f'<div style="font-size: 0.78rem; color: #93c5fd; margin-top: 3px;">🛡️ Suff: <b>{pct_suff:.0f}%</b> | MV: <b>{mv_stag:.2f}</b></div>'
+                                elif any(r in slot for r in ['E', 'M']):
+                                    kp = float(p.get('Key_Passes_90', 0.0))
+                                    metric_html = f'<div style="font-size: 0.78rem; color: #93c5fd; margin-top: 3px;">🛡️ Suff: <b>{pct_suff:.0f}%</b> | KP: <b>{kp:.1f}/90</b></div>'
+                                elif any(r in slot for r in ['W', 'T', 'C']):
+                                    kp = float(p.get('Key_Passes_90', 0.0))
+                                    xa = float(p.get('xA_90', 0.0))
+                                    metric_html = f'<div style="font-size: 0.78rem; color: #c4b5fd; margin-top: 3px;">🎯 KP: <b>{kp:.1f}/90</b> | xA/90: <b>{xa:.2f}</b></div>'
+                                else:
+                                    tiri = float(p.get('Tiri_90', 0.0))
+                                    xg = float(p.get('xG_90', 0.0))
+                                    metric_html = f'<div style="font-size: 0.78rem; color: #6ee7b7; margin-top: 3px;">⚽ Tiri: <b>{tiri:.1f}/90</b> | xG/90: <b>{xg:.2f}</b></div>'
+                                    
+                                bonus_html = ""
+                                exp_gf = float(p.get('Exp_GF', 0.0))
+                                exp_ass = float(p.get('Exp_ASS', 0.0))
+                                if slot in ['Por', 'P']:
+                                    bonus_imb = float(p.get('Bonus_Imbattibilita', 0.0))
+                                    exp_gs = float(p.get('Exp_GS', 0.0))
+                                    if bonus_imb > 0.05:
+                                        bonus_html += f'<span style="background: #0369a1; color: #bae6fd; padding: 1px 5px; border-radius: 3px; font-size: 0.74rem; margin-right: 4px;">🛡️ CS: +{bonus_imb:.2f}</span>'
+                                    bonus_html += f'<span style="background: #7f1d1d; color: #fecaca; padding: 1px 5px; border-radius: 3px; font-size: 0.74rem;">xGS: -{exp_gs:.2f}</span>'
+                                else:
+                                    if exp_gf >= 0.08:
+                                        bonus_html += f'<span style="background: #064e3b; color: #6ee7b7; padding: 1px 5px; border-radius: 3px; font-size: 0.74rem; margin-right: 4px;">+GF: {exp_gf:.2f}</span>'
+                                    if exp_ass >= 0.08:
+                                        bonus_html += f'<span style="background: #4c1d95; color: #c4b5fd; padding: 1px 5px; border-radius: 3px; font-size: 0.74rem;">+ASS: {exp_ass:.2f}</span>'
+
+                                p_voto_pct = int(float(p.get('P_Voto', 0.90)) * 100)
+                                tit_badge = str(p.get('Status_Titolarita', '🟢 TITOLARE'))
+                                pres_val = int(p.get('Presenze_Tot', p.get('Presenze', 0)))
+                                tot_g = int(p.get('Tot_Giornate', 0) or max(pres_val, int(selected_giornata - 1) if selected_giornata > 1 else 1))
+                                tot_g = max(tot_g, pres_val, 1)
+                                pres_txt = f"{pres_val}/{tot_g}"
+                                bal_info = str(p.get('Ballottaggio_Info', '')).strip()
+                                bal_line = f'<div style="font-size: 0.75rem; color: #fbbf24; margin-top: 2px;">⚖️ {bal_info}</div>' if bal_info else ''
+                                tit_html = f'<div style="font-size: 0.78rem; color: #94a3b8; margin-top: 2px;">{tit_badge} • <b>{p_voto_pct}%</b> ({pres_txt} pres)</div>{bal_line}'
+                                bonus_block = f'<div style="margin-top: 3px;">{bonus_html}</div>' if bonus_html else ''
+                                
+                                card_html = (
+                                    f'<div class="player-card">'
+                                    f'<div style="display: flex; justify-content: space-between; align-items: center;">'
+                                    f'<strong style="color: #00f0ff; font-size: 1.05rem; text-shadow: 0 0 10px rgba(0, 240, 255, 0.4);">[{p["Slot_Assegnato"]}] {p["Giocatore"]}</strong>'
+                                    f'<span class="{fdr_class}">FDR {fdr}</span>'
+                                    f'</div>'
+                                    f'<div style="font-size: 0.86rem; color: #f1f5f9; margin-top: 3px; font-weight: 600;">'
+                                    f'{p["Squadra"]} vs <b>{p["Match"]}</b>'
+                                    f'</div>'
+                                    f'{tit_html}'
+                                    f'{metric_html}'
+                                    f'{bonus_block}'
+                                    f'<hr style="margin: 6px 0; border: none; border-top: 1.5px solid #132d4e;">'
+                                    f'<div style="display: flex; justify-content: space-between; font-size: 0.90rem; color: #f8fafc;">'
+                                    f'<span>Voto: <b>{p["Pred_Voto"]}</b></span>'
+                                    f'<span style="color: #00f0ff; font-weight: 900; font-size: 1.12rem; text-shadow: 0 0 12px rgba(0, 240, 255, 0.6);">xFV: {p["xFV"]}</span>'
+                                    f'</div>'
+                                    f'</div>'
+                                )
+                                st.markdown(card_html, unsafe_allow_html=True)
+
+                st.markdown("---")
+                st.markdown("**🟡 Panchina Consigliata (Ordine 1-12)**")
+                st.dataframe(df_bench_display, hide_index=True, width='stretch')
 
             st.markdown("---")
             st.caption("🔬 **Approfondimenti & Strumenti Avanzati di Giornata** *(clicca per espandere)*:")
