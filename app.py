@@ -1832,8 +1832,9 @@ with tab_scambi:
         st.subheader("🎯 Scambio Mirato su Obiettivo (Reverse Trade Finder)")
         st.markdown(
             "Cerca uno o più calciatori che desideri strappare a un avversario di lega. "
-            "L'algoritmo analizza le **criticità strutturali dell'avversario** e formula pacchetti d'offerta su misura per convincerlo, "
-            "dando **priorità ai tuoi esuberi (surplus)** e attingendo a panchinari o titolari solo se necessario per chiudere uno scambio vantaggioso."
+            "L'algoritmo valuta l'**intera rosa senza discriminazioni** (titolari, panchinari ed esuberi) "
+            "e formula pacchetti d'offerta **molti-a-molti (1x1, 2x1, 1x2, 2x2, 3x2, 2x3, 3x3...)** "
+            "rigorosamente **migliorativi** per la tua formazione titolare e credibili per l'avversario."
         )
 
         my_team = get_active_my_team()
@@ -1887,26 +1888,24 @@ with tab_scambi:
                 )
                 selected_target_pnames = [label_to_pname[lbl] for lbl in selected_labels]
 
-            # Options Row
-            col_opt1, col_opt2 = st.columns([1.6, 1])
-            with col_opt1:
-                allow_starters_flag = st.checkbox(
-                    "Attingi anche ai tuoi Titolari/Panchinari chiave se necessario",
-                    value=True,
-                    help="Se attivo, consente all'algoritmo di inserire nei pacchetti anche giocatori della tua rotazione o titolari se i soli surplus non bastano per valore. Vengono proposti SOLO scambi in cui la tua formazione ne esce complessivamente migliorata o equivalente."
-                )
-            with col_opt2:
-                pkg_size_label = st.selectbox(
-                    "Formato Pacchetto Offerta:",
-                    options=["Tutti i formati (1x1, 2x1, 2x2)", "Solo 1x1 (Scambio Diretto)", "Solo Pacchetti Multipli (2x1, 2x2)"],
-                    key=f"target_finder_pkg_size_{my_team}"
-                )
-                pkg_types_map = {
-                    "Tutti i formati (1x1, 2x1, 2x2)": ('1x1', '2x1', '2x2'),
-                    "Solo 1x1 (Scambio Diretto)": ('1x1',),
-                    "Solo Pacchetti Multipli (2x1, 2x2)": ('2x1', '2x2')
-                }
-                chosen_pkg_types = pkg_types_map[pkg_size_label]
+            # Format Selector (Many-to-Many M x N)
+            pkg_size_label = st.selectbox(
+                "Formato Pacchetto Scambio:",
+                options=[
+                    "Tutti i formati Molti-a-Molti (1x1, 2x1, 1x2, 2x2, 3x2, 2x3, 3x3)",
+                    "Solo Scambio Singolo Diretto (1x1)",
+                    "Solo Pacchetti Multipli (M x N: 2x1, 1x2, 2x2, 3x2, 2x3, 3x3)"
+                ],
+                index=0,
+                key=f"target_finder_pkg_size_{my_team}",
+                help="Gli scambi possono coinvolgere qualsiasi combinazione molti-a-molti senza limiti. Vengono proposte offerte rigorosamente migliorative per la tua rosa."
+            )
+            pkg_types_map = {
+                "Tutti i formati Molti-a-Molti (1x1, 2x1, 1x2, 2x2, 3x2, 2x3, 3x3)": 'ALL',
+                "Solo Scambio Singolo Diretto (1x1)": 'SOLO_1X1',
+                "Solo Pacchetti Multipli (M x N: 2x1, 1x2, 2x2, 3x2, 2x3, 3x3)": 'SOLO_MULTIPLI'
+            }
+            chosen_pkg_types = pkg_types_map[pkg_size_label]
 
             # Show Instant Rival Check-up Card
             with st.expander(f"🔍 Check-up Immediato Carenze di {target_opp_team} (Perché dovrebbero accettare)", expanded=False):
@@ -1939,7 +1938,6 @@ with tab_scambi:
                             league_data=league_dict,
                             df_master=df_master,
                             matchday=selected_giornata,
-                            allow_starters=allow_starters_flag,
                             package_types=chosen_pkg_types,
                             league_type=active_league_type
                         )
@@ -1949,31 +1947,34 @@ with tab_scambi:
 
                 if not target_proposals:
                     st.warning(
-                        f"Non sono state trovate combinazioni compatibili per acquisire **{', '.join(selected_target_pnames)}**. "
-                        "Suggerimento: prova ad attivare l'opzione per includere anche titolari/panchinari, "
-                        "oppure valuta una contropartita diversa."
+                        f"Nessuna combinazione molti-a-molti trovata per acquisire **{', '.join(selected_target_pnames)}** "
+                        "che risulti sia migliorativa per la tua rosa sia appetibile e sostenibile per l'avversario. "
+                        "Prova a selezionare una rosa o un obiettivo differente."
                     )
                 else:
-                    st.success(f"🎯 Trovate **{len(target_proposals)} proposte di scambio strutturate** per acquisire **{', '.join(selected_target_pnames)}**!")
+                    st.success(f"🎯 Trovate **{len(target_proposals)} proposte di scambio migliorative** per acquisire **{', '.join(selected_target_pnames)}**!")
 
                     for p_idx, prop in enumerate(target_proposals):
-                        card_bg = "rgba(16, 185, 129, 0.05)" if "Soli Surplus" in prop['Tipo_Pacchetto'] else "rgba(14, 165, 233, 0.05)"
-                        card_border = "#10b981" if "Soli Surplus" in prop['Tipo_Pacchetto'] else "#0ea5e9"
+                        delta_pts = prop['Delta_Punti_Titolari']
+                        is_migliorativo = (delta_pts >= 0)
+                        card_border = "#10b981" if is_migliorativo else "#38bdf8"
+                        card_bg = "rgba(16, 185, 129, 0.06)" if is_migliorativo else "rgba(56, 189, 248, 0.05)"
+                        fmt_badge = prop.get('Formato', prop.get('Tipo_Pacchetto', 'M x N'))
                         
                         st.markdown(f"""
                         <div style="background: {card_bg}; border: 1.5px solid {card_border}; border-radius: 10px; padding: 16px 20px; margin-bottom: 20px;">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
                                 <div>
                                     <span style="font-weight: 800; font-size: 1.15rem; color: #ffffff;">Offerta #{p_idx+1}</span>
-                                    <span style="margin-left: 10px; background: rgba(255,255,255,0.1); border-radius: 6px; padding: 4px 10px; font-weight: 700; font-size: 0.85rem; color: #38bdf8;">
-                                        {prop['Tipo_Pacchetto']}
+                                    <span style="margin-left: 10px; background: rgba(56, 189, 248, 0.15); border: 1px solid #38bdf8; border-radius: 6px; padding: 3px 10px; font-weight: 800; font-size: 0.85rem; color: #38bdf8;">
+                                        {fmt_badge}
+                                    </span>
+                                    <span style="margin-left: 6px; background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; border-radius: 6px; padding: 3px 10px; font-weight: 800; font-size: 0.85rem; color: #34d399;">
+                                        📈 +{delta_pts:.2f} pt attesi
                                     </span>
                                 </div>
                                 <div style="display: flex; gap: 12px; align-items: center;">
                                     <span style="font-weight: 700; font-size: 0.95rem; color: #f59e0b;">🎯 Appetibilità Avversario: {prop['Appetibilita_Avversario']}%</span>
-                                    <span style="font-weight: 800; font-size: 0.95rem; color: {'#10b981' if prop['Delta_Punti_Titolari'] >= 0 else '#f97316'};">
-                                        📈 Impatto Titolari: {prop['Delta_Punti_Titolari']:+.2f} pt
-                                    </span>
                                 </div>
                             </div>
                         """, unsafe_allow_html=True)
@@ -1982,12 +1983,11 @@ with tab_scambi:
                         with col_give:
                             st.markdown("##### 🔴 Cosa Cedi Tu")
                             for p in prop['Tu_Cedi']:
-                                tier_color = "#10b981" if p['Tier'] == 'SURPLUS' else ("#0ea5e9" if p['Tier'] == 'PANCHINARO' else "#f59e0b")
                                 role_display = p.get('RuoloClassic' if is_classic else 'RuoloMantra', p.get('Ruolo', ''))
                                 st.markdown(f"""
-                                <div style="background: rgba(255,255,255,0.04); border-left: 3px solid {tier_color}; padding: 8px 12px; border-radius: 6px; margin-bottom: 6px;">
+                                <div style="background: rgba(255,255,255,0.04); border-left: 3px solid #38bdf8; padding: 8px 12px; border-radius: 6px; margin-bottom: 6px;">
                                     <div style="font-weight: 700; color: #ffffff;">{p['Giocatore']} <span style="font-weight: 450; color: #94a3b8; font-size: 0.85rem;">({role_display} - {p['Squadra']})</span></div>
-                                    <div style="font-size: 0.8rem; color: #cbd5e1;">Status: <strong style="color: {tier_color};">{p['Tier']}</strong> | FM: <strong>{p['FM']:.2f}</strong> | xFV: <strong>{p['xFV']:.2f}</strong> | FVM: <strong>{p.get('FVM', p.get('Costo', 0))}</strong></div>
+                                    <div style="font-size: 0.8rem; color: #cbd5e1;">FM: <strong>{p['FM']:.2f}</strong> | xFV: <strong>{p['xFV']:.2f}</strong> | FVM: <strong>{p.get('FVM', p.get('Costo', 0))}</strong></div>
                                 </div>
                                 """, unsafe_allow_html=True)
                             st.caption(f"Totale xFV Offerto: **{prop['Totale_xFV_Ceduti']}**")

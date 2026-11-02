@@ -1636,10 +1636,6 @@ def find_win_win_trades(
         if pname in my_surplus_set:
             tier = 'SURPLUS'
         elif pname in my_starters_set:
-            # Starter: only offer if squad has deep coverage in that role (>= 4 active)
-            has_depth = any(my_roles_active.get(r, 0) >= 4 for r in roles)
-            if not has_depth and not is_gk:
-                continue
             tier = 'TITOLARE'
         else:
             tier = 'PANCHINARO'
@@ -1775,9 +1771,7 @@ def find_win_win_trades(
         # GENERATION 1: 1x1 TRADES (Scambi Singoli Equilibrati)
         # -------------------------------------------------------------
         if trade_format_filter in ['TUTTI', 'SOLO_SINGOLI']:
-            my_1x1_offers = [p for p in my_offerable if p['Tier'] in ['SURPLUS', 'PANCHINARO']]
-            if not my_1x1_offers:
-                my_1x1_offers = my_offerable
+            my_1x1_offers = my_offerable  # No discrimination between starters, bench, surplus
 
             for my_give in my_1x1_offers:
                 if give_player_filter and give_player_filter != 'TUTTI' and my_give['Giocatore'] != give_player_filter:
@@ -1887,7 +1881,7 @@ def find_win_win_trades(
                 if any(r in opp_weak_roles for r in _p_roles(p)) or p['Tier'] == 'SURPLUS'
             ]
             primary_give_candidates = sorted(primary_give_candidates, key=lambda x: safe_float(x.get('xFV', 0)), reverse=True)[:6]
-            secondary_give_candidates = [p for p in my_offerable if p['Tier'] in ['SURPLUS', 'PANCHINARO']][:8]
+            secondary_give_candidates = my_offerable[:14]
 
             for g1 in primary_give_candidates:
                 g1_name = g1['Giocatore']
@@ -2420,21 +2414,20 @@ def find_trades_for_target_players(
     df_master,
     matchday=8,
     allow_starters=True,
-    package_types=('1x1', '2x1', '2x2'),
+    package_types='ALL',
     df_all_proj=None,
     max_proposals=25,
     league_type=None
 ):
     """
     Reverse Targeted Trade Finder (Scambio Mirato su Obiettivo):
-    Given one or more target players from a rival team:
-    1. Analyzes the opponent's structural weaknesses, bottlenecks, and depth deficits.
-    2. Identifies players from user's squad that solve those weaknesses, giving preference
-       to Surplus (esuberi) first, but allowing bench and starters if advantageous.
-    3. Simulates the user's starting 11 before and after trade to ensure positive net value.
-    4. Evaluates rival feasibility/appeal and generates convincing negotiation pitches.
+    Evaluates the entire roster without discrimination (starters, bench, surplus).
+    Finds generalized Many-to-Many (M x N) trade packages (1x1, 2x1, 1x2, 2x2, 3x2, 2x3, 3x3...)
+    that are strictly MIGLIORATIVI for the user's starting 11, while being fair and appealing to the rival.
     """
     import itertools
+    import numpy as np
+    import pandas as pd
     from engine.injuries_manager import classify_injury_status
 
     if not target_player_names or opp_team_name == my_team_name:
@@ -2499,7 +2492,10 @@ def find_trades_for_target_players(
     opt_opp_curr = optimize_best_lineup(df_opp_proj, mode=league_type)
     opp_curr_pts = opt_opp_curr['Punti_Attesi_Totali'] if opt_opp_curr else 0.0
     opp_curr_modulo = opt_opp_curr['Modulo'] if opt_opp_curr else 'N/D'
-    opp_sim_formations = list(dict.fromkeys([opp_curr_modulo, '3-5-2', '4-3-3', '4-2-3-1', '4-3-1-2']))[:4]
+    if is_classic:
+        opp_sim_formations = list(dict.fromkeys([opp_curr_modulo, '3-4-3', '3-5-2', '4-3-3', '4-4-2', '4-2-3-1']))
+    else:
+        opp_sim_formations = list(dict.fromkeys([opp_curr_modulo, '3-4-1-2', '3-4-2-1', '3-4-3', '3-5-2', '4-3-3', '4-2-3-1', '4-3-1-2', '4-4-2']))
     
     target_players = []
     for tname in target_player_names:
@@ -2527,7 +2523,7 @@ def find_trades_for_target_players(
     opp_pors_rem_starters = [p for p in opp_pors_rem if safe_int(p.get('Presenze', 0)) >= 3 or safe_float(p.get('P_Voto', 0)) >= 0.70]
     por_emergency = target_has_por and (len(opp_pors_rem) < 2 or len(opp_pors_rem_starters) == 0)
 
-    # 3. Categorize my offerable players (Surplus, Bench, Starters, Goalkeepers)
+    # 3. Categorize my offerable players (ALL players eligible without discrimination)
     my_offerable = []
     my_gk_offerable = []
     my_outfield_offerable = []
@@ -2548,23 +2544,16 @@ def find_trades_for_target_players(
         roles = parse_mantra_roles(p_row.get('RuoloMantra', ''))
         is_gk = ('Por' in roles)
         
-        # Determine Tier
-        if pname in my_surplus_set:
-            tier = 'SURPLUS'
-        elif pname in my_starters_set:
-            # If target includes Por, allow user's starting GK to be traded as counterpart!
-            if not allow_starters and not (is_gk and target_has_por):
-                continue
-            tier = 'TITOLARE'
+        # Track status purely for info
+        if pname in my_starters_set:
+            status_desc = 'TITOLARE'
+        elif pname in my_surplus_set:
+            status_desc = 'SURPLUS'
         else:
-            tier = 'PANCHINARO'
-
-        # Basic activity filter: players with at least some presence or value
-        if not is_gk and pres < 1 and xfv < 5.2 and tier != 'SURPLUS':
-            continue
+            status_desc = 'PANCHINARO'
 
         p_info = dict(p_row)
-        p_info['Tier'] = tier
+        p_info['Tier'] = status_desc
         my_offerable.append(p_info)
 
         if is_gk:
@@ -2572,13 +2561,15 @@ def find_trades_for_target_players(
         else:
             my_outfield_offerable.append(p_info)
 
-    # 4. Generate candidate packages to offer
+    # 4. Generate candidate packages (True Many-to-Many M x N)
     candidate_packages = []
+    my_offerable_top = sorted(my_offerable, key=lambda x: safe_float(x.get('Trade_Eff', x.get('xFV', 0))), reverse=True)
+    my_outfield_top = sorted(my_outfield_offerable, key=lambda x: safe_float(x.get('Trade_Eff', x.get('xFV', 0))), reverse=True)
+
+    allow_1x1 = (package_types in ['ALL', 'TUTTI'] or package_types == 'SOLO_1X1' or '1x1' in str(package_types))
+    allow_multi = (package_types in ['ALL', 'TUTTI'] or package_types == 'SOLO_MULTIPLI' or any(x in str(package_types) for x in ['2x1', '1x2', '2x2', '3x1', '3x2', '2x3', '3x3']))
 
     if por_emergency:
-        # Crucial Rule: When target creates a goalkeeper emergency for the opponent,
-        # every proposed package MUST include a reliable, active goalkeeper from our squad to avoid leaving their net empty!
-        # (A reserve with 0 appearances cannot solve an emergency).
         viable_gks = [
             p for p in my_gk_offerable 
             if safe_int(p.get('Presenze', 0)) >= 2 or safe_float(p.get('P_Voto', 0)) >= 0.60 or p['Tier'] == 'TITOLARE'
@@ -2586,57 +2577,43 @@ def find_trades_for_target_players(
         if not viable_gks and my_gk_offerable:
             viable_gks = my_gk_offerable
 
-        if viable_gks:
-            if num_targets == 1:
-                if '1x1' in package_types:
-                    for gk in viable_gks:
-                        candidate_packages.append([gk])
-                if '2x1' in package_types:
-                    for gk in viable_gks:
-                        for out in my_outfield_offerable[:16]:
-                            candidate_packages.append([gk, out])
-            elif num_targets == 2:
-                if '2x2' in package_types:
-                    for gk in viable_gks:
-                        for out in my_outfield_offerable[:16]:
-                            candidate_packages.append([gk, out])
-                    if len(viable_gks) >= 2:
-                        for gk_pair in itertools.combinations(viable_gks, 2):
-                            candidate_packages.append(list(gk_pair))
-                # 1x2 offer if user GK alone has high xFV
-                for gk in viable_gks:
-                    if safe_float(gk.get('xFV', 0)) >= target_xfv_sum * 0.70:
-                        candidate_packages.append([gk])
-                # 3x2 offers
-                for gk in viable_gks:
-                    for out_pair in itertools.combinations(my_outfield_offerable[:10], 2):
-                        candidate_packages.append([gk, out_pair[0], out_pair[1]])
-            else:
-                for gk in viable_gks:
-                    for comb in itertools.combinations(my_outfield_offerable[:10], num_targets - 1):
-                        candidate_packages.append([gk] + list(comb))
+        for gk in viable_gks:
+            # 1 x N
+            if (num_targets == 1 and allow_1x1) or (num_targets > 1 and allow_multi):
+                candidate_packages.append([gk])
+            # 2 x N
+            if allow_multi:
+                for out in my_outfield_top[:16]:
+                    candidate_packages.append([gk, out])
+                if len(viable_gks) >= 2:
+                    for gk2 in viable_gks:
+                        if gk['Giocatore'] != gk2['Giocatore']:
+                            candidate_packages.append([gk, gk2])
+            # 3 x N
+            if allow_multi:
+                for out_pair in itertools.combinations(my_outfield_top[:10], 2):
+                    candidate_packages.append([gk, out_pair[0], out_pair[1]])
     else:
-        # Standard Outfield package sizes
-        my_offerable_top = sorted(my_offerable, key=lambda x: safe_float(x.get('xFV', 0)), reverse=True)[:18]
-        if num_targets == 1:
-            if '1x1' in package_types:
-                for p in my_offerable:
-                    candidate_packages.append([p])
-            if '2x1' in package_types:
-                for pair in itertools.combinations(my_offerable_top, 2):
-                    candidate_packages.append(list(pair))
-        elif num_targets == 2:
-            if '2x2' in package_types:
-                for pair in itertools.combinations(my_offerable_top, 2):
-                    candidate_packages.append(list(pair))
+        # Standard Outfield/Mixed:
+        # Size 1 (1 x N: 1x1 if num_targets==1, 1x2 if num_targets==2, etc.)
+        if (num_targets == 1 and allow_1x1) or (num_targets > 1 and allow_multi):
+            for p in my_offerable:
+                candidate_packages.append([p])
+        
+        # Size 2 (2 x N: 2x1 if num_targets==1, 2x2 if num_targets==2, 2x3 if num_targets==3)
+        if allow_multi:
+            for pair in itertools.combinations(my_offerable_top[:18], 2):
+                candidate_packages.append(list(pair))
+        
+        # Size 3 (3 x N: 3x1 if num_targets==1, 3x2 if num_targets==2, 3x3 if num_targets==3)
+        if allow_multi:
             for trio in itertools.combinations(my_offerable_top[:12], 3):
                 candidate_packages.append(list(trio))
-            for p in my_offerable:
-                if safe_float(p.get('xFV', 0)) >= target_xfv_sum * 0.85:
-                    candidate_packages.append([p])
-        else:
-            for comb in itertools.combinations(my_offerable_top, num_targets):
-                candidate_packages.append(list(comb))
+
+        # Size 4 (4 x N if num_targets >= 3)
+        if allow_multi and num_targets >= 3:
+            for quad in itertools.combinations(my_offerable_top[:10], num_targets):
+                candidate_packages.append(list(quad))
 
     pre_screened = []
     seen_combos = set()
@@ -2662,17 +2639,15 @@ def find_trades_for_target_players(
         give_eff_sum = pairwise_eval['give_tot_eff']
         target_eff_sum = pairwise_eval['target_tot_eff']
 
+        ratio = give_eff_sum / max(target_eff_sum, 0.1)
         if give_n == num_targets:
-            # 1x1 or 2x2: effective value should be balanced (0.65x to 1.45x)
-            if not (0.65 * target_eff_sum <= give_eff_sum <= 1.45 * target_eff_sum):
+            if not (0.65 <= ratio <= 1.50):
                 continue
         elif give_n > num_targets:
-            # Multi-to-one (2x1, 3x2): buyer can pay a slight premium (0.72x to 1.60x)
-            if not (0.72 * target_eff_sum <= give_eff_sum <= 1.60 * target_eff_sum):
+            if not (0.70 <= ratio <= 1.70):
                 continue
         else:
-            # One-to-multi: giver gives high value (0.62x to 1.35x)
-            if not (0.62 * target_eff_sum <= give_eff_sum <= 1.35 * target_eff_sum):
+            if not (0.60 <= ratio <= 1.40):
                 continue
 
         # -------------------------------------------------------------
@@ -2696,44 +2671,40 @@ def find_trades_for_target_players(
                     weakness_points += 12.0
                     solved_bottlenecks.append(f"Migliora profondità nel ruolo '{r}'")
 
-        # Credibility check: if target has Pc or A, ensure offer is credible
         is_target_striker = any(r in ['Pc', 'A'] for r in target_roles)
         if is_target_striker and num_targets == 1 and give_n == 1:
             if not is_trade_role_parity_credible(give_pkg[0], target_players[0]):
                 continue
 
-        # If offer neither solves an opponent weakness nor offers balanced/superior value, skip
-        if not matched_weak_roles and give_xfv_sum < (target_xfv_sum * 0.90) and give_eff_sum < (target_eff_sum * 0.92) and not por_emergency:
+        min_eff_threshold = (target_eff_sum * 0.82) if num_targets > 1 else (target_eff_sum * 0.90)
+        min_xfv_threshold = (target_xfv_sum * 0.80) if num_targets > 1 else (target_xfv_sum * 0.88)
+        if not matched_weak_roles and give_xfv_sum < min_xfv_threshold and give_eff_sum < min_eff_threshold and not por_emergency:
             continue
 
-        # Package Tier Classification & Surplus Preference
-        surplus_count = sum(1 for p in give_pkg if p['Tier'] == 'SURPLUS')
-        starter_count = sum(1 for p in give_pkg if p['Tier'] == 'TITOLARE')
-
-        if surplus_count == give_n:
-            tipo_pacchetto = "🟢 Soli Surplus (Zero impatto titolari)"
-            badge_tipo = "🟢 SOLI SURPLUS"
-            tier_bonus = 45.0
-        elif starter_count == 0:
-            tipo_pacchetto = "🟡 Misto Surplus / Panchina"
-            badge_tipo = "🟡 CON PANCHINARI"
-            tier_bonus = 25.0
+        # Format label
+        fmt_label = f"{give_n}x{num_targets}"
+        if give_n == 1 and num_targets == 1:
+            tipo_pacchetto = "🎯 Scambio Diretto (1x1)"
+            badge_tipo = "1x1 DIRETTO"
+        elif give_n > num_targets:
+            tipo_pacchetto = f"🚀 Upgrade Reparto ({fmt_label})"
+            badge_tipo = f"{fmt_label} UPGRADE"
+        elif give_n < num_targets:
+            tipo_pacchetto = f"📦 Ristrutturazione / Espansione ({fmt_label})"
+            badge_tipo = f"{fmt_label} RISTRUTTURAZIONE"
         else:
-            tipo_pacchetto = "🔵 Con Titolare (Upgrade di Reparto)"
-            badge_tipo = "🔵 CON TITOLARE"
-            tier_bonus = 10.0
+            tipo_pacchetto = f"🔄 Scambio Bilanciato ({fmt_label})"
+            badge_tipo = f"{fmt_label} BILANCIATO"
 
-        # Special bonus if providing goalkeeper to solve goalkeeper emergency
-        if por_emergency and any('Por' in parse_mantra_roles(p['RuoloMantra']) for p in give_pkg):
-            tier_bonus += 35.0
-
+        # Pre-score without tier discrimination: based on mutual need, fairness, and overall quality
         pre_score = (
-            tier_bonus + 
-            (weakness_points * 1.5) - 
-            (abs(give_eff_sum - target_eff_sum) * 3.5)
+            (weakness_points * 2.0) - 
+            (abs(give_eff_sum - target_eff_sum) * 2.5) +
+            (give_xfv_sum * 1.5)
         )
         pre_screened.append({
             'give_pkg': give_pkg,
+            'fmt_label': fmt_label,
             'give_xfv_sum': give_xfv_sum,
             'give_eff_sum': give_eff_sum,
             'target_eff_sum': target_eff_sum,
@@ -2745,19 +2716,29 @@ def find_trades_for_target_players(
             'solved_bottlenecks': solved_bottlenecks,
             'tipo_pacchetto': tipo_pacchetto,
             'badge_tipo': badge_tipo,
-            'tier_bonus': tier_bonus,
             'pre_score': pre_score
         })
 
-    # Sort pre-screened packages by pre-score and simulate lineup on top 20 candidates for fast responsiveness
-    pre_screened = sorted(pre_screened, key=lambda x: x['pre_score'], reverse=True)[:20]
+    # Format diversity: ensure top candidates from each format (1x1, 2x1, 2x2, 3x2, etc.) are included
+    formats = set(x['fmt_label'] for x in pre_screened)
+    selected_candidates = []
+    per_fmt_cap = max(10, 36 // max(len(formats), 1))
+    for f in formats:
+        fmt_items = [x for x in pre_screened if x['fmt_label'] == f]
+        fmt_items = sorted(fmt_items, key=lambda x: x['pre_score'], reverse=True)[:per_fmt_cap]
+        selected_candidates.extend(fmt_items)
+
+    pre_screened = sorted(selected_candidates, key=lambda x: x['pre_score'], reverse=True)[:35]
 
     proposals = []
-    # Identify relevant formations for fast simulation (My team)
-    sim_formations = list(dict.fromkeys([my_curr_modulo, '3-5-2', '4-3-3', '4-2-3-1', '4-3-1-2']))[:4]
+    if is_classic:
+        sim_formations = list(dict.fromkeys([my_curr_modulo, '3-4-3', '3-5-2', '4-3-3', '4-4-2', '4-2-3-1']))
+    else:
+        sim_formations = list(dict.fromkeys([my_curr_modulo, '3-4-1-2', '3-4-2-1', '3-4-3', '3-5-2', '4-3-3', '4-2-3-1', '4-3-1-2', '4-4-2']))
 
     for item in pre_screened:
         give_pkg = item['give_pkg']
+        fmt_label = item['fmt_label']
         give_xfv_sum = item['give_xfv_sum']
         give_eff_sum = item['give_eff_sum']
         target_eff_sum = item['target_eff_sum']
@@ -2768,7 +2749,6 @@ def find_trades_for_target_players(
         solved_bottlenecks = item['solved_bottlenecks']
         tipo_pacchetto = item['tipo_pacchetto']
         badge_tipo = item['badge_tipo']
-        tier_bonus = item['tier_bonus']
 
         # -------------------------------------------------------------
         # Filter C: Fast Simulate Opponent Squad Post-Trade (Health & Lineup)
@@ -2783,12 +2763,11 @@ def find_trades_for_target_players(
             league_type=league_type
         )
 
-        # STRICT RULE: Never leave the opponent with an uncovered net or fatal flaw!
         if opp_sim['is_goal_uncovered'] or opp_sim['has_fatal_flaw']:
             continue
 
         # -------------------------------------------------------------
-        # Filter D: Fast Simulate My Squad Post-Trade
+        # Filter D: Fast Simulate My Squad Post-Trade ("MIGLIORATIVO" Check)
         # -------------------------------------------------------------
         give_pnames_set = set(p['Giocatore'] for p in give_pkg)
         my_new_roster_items = [p for p in my_proj_list if p['Giocatore'] not in give_pnames_set] + target_players
@@ -2801,34 +2780,28 @@ def find_trades_for_target_players(
         new_lineup_pts = opt_my_new['Punti_Attesi_Totali']
         delta_lineup_pts = round(new_lineup_pts - my_curr_pts, 2)
 
-        # Starter sacrifice protection: if sacrificing a starter, lineup must NOT lose significant points!
-        # Exception: if the starter is a direct positional replacement for an acquired target (e.g. Por for Por or Pc for Pc),
-        # allow fixture-based single matchday variance down to -1.35 pts.
-        has_starter = any(p['Tier'] == 'TITOLARE' for p in give_pkg)
-        is_same_pos_replacement = any(
-            any(r in target_roles for r in parse_mantra_roles(p.get('RuoloMantra', '')))
-            for p in give_pkg if p['Tier'] == 'TITOLARE'
-        )
-        min_allowed_delta = -1.35 if is_same_pos_replacement else -0.15
-        if has_starter and delta_lineup_pts < min_allowed_delta:
-            continue
+        # STRICT "MIGLIORATIVO" RULE:
+        # Proposed trades must improve our team's starting lineup or be strategically superior!
+        if delta_lineup_pts < 0.0:
+            if delta_lineup_pts < -0.15 or (give_eff_sum >= target_eff_sum * 1.05):
+                continue
 
         # Opponent Appeal Score (0 to 100%)
-        base_appeal = 38.0
+        base_appeal = 40.0
         val_incentive = np.clip((give_eff_sum - target_eff_sum) * 6.0, -15.0, 25.0)
         opp_pts_incentive = np.clip(opp_sim['delta_opp_pts'] * 12.0, -25.0, 30.0)
         reassurance_bonus = 20.0 if opp_sim.get('reassurances') else 0.0
         flaw_penalty = 30.0 * len(opp_sim.get('critical_flaws', []))
         opp_appeal = int(np.clip(base_appeal + weakness_points + val_incentive + opp_pts_incentive + reassurance_bonus - flaw_penalty, 15.0, 98.0))
 
-        # Overall Trade Ranking Score
+        # Overall Trade Ranking Score: strictly driven by improvement and feasibility!
         total_score = (
-            (opp_appeal * 0.45) +
-            (tier_bonus) +
-            (delta_lineup_pts * 22.0) +
+            (delta_lineup_pts * 30.0) +
+            (opp_appeal * 0.40) +
             (opp_sim['delta_opp_pts'] * 10.0) +
+            (weakness_points * 0.5) +
             (8.0 if not opt_my_new.get('Ha_Problemi_Copertura', False) else -8.0) +
-            (12.0 if not opp_sim.get('critical_flaws') else -20.0)
+            (10.0 if not opp_sim.get('critical_flaws') else -20.0)
         )
 
         # -------------------------------------------------------------
@@ -2858,42 +2831,38 @@ def find_trades_for_target_players(
             )
         elif matched_weak_roles:
             roles_txt = ", ".join(set(matched_weak_roles))
-            leva = (
-                f"L'avversario ha carenze su **{roles_txt}** ({'; '.join(solved_bottlenecks[:2])}). "
-                f"Offrendo {give_str} colmi il suo bisogno più urgente senza creare nuove falle.{reassure_txt}"
-            )
+            b_txt = "; ".join(solved_bottlenecks[:2])
+            leva = f"Risolve debolezza diretta di {opp_team} nei ruoli **{roles_txt}**: {b_txt}. La loro formazione post-scambio guadagna solidità{pts_clause}.{reassure_txt}"
             pitch_msg = (
-                f"Ciao! Ho visto che per {opp_team_name} farebbe comodo rinforzare lo slot {roles_txt} "
-                f"dove avete rotazioni corte. Che ne dite se impostiamo uno scambio {give_str} per {target_str}? "
-                f"A voi risolve l'emergenza di formazione garantendo copertura titolare immediata senza creare nuove falle{pts_clause}, "
-                f"e per noi quadra a livello tattico. È un ottimo affare per entrambi!"
+                f"Ciao! Ho notato che a {opp_team} farebbe comodo un rinforzo mirato nei ruoli di {roles_txt}. "
+                f"Vi propongo uno scambio {fmt_label}: da parte mia metto sul piatto {give_str} in cambio di {target_str}. "
+                f"È un accordo calibrato per risolvere i vostri buchi di formazione senza indebolire la rotazione{pts_clause}. Che ne pensate?"
             )
         else:
-            leva = (
-                f"Offerta basata su equivalenza di fanta-valore ({give_xfv_sum:.2f} xFV vs {target_xfv_sum:.2f} xFV). "
-                f"L'avversario riceve asset pronti all'uso e la sua formazione resta integra ({opp_sim['opp_new_modulo']}, {opp_sim['delta_opp_pts']:+.2f} pt attesi).{reassure_txt}"
-            )
+            leva = f"Scambio {fmt_label} equilibrato su valore di mercato e potenziale ({give_xfv_sum:.2f} xFV vs {target_xfv_sum:.2f} xFV). Entrambe le squadre mantengono formazioni ottimali.{reassure_txt}"
             pitch_msg = (
-                f"Ciao! Ti andrebbe di valutare uno scambio tra {give_str} per {target_str}? "
-                f"I valori tecnici sono allineati, la vostra formazione resta coperta e ben bilanciata{pts_clause} ({opp_sim['opp_new_modulo']}). Che ne pensi?"
+                f"Ciao! Vi andrebbe di valutare uno scambio {fmt_label}: {give_str} per {target_str}? "
+                f"I valori tecnici ed economici sono perfettamente bilanciati e la mossa crea ottime opportunità tattiche per entrambi{pts_clause}. Fatemi sapere!"
             )
 
         proposals.append({
             'Score': round(total_score, 1),
             'Tipo_Pacchetto': tipo_pacchetto,
             'Badge_Tipo': badge_tipo,
+            'Formato': fmt_label,
             'Appetibilita_Avversario': opp_appeal,
             'Tu_Cedi': [
                 {
                     'Giocatore': p['Giocatore'],
                     'Squadra': p.get('Squadra', ''),
                     'RuoloMantra': p.get('RuoloMantra', ''),
+                    'RuoloClassic': p.get('RuoloClassic', ''),
                     'xFV': safe_float(p.get('xFV', 0.0)),
                     'FM': safe_float(p.get('FM_Stagione', 0.0)),
                     'FVM': safe_int(p.get('FVM', p.get('Costo', 0))),
                     'Costo': safe_int(p.get('FVM', p.get('Costo', 0))),
                     'Costo_Asta': safe_int(p.get('Costo', 0)),
-                    'Tier': p.get('Tier', 'PANCHINARO'),
+                    'Tier': p.get('Tier', 'ROSA'),
                     'P_Voto': safe_float(p.get('P_Voto', 0.8)),
                     'Status_Titolarita': p.get('Status_Titolarita', '🟢 TITOLARE')
                 } for p in give_pkg
@@ -2903,11 +2872,13 @@ def find_trades_for_target_players(
                     'Giocatore': p['Giocatore'],
                     'Squadra': p.get('Squadra', ''),
                     'RuoloMantra': p.get('RuoloMantra', ''),
+                    'RuoloClassic': p.get('RuoloClassic', ''),
                     'xFV': safe_float(p.get('xFV', 0.0)),
                     'FM': safe_float(p.get('FM_Stagione', 0.0)),
                     'FVM': safe_int(p.get('FVM', p.get('Costo', 0))),
                     'Costo': safe_int(p.get('FVM', p.get('Costo', 0))),
                     'Costo_Asta': safe_int(p.get('Costo', 0)),
+                    'Tier': 'OBIETTIVO',
                     'P_Voto': safe_float(p.get('P_Voto', 0.8)),
                     'Status_Titolarita': p.get('Status_Titolarita', '🟢 TITOLARE')
                 } for p in target_players
@@ -2926,7 +2897,6 @@ def find_trades_for_target_players(
             'Carenze_Risolte': solved_bottlenecks,
             'Leva_di_Trattativa': leva,
             'Messaggio_Trattativa': pitch_msg,
-            # OPPONENT FORMATION POST-TRADE INSIGHTS
             'Modulo_Avversario_Nuovo': opp_sim['opp_new_modulo'],
             'Punti_Avversario_Nuovi': opp_sim['opp_new_pts'],
             'Delta_Punti_Avversario': opp_sim['delta_opp_pts'],
@@ -2938,6 +2908,6 @@ def find_trades_for_target_players(
             }
         })
 
-    # Sort proposals by highest Score (Surplus priority + Opponent fit + Net lineup benefit)
+    # Sort proposals by highest Score (Net lineup benefit + Opponent appeal + Structural fit)
     proposals = sorted(proposals, key=lambda x: x['Score'], reverse=True)
     return proposals[:max_proposals]
