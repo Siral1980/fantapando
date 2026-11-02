@@ -2252,34 +2252,59 @@ with tab_scambi:
     @st.fragment
     def render_free_trade_simulator():
         """Rendered as a fragment: changing team/players reruns only this block, not the whole app."""
-        st.subheader("⚖️ Simulatore Scambi Libero (1v1, 2v2, Pacchetti)")
-        st.markdown(
-            "Simula qualsiasi scambio. L'algoritmo proietta il valore atteso "
-            "delle prossime giornate incrociando **calendario, fattore casa/trasferta, difficoltà avversari (FDR) e segnali Buy-Low / Sell-High**."
-        )
-    
+        render_html("""
+        <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px;">
+            <div>
+                <span style="font-size: 1.15rem; font-weight: 800; color: #f8fafc;">⚖️ Simulatore Scambi Libero</span>
+                <span style="font-size: 0.82rem; color: #94a3b8; margin-left: 8px;">(1v1, 2v2, Pacchetti Asimmetrici)</span>
+            </div>
+            <div style="font-size: 0.78rem; color: #64748b;">Consenso Multi-Algoritmo a 4 Pilastri • Proiezione fine stagione</div>
+        </div>
+        """)
+
         # Check prefill from radar
         prefill_mode = st.session_state.get('sim_prefill_mode', "🤝 Trattativa di Lega (Inter-Squadra)")
         prefill_give = st.session_state.get('sim_prefill_give', [])
         prefill_receive = st.session_state.get('sim_prefill_receive', [])
         prefill_opp = st.session_state.get('sim_prefill_opp', None)
-    
-        trade_mode = st.radio(
-            "Modalità di Selezione Scambio:",
-            options=["🤝 Trattativa di Lega (Inter-Squadra)", "🔍 Ricerca Libera (Tutta la Serie A)"],
-            index=0 if prefill_mode == "🤝 Trattativa di Lega (Inter-Squadra)" else 1,
-            horizontal=True,
-            key="sim_trade_mode_radio"
-        )
-    
+
         give_selection = []
         receive_selection = []
-    
-        if trade_mode == "🤝 Trattativa di Lega (Inter-Squadra)" and league_teams:
-            col_sc1, col_sc2 = st.columns(2)
-            my_team = get_active_my_team()
+        my_team = get_active_my_team()
+
+        # Row 1: Mode selector + Opponent selector (compact & aligned)
+        if league_teams:
+            col_ctrl1, col_ctrl2 = st.columns([1.1, 1.1])
+            with col_ctrl1:
+                trade_mode = st.radio(
+                    "Modalità Selezione Scambio:",
+                    options=["🤝 Trattativa di Lega (Inter-Squadra)", "🔍 Ricerca Libera (Tutta la Serie A)"],
+                    index=0 if prefill_mode == "🤝 Trattativa di Lega (Inter-Squadra)" else 1,
+                    horizontal=True,
+                    key="sim_trade_mode_radio"
+                )
+            with col_ctrl2:
+                if trade_mode == "🤝 Trattativa di Lega (Inter-Squadra)":
+                    opp_teams = [t for t in league_teams if t != my_team]
+                    opp_index = opp_teams.index(prefill_opp) if (prefill_opp and prefill_opp in opp_teams) else 0
+                    selected_opp = st.selectbox(
+                        "Squadra Avversaria con cui trattare:",
+                        options=opp_teams,
+                        index=opp_index,
+                        key=f"sim_selectbox_opp_{my_team}"
+                    )
+                else:
+                    selected_opp = None
+                    st.caption("🔍 Modalità libera: puoi selezionare qualsiasi calciatore della Serie A da entrambe le parti.")
+        else:
+            trade_mode = "🔍 Ricerca Libera (Tutta la Serie A)"
+            selected_opp = None
+
+        # Row 2: Give and Receive Multiselects side-by-side
+        col_sc1, col_sc2 = st.columns(2)
+
+        if trade_mode == "🤝 Trattativa di Lega (Inter-Squadra)" and league_teams and selected_opp:
             with col_sc1:
-                st.subheader(f"🔴 La Tua Squadra ({my_team})")
                 my_team_df = get_team_roster_df(my_team, df_master)
                 # Exclude borrowed players and players to release from tradeable give list
                 my_mask = pd.Series(True, index=my_team_df.index)
@@ -2295,21 +2320,13 @@ with tab_scambi:
                 my_team_players = sorted(my_team_owned['Giocatore'].unique().tolist())
                 valid_prefill_give = [p for p in prefill_give if p in my_team_players]
                 give_selection = st.multiselect(
-                    f"Calciatori di {my_team} che proponi di Cedere:",
+                    f"🔴 Calciatori che Cedi ({my_team}):",
                     options=my_team_players,
                     default=valid_prefill_give,
-                    key=f"sim_multiselect_give_{my_team}"
+                    key=f"sim_multiselect_give_{my_team}",
+                    placeholder="Seleziona calciatore/i da cedere..."
                 )
             with col_sc2:
-                opp_teams = [t for t in league_teams if t != my_team]
-                opp_index = opp_teams.index(prefill_opp) if (prefill_opp and prefill_opp in opp_teams) else 0
-                selected_opp = st.selectbox(
-                    "Seleziona Squadra della Lega con cui trattare:",
-                    options=opp_teams,
-                    index=opp_index,
-                    key=f"sim_selectbox_opp_{my_team}"
-                )
-                st.subheader(f"🟢 Rosa Avversaria ({selected_opp})")
                 opp_team_df = get_team_roster_df(selected_opp, df_master)
                 # Exclude borrowed players and players to release from opponent receive list
                 opp_mask = pd.Series(True, index=opp_team_df.index)
@@ -2325,78 +2342,78 @@ with tab_scambi:
                 opp_team_players = sorted(opp_team_owned['Giocatore'].unique().tolist())
                 valid_prefill_rec = [p for p in prefill_receive if p in opp_team_players]
                 receive_selection = st.multiselect(
-                    f"Calciatori di {selected_opp} che chiedi in cambio:",
+                    f"🟢 Calciatori che Ricevi ({selected_opp}):",
                     options=opp_team_players,
                     default=valid_prefill_rec,
-                    key=f"sim_multiselect_receive_{my_team}"
+                    key=f"sim_multiselect_receive_{my_team}",
+                    placeholder="Seleziona calciatore/i da ricevere..."
                 )
         else:
-            col_sc1, col_sc2 = st.columns(2)
             with col_sc1:
-                st.subheader("🔴 Calciatori che CEDI")
                 all_pnames = sorted(df_master['Giocatore'].unique())
                 valid_p_give = [p for p in prefill_give if p in all_pnames]
                 if not valid_p_give and user_squad_names:
                     valid_p_give = [user_squad_names[0]]
                 give_selection = st.multiselect(
-                    "Seleziona calciatore/i dalla tua rosa (o da tutta la Serie A):",
+                    "🔴 Calciatori che Cedi (tutta la Serie A):",
                     options=all_pnames,
                     default=valid_p_give,
-                    key="sim_multiselect_give_all"
+                    key="sim_multiselect_give_all",
+                    placeholder="Seleziona calciatore/i da cedere..."
                 )
             
             with col_sc2:
-                st.subheader("🟢 Calciatori che RICEVI")
                 available_targets = [p for p in df_master['Giocatore'].unique() if p not in give_selection]
                 valid_p_rec = [p for p in prefill_receive if p in available_targets]
                 if not valid_p_rec and 'Martinez L.' in available_targets:
                     valid_p_rec = ['Martinez L.']
                 receive_selection = st.multiselect(
-                    "Seleziona calciatore/i che riceveresti in cambio:",
+                    "🟢 Calciatori che Ricevi (tutta la Serie A):",
                     options=sorted(available_targets),
                     default=valid_p_rec,
-                    key="sim_multiselect_receive_all"
+                    key="sim_multiselect_receive_all",
+                    placeholder="Seleziona calciatore/i da ricevere..."
                 )
-        
-        col_hor1, col_hor2 = st.columns([1, 1])
+
+        # Row 3: Horizon info pill + Multi-package Weight Mode + Evaluation Button in 1 compact line
+        rem_giornate = max(1, 38 - selected_giornata + 1)
+        col_hor1, col_hor2, col_hor3 = st.columns([1.1, 1.6, 1.0], vertical_alignment="bottom")
         with col_hor1:
-            rem_giornate = max(1, 38 - selected_giornata + 1)
-            st.markdown(
-                f"""
-                <div style="background: rgba(15, 23, 42, 0.65); border: 1px solid #334155; border-radius: 8px; padding: 10px 14px; margin-top: 2px;">
-                    <div style="font-size: 0.78rem; text-transform: uppercase; color: #94a3b8; font-weight: 700; letter-spacing: 0.5px;">📅 Orizzonte di Valutazione</div>
-                    <div style="font-size: 0.95rem; color: #38bdf8; font-weight: 700; margin-top: 2px;">
-                        Resto della Stagione: {rem_giornate} turni ({selected_giornata}ª ➔ 38ª Giornata)
-                    </div>
+            render_html(f"""
+            <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid #334155; border-radius: 6px; padding: 7px 10px; margin-bottom: 2px;">
+                <div style="font-size: 0.70rem; text-transform: uppercase; color: #94a3b8; font-weight: 700;">📅 Orizzonte</div>
+                <div style="font-size: 0.86rem; color: #38bdf8; font-weight: 700;">
+                    {rem_giornate} turni ({selected_giornata}ª ➔ 38ª)
                 </div>
-                """,
-                unsafe_allow_html=True
-            )
+            </div>
+            """)
         with col_hor2:
             weight_mode_label = st.selectbox(
-                "Metodo Valutazione Pacchetto Multiplo:",
+                "Ponderazione Pacchetti Multipli:",
                 options=[
-                    "⚖️ Media Ponderata Decrescente (Consigliata: Priorità Star)",
-                    "📊 Media Semplice (Tutti i calciatori equiparati)",
-                    "➕ Somma Grezza (Cumulativa semplice)"
+                    "⚖️ Media Ponderata (Priorità Star)",
+                    "📊 Media Semplice (Equiparati)",
+                    "➕ Somma Grezza (Cumulativa)"
                 ],
                 index=0,
                 key="sim_weight_mode_select",
-                help="Negli scambi a pacchetto multiplo (es. 2v1 o 4v4), la media ponderata bilancia i valori normalizzandoli a livello di singolo slot titolare evitando che la pura somma condanni ingiustamente gli scambi asimmetrici."
+                help="Negli scambi multipli, la media ponderata bilancia i valori normalizzandoli a livello di singolo slot titolare evitando che la pura somma condanni ingiustamente gli scambi asimmetrici."
             )
             weight_mode_map = {
-                "⚖️ Media Ponderata Decrescente (Consigliata: Priorità Star)": "rank_decay",
-                "📊 Media Semplice (Tutti i calciatori equiparati)": "simple_mean",
-                "➕ Somma Grezza (Cumulativa semplice)": "raw_sum"
+                "⚖️ Media Ponderata (Priorità Star)": "rank_decay",
+                "📊 Media Semplice (Equiparati)": "simple_mean",
+                "➕ Somma Grezza (Cumulativa)": "raw_sum"
             }
             chosen_weight_mode = weight_mode_map[weight_mode_label]
-    
-        if st.button("⚡ Valuta Scambio", type="primary", key="sim_eval_button"):
+        with col_hor3:
+            eval_clicked = st.button("⚡ Valuta Scambio", type="primary", use_container_width=True, key="sim_eval_button")
+
+        if eval_clicked:
             if not give_selection or not receive_selection:
                 st.error("Seleziona almeno un giocatore da cedere e uno da ricevere.")
                 st.session_state.pop('sim_last_trade_res', None)
             else:
-                with st.spinner("Valutazione multi-algoritmo (4 Pilastri) in corso..."):
+                with st.spinner("Valutazione in corso (4 Pilastri & Consenso)..."):
                     st.session_state['sim_last_trade_res'] = evaluate_trade(
                         give_selection,
                         receive_selection,
@@ -2412,9 +2429,7 @@ with tab_scambi:
             if 'error' in trade_res:
                 st.error(trade_res['error'])
             else:
-                st.markdown("---")
-
-                # 1. VERDICT HERO BANNER WITH GRADUAL NUANCES & GAUGE
+                # 1. VERDICT HERO HUD (Compact & High-Density)
                 verdict_cfg = {
                     'emerald': ('#059669', 'rgba(5, 150, 105, 0.15)', 'border: 1px solid rgba(5, 150, 105, 0.5)'),
                     'green': ('#10b981', 'rgba(16, 185, 129, 0.12)', 'border: 1px solid rgba(16, 185, 129, 0.4)'),
@@ -2429,8 +2444,8 @@ with tab_scambi:
                 }
                 v_color, v_bg, v_border = verdict_cfg.get(trade_res.get('StatusColor', 'slate'), ('#94a3b8', 'rgba(148, 163, 184, 0.10)', 'border: 1px solid #334155'))
                 is_multi_pkg = trade_res.get('Is_Multi', False)
-                pkg_badge = f"Pacchetto {trade_res.get('Num_Ceduti', 1)} vs {trade_res.get('Num_Ricevuti', 1)}" if is_multi_pkg else "Scambio Singolo 1 vs 1"
-                sub_title_mode = "Media Ponderata Decrescente (Priorità Star)" if chosen_weight_mode == "rank_decay" else ("Media Semplice" if chosen_weight_mode == "simple_mean" else "Somma Grezza")
+                pkg_badge = f"Pacchetto {trade_res.get('Num_Ceduti', 1)} vs {trade_res.get('Num_Ricevuti', 1)}" if is_multi_pkg else "Scambio 1 vs 1"
+                sub_title_mode = "Media Ponderata" if chosen_weight_mode == "rank_decay" else ("Media Semplice" if chosen_weight_mode == "simple_mean" else "Somma Grezza")
 
                 delta_tot = trade_res.get('Delta_Totale_xFV', 0.0)
                 delta_p = trade_res.get('Delta_Medio_Partita', 0.0)
@@ -2443,117 +2458,130 @@ with tab_scambi:
                 tier_desc_txt = trade_res.get('Tier_Desc', '')
 
                 render_html(f"""
-                <div style="background: {v_bg}; {v_border}; border-radius: 12px; padding: 20px 24px; margin-top: 15px; margin-bottom: 16px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
-                        <div style="display: flex; gap: 8px; align-items: center;">
-                            <span style="font-size: 0.80rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: {v_color}; background: rgba(0,0,0,0.25); padding: 3px 8px; border-radius: 4px;">
+                <div style="background: {v_bg}; {v_border}; border-radius: 10px; padding: 12px 18px; margin-top: 10px; margin-bottom: 8px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 6px;">
+                        <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+                            <span style="font-size: 0.74rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: {v_color}; background: rgba(0,0,0,0.3); padding: 2px 7px; border-radius: 4px;">
                                 {pkg_badge} • {sub_title_mode}
                             </span>
-                            <span style="font-size: 0.80rem; font-weight: 700; color: #38bdf8; background: rgba(56,189,248,0.12); padding: 3px 8px; border-radius: 4px; border: 1px solid rgba(56,189,248,0.25);">
+                            <span style="font-size: 0.74rem; font-weight: 700; color: #38bdf8; background: rgba(56,189,248,0.12); padding: 2px 7px; border-radius: 4px; border: 1px solid rgba(56,189,248,0.25);">
                                 {archetipo_tit}
                             </span>
                         </div>
-                        <span style="font-size: 0.85rem; color: #94a3b8;">
+                        <span style="font-size: 0.78rem; color: #94a3b8;">
                             Orizzonte: <b>{trade_res.get('Giornate_Valutate', 1)} turni</b> (fino alla 38ª)
                         </span>
                     </div>
-                    <h2 style="color: {v_color}; margin: 2px 0 8px 0; font-size: 1.85rem; font-weight: 800; letter-spacing: -0.5px;">
-                        {badge_lbl} — {trade_res.get('Verdetto', 'VALUTAZIONE')}
-                    </h2>
-                    <div style="color: #f1f5f9; font-size: 1.05rem; line-height: 1.45; margin-bottom: 14px; font-weight: 500;">
-                        {trade_res.get('Sintesi_Umana', '')}
-                    </div>
-                    <div style="background: rgba(15, 23, 42, 0.45); border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.06);">
-                        <div style="display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 700; color: #cbd5e1; margin-bottom: 6px;">
-                            <span>Indice di Convenienza dello Scambio:</span>
-                            <span style="color: {v_color}; font-size: 0.95rem;"><b>{idx_conv} / 100</b> <span style="font-weight: 400; color: #94a3b8; font-size: 0.82rem;">({tier_desc_txt})</span></span>
-                        </div>
-                        <div style="background: rgba(15, 23, 42, 0.9); border-radius: 999px; height: 10px; width: 100%; overflow: hidden; border: 1px solid rgba(255,255,255,0.12);">
-                            <div style="background: {v_color}; height: 100%; width: {idx_conv}%; border-radius: 999px;"></div>
-                        </div>
-                    </div>
-                    <div style="display: flex; gap: 20px; align-items: center; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.08); font-size: 0.92rem; flex-wrap: wrap;">
+                    <div style="display: grid; grid-template-columns: 1.4fr 1fr; gap: 14px; align-items: center;">
                         <div>
-                            <span style="color: #94a3b8;">Differenziale Totale:</span> 
-                            <b style="color: {v_color}; font-size: 1.08rem; margin-left: 4px;">{delta_sign}{delta_tot:.1f} xFV</b>
+                            <div style="color: {v_color}; font-size: 1.25rem; font-weight: 800; letter-spacing: -0.3px; line-height: 1.2; margin-bottom: 4px;">
+                                {badge_lbl} — {trade_res.get('Verdetto', 'VALUTAZIONE')}
+                            </div>
+                            <div style="color: #f1f5f9; font-size: 0.88rem; line-height: 1.4; font-weight: 500;">
+                                {trade_res.get('Sintesi_Umana', '')}
+                            </div>
+                            <div style="font-size: 0.78rem; color: #94a3b8; font-style: italic; margin-top: 3px;">
+                                {archetipo_desc}
+                            </div>
                         </div>
-                        <div style="color: #64748b;">•</div>
-                        <div>
-                            <span style="color: #94a3b8;">Impatto Medio a Gara:</span> 
-                            <b style="color: {v_color}; font-size: 1.08rem; margin-left: 4px;">{delta_p_sign}{delta_p:.2f} xFV/partita</b>
-                        </div>
-                        <div style="color: #64748b;">•</div>
-                        <div>
-                            <span style="color: #94a3b8;">Sfumatura Tattica:</span> 
-                            <span style="color: #e2e8f0; font-style: italic; margin-left: 4px;">{archetipo_desc}</span>
+                        <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 8px 12px;">
+                            <div style="display: flex; justify-content: space-between; align-items: baseline; font-size: 0.80rem; margin-bottom: 4px;">
+                                <span style="color: #cbd5e1; font-weight: 700;">Indice Convenienza:</span>
+                                <span style="color: {v_color}; font-size: 0.95rem; font-weight: 800;">
+                                    {idx_conv} / 100 <span style="font-weight: 400; color: #94a3b8; font-size: 0.74rem;">({tier_desc_txt})</span>
+                                </span>
+                            </div>
+                            <div style="background: rgba(15, 23, 42, 0.9); border-radius: 999px; height: 6px; width: 100%; overflow: hidden; margin-bottom: 6px; border: 1px solid rgba(255,255,255,0.1);">
+                                <div style="background: {v_color}; height: 100%; width: {idx_conv}%; border-radius: 999px;"></div>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; font-size: 0.78rem; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 4px;">
+                                <div><span style="color: #94a3b8;">Δ Totale:</span> <b style="color: {v_color};">{delta_sign}{delta_tot:.1f} xFV</b></div>
+                                <div><span style="color: #94a3b8;">Δ Partita:</span> <b style="color: {v_color};">{delta_p_sign}{delta_p:.2f} xFV/g</b></div>
+                            </div>
                         </div>
                     </div>
                 </div>
                 """)
 
-                # Strategic Conditions & Tactical Guidelines
+                # Strategic Conditions & Clinical Notes (Compact Unified Row)
                 conds = trade_res.get('Condizioni_Strategiche', [])
-                if conds:
-                    cond_items = "".join(f"<div style='font-size: 0.86rem; color: #cbd5e1; margin-left: 6px; margin-bottom: 4px;'>• {c}</div>" for c in conds)
-                    render_html(f"""
-                    <div style="background: rgba(30, 41, 59, 0.65); border: 1px solid #334155; border-left: 4px solid {v_color}; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px;">
-                        <div style="font-weight: 700; color: #f8fafc; font-size: 0.92rem; margin-bottom: 6px;">
-                            💡 Il Consiglio Strategico del Modello (Condizioni Chiave per Concludere):
+                notes_clin = trade_res.get('Note_Cliniche', [])
+                if conds or notes_clin:
+                    if conds and notes_clin:
+                        col_c1, col_c2 = st.columns(2)
+                        with col_c1:
+                            cond_items = "".join(f"<div style='margin-bottom: 2px;'>• {c}</div>" for c in conds)
+                            render_html(f"""
+                            <div style="background: rgba(30, 41, 59, 0.6); border: 1px solid #334155; border-left: 3px solid {v_color}; border-radius: 6px; padding: 7px 11px; margin-bottom: 8px; font-size: 0.80rem; color: #cbd5e1;">
+                                <b style="color: #f8fafc; display: block; margin-bottom: 3px;">💡 Consiglio Strategico (Condizioni per concludere):</b>
+                                {cond_items}
+                            </div>
+                            """)
+                        with col_c2:
+                            note_items = "".join(f"<div style='margin-bottom: 2px;'>• {nc}</div>" for nc in notes_clin)
+                            render_html(f"""
+                            <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.3); border-left: 3px solid #ef4444; border-radius: 6px; padding: 7px 11px; margin-bottom: 8px; font-size: 0.80rem; color: #fecaca;">
+                                <b style="color: #f87171; display: block; margin-bottom: 3px;">🚑 Aggiornamento Infermeria & Squalifiche:</b>
+                                {note_items}
+                            </div>
+                            """)
+                    elif conds:
+                        cond_items = "".join(f"<div style='margin-bottom: 2px;'>• {c}</div>" for c in conds)
+                        render_html(f"""
+                        <div style="background: rgba(30, 41, 59, 0.6); border: 1px solid #334155; border-left: 3px solid {v_color}; border-radius: 6px; padding: 7px 12px; margin-bottom: 8px; font-size: 0.82rem; color: #cbd5e1;">
+                            <b style="color: #f8fafc; margin-right: 6px;">💡 Consiglio Strategico:</b> {cond_items}
                         </div>
-                        {cond_items}
-                    </div>
-                    """)
-
-                # 2. CLINICAL & SUSPENSION NOTES (if any)
-                if trade_res.get('Note_Cliniche'):
-                    note_items = "".join(f"<div style='font-size: 0.85rem; color: #cbd5e1; margin-left: 10px;'>• {nc}</div>" for nc in trade_res['Note_Cliniche'])
-                    render_html(f"""
-                    <div style="background: rgba(239, 68, 68, 0.08); border-left: 4px solid #ef4444; border-radius: 6px; padding: 10px 14px; margin-bottom: 18px;">
-                        <div style="font-weight: 700; color: #f87171; font-size: 0.9rem; margin-bottom: 4px;">
-                            🚑 Aggiornamento Infermeria & Squalifiche (Impatto sulle proiezioni):
+                        """)
+                    elif notes_clin:
+                        note_items = "".join(f"<div style='margin-bottom: 2px;'>• {nc}</div>" for nc in notes_clin)
+                        render_html(f"""
+                        <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.3); border-left: 3px solid #ef4444; border-radius: 6px; padding: 7px 12px; margin-bottom: 8px; font-size: 0.82rem; color: #fecaca;">
+                            <b style="color: #f87171; margin-right: 6px;">🚑 Aggiornamento Infermeria & Squalifiche:</b> {note_items}
                         </div>
-                        {note_items}
-                    </div>
-                    """)
+                        """)
 
-                # 3. SIDE-BY-SIDE COCKPIT
-                st.markdown("### 👥 Confronto Diretto Calciatori")
+                # 2. CONFRONTO DIRETTO CALCIATORI (Ultra-Compact Cards)
+                render_html("""
+                <div style="font-size: 0.82rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #94a3b8; margin: 6px 0 4px 0; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 2px;">
+                    👥 Confronto Diretto Calciatori
+                </div>
+                """)
+
                 def _render_cockpit_card(card, is_give=True):
                     border_accent = "#f87171" if is_give else "#4ade80"
-                    bg_card = "rgba(30, 41, 59, 0.70)"
                     sig = card.get('Signal', '')
-                    sig_badge = f"<span style='background:rgba(56,189,248,0.2); color:#38bdf8; font-size:0.75rem; padding:2px 6px; border-radius:4px; margin-left:6px;'>{sig}</span>" if sig else ""
+                    sig_badge = f"<span style='background:rgba(56,189,248,0.2); color:#38bdf8; font-size:0.70rem; padding:1px 5px; border-radius:3px;'>{sig}</span>" if sig else ""
                     role = card.get('RuoloClassic' if is_classic else 'RuoloMantra', card.get('RuoloMantra', ''))
                     
                     return f"""
-                    <div style="background: {bg_card}; border: 1px solid #334155; border-left: 4px solid {border_accent}; border-radius: 8px; padding: 12px 14px; margin-bottom: 10px;">
-                        <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px;">
-                            <div>
-                                <b style="color: #f8fafc; font-size: 1.05rem;">{card.get('Giocatore')}</b>
-                                <span style="color: #94a3b8; font-size: 0.85rem; margin-left: 6px;">({card.get('Squadra')} · <code style='color:#38bdf8;'>{role}</code>)</span>
+                    <div style="background: rgba(30, 41, 59, 0.65); border: 1px solid #334155; border-left: 3px solid {border_accent}; border-radius: 6px; padding: 6px 10px; margin-bottom: 5px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+                            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                                <b style="color: #f8fafc; font-size: 0.92rem;">{card.get('Giocatore')}</b>
+                                <span style="color: #94a3b8; font-size: 0.78rem;">({card.get('Squadra')} · <code style='color:#38bdf8;'>{role}</code>)</span>
                                 {sig_badge}
+                                <span style="font-size: 0.70rem; color: #cbd5e1; background: rgba(15,23,42,0.5); padding: 1px 5px; border-radius: 3px;">
+                                    {card.get('Titolarita_Label', 'Titolare')}
+                                </span>
                             </div>
-                            <span style="font-size: 0.75rem; font-weight: 700; color: {card.get('Status_Color', '#10b981')}; background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px;">
+                            <span style="font-size: 0.70rem; font-weight: 700; color: {card.get('Status_Color', '#10b981')}; background: rgba(0,0,0,0.3); padding: 1px 5px; border-radius: 3px; white-space: nowrap;">
                                 {card.get('Status_Badge', 'Disponibile')}
                             </span>
                         </div>
-                        <div style="font-size: 0.82rem; color: #cbd5e1; margin-bottom: 8px;">
-                            {card.get('Titolarita_Label', 'Titolare')}
-                        </div>
-                        <div style="display: flex; gap: 8px; flex-wrap: wrap; font-size: 0.78rem;">
-                            <span style="background: rgba(15,23,42,0.6); padding: 3px 7px; border-radius: 4px; color: #94a3b8;">
+                        <div style="display: flex; gap: 6px; flex-wrap: wrap; font-size: 0.74rem;">
+                            <span style="background: rgba(15,23,42,0.6); padding: 2px 5px; border-radius: 3px; color: #94a3b8;">
                                 FM: <b style="color: #f1f5f9;">{card.get('FM_Stagione', 0.0):.2f}</b>
                             </span>
-                            <span style="background: rgba(15,23,42,0.6); padding: 3px 7px; border-radius: 4px; color: #94a3b8;">
+                            <span style="background: rgba(15,23,42,0.6); padding: 2px 5px; border-radius: 3px; color: #94a3b8;">
                                 MV: <b style="color: #f1f5f9;">{card.get('MV_Stagione', 0.0):.2f}</b>
                             </span>
-                            <span style="background: rgba(15,23,42,0.6); padding: 3px 7px; border-radius: 4px; color: #94a3b8;">
-                                Gol/Ass: <b style="color: #f1f5f9;">{card.get('GF', 0)}G / {card.get('ASS', 0)}A</b>
+                            <span style="background: rgba(15,23,42,0.6); padding: 2px 5px; border-radius: 3px; color: #94a3b8;">
+                                G/A: <b style="color: #f1f5f9;">{card.get('GF', 0)}G / {card.get('ASS', 0)}A</b>
                             </span>
-                            <span style="background: rgba(15,23,42,0.6); padding: 3px 7px; border-radius: 4px; color: #94a3b8;">
-                                Sufficienza: <b style="color: #f1f5f9;">{card.get('Pct_Sufficienza', 0.0):.0f}%</b>
+                            <span style="background: rgba(15,23,42,0.6); padding: 2px 5px; border-radius: 3px; color: #94a3b8;">
+                                Suff: <b style="color: #f1f5f9;">{card.get('Pct_Sufficienza', 0.0):.0f}%</b>
                             </span>
-                            <span style="background: rgba(15,23,42,0.6); padding: 3px 7px; border-radius: 4px; color: #94a3b8;">
+                            <span style="background: rgba(15,23,42,0.6); padding: 2px 5px; border-radius: 3px; color: #38bdf8;">
                                 FVM: <b style="color: #38bdf8;">{int(card.get('FVM', 0))}</b>
                             </span>
                         </div>
@@ -2562,16 +2590,21 @@ with tab_scambi:
 
                 c_give_col, c_rec_col = st.columns(2)
                 with c_give_col:
-                    st.markdown(f"**🔴 Calciatori Ceduti ({len(trade_res['Cards_Give'])})**")
+                    render_html(f"<div style='font-size:0.78rem; font-weight:700; color:#f87171; text-transform:uppercase; margin-bottom:3px;'>🔴 Calciatori Ceduti ({len(trade_res['Cards_Give'])})</div>")
                     for c in trade_res['Cards_Give']:
                         render_html(_render_cockpit_card(c, is_give=True))
                 with c_rec_col:
-                    st.markdown(f"**🟢 Calciatori Ricevuti ({len(trade_res['Cards_Rec'])})**")
+                    render_html(f"<div style='font-size:0.78rem; font-weight:700; color:#4ade80; text-transform:uppercase; margin-bottom:3px;'>🟢 Calciatori Ricevuti ({len(trade_res['Cards_Rec'])})</div>")
                     for c in trade_res['Cards_Rec']:
                         render_html(_render_cockpit_card(c, is_give=False))
 
-                # 4. 4 PILLARS CONSENSUS COCKPIT
-                st.markdown("### 🏛️ I 4 Pilastri di Valutazione (Consenso Multi-Algoritmo)")
+                # 3. I 4 PILASTRI DI VALUTAZIONE (Side-by-Side 4 Columns)
+                render_html("""
+                <div style="font-size: 0.82rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #94a3b8; margin: 8px 0 4px 0; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 2px;">
+                    🏛️ I 4 Pilastri di Valutazione (Consenso Multi-Algoritmo)
+                </div>
+                """)
+
                 p1 = trade_res.get('Pilastro1', {})
                 p2 = trade_res.get('Pilastro2', {})
                 p3 = trade_res.get('Pilastro3', {})
@@ -2579,92 +2612,129 @@ with tab_scambi:
 
                 def _pillar_badge(winner):
                     if winner == 'RICEVI':
-                        return "<span style='color: #4ade80; font-weight: 700;'>🟢 Vince Ricevi</span>"
+                        return "<span style='color: #4ade80; font-weight: 700; font-size: 0.72rem;'>🟢 Ricevi</span>"
                     elif winner == 'CEDI':
-                        return "<span style='color: #f87171; font-weight: 700;'>🔴 Vince Cedi</span>"
-                    return "<span style='color: #94a3b8; font-weight: 700;'>⚪ Sostanziale Parità</span>"
+                        return "<span style='color: #f87171; font-weight: 700; font-size: 0.72rem;'>🔴 Cedi</span>"
+                    return "<span style='color: #94a3b8; font-weight: 700; font-size: 0.72rem;'>⚪ Parità</span>"
 
-                pil_c1, pil_c2 = st.columns(2)
+                pil_c1, pil_c2, pil_c3, pil_c4 = st.columns(4)
                 with pil_c1:
                     render_html(f"""
-                    <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid #334155; border-radius: 8px; padding: 14px; margin-bottom: 12px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                            <b style="color: #38bdf8; font-size: 0.95rem;">1. {p1.get('Nome', 'Valore Netto Effettivo')} (35%)</b>
-                            {_pillar_badge(p1.get('Winner', 'PARI'))}
+                    <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid #334155; border-radius: 8px; padding: 8px 10px; height: 100%; display: flex; flex-direction: column; justify-content: space-between;">
+                        <div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+                                <b style="color: #38bdf8; font-size: 0.80rem;">1. Valore Netto (35%)</b>
+                                {_pillar_badge(p1.get('Winner', 'PARI'))}
+                            </div>
+                            <div style="font-size: 0.76rem; color: #f1f5f9; line-height: 1.35; margin-bottom: 4px;">
+                                {p1.get('Descrizione', '')}
+                            </div>
                         </div>
-                        <div style="font-size: 0.88rem; color: #f1f5f9; margin-bottom: 6px;">
-                            {p1.get('Descrizione', '')}
-                        </div>
-                        <div style="font-size: 0.78rem; color: #94a3b8;">
-                            Partite saltate per infortunio/squalifica: Ceduti: <b>{p1.get('Missed_Games_Give', 0)}</b> vs Ricevuti: <b>{p1.get('Missed_Games_Rec', 0)}</b>
-                        </div>
-                    </div>
-                    """)
-
-                    render_html(f"""
-                    <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid #334155; border-radius: 8px; padding: 14px; margin-bottom: 12px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                            <b style="color: #38bdf8; font-size: 0.95rem;">3. {p3.get('Nome', 'Solidità Rosa & Garanzia Voto')} (20%)</b>
-                            {_pillar_badge(p3.get('Winner', 'PARI'))}
-                        </div>
-                        <div style="font-size: 0.88rem; color: #f1f5f9;">
-                            {p3.get('Descrizione', '')}
+                        <div style="font-size: 0.70rem; color: #94a3b8; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 3px;">
+                            Saltate: cedi <b>{p1.get('Missed_Games_Give', 0)}</b> vs ric. <b>{p1.get('Missed_Games_Rec', 0)}</b>
                         </div>
                     </div>
                     """)
 
                 with pil_c2:
                     render_html(f"""
-                    <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid #334155; border-radius: 8px; padding: 14px; margin-bottom: 12px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                            <b style="color: #38bdf8; font-size: 0.95rem;">2. {p2.get('Nome', 'Momentum & Trend Recente')} (25%)</b>
-                            {_pillar_badge(p2.get('Winner', 'PARI'))}
+                    <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid #334155; border-radius: 8px; padding: 8px 10px; height: 100%; display: flex; flex-direction: column; justify-content: space-between;">
+                        <div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+                                <b style="color: #38bdf8; font-size: 0.80rem;">2. Momentum (25%)</b>
+                                {_pillar_badge(p2.get('Winner', 'PARI'))}
+                            </div>
+                            <div style="font-size: 0.76rem; color: #f1f5f9; line-height: 1.35;">
+                                {p2.get('Descrizione', '')}
+                            </div>
                         </div>
-                        <div style="font-size: 0.88rem; color: #f1f5f9;">
-                            {p2.get('Descrizione', '')}
+                        <div style="font-size: 0.70rem; color: #94a3b8; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 3px;">
+                            Trend & xG/xA Understat
                         </div>
                     </div>
                     """)
 
+                with pil_c3:
                     render_html(f"""
-                    <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid #334155; border-radius: 8px; padding: 14px; margin-bottom: 12px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                            <b style="color: #38bdf8; font-size: 0.95rem;">4. {p4.get('Nome', 'Gerarchia Star & FVM')} (20%)</b>
-                            {_pillar_badge(p4.get('Winner', 'PARI'))}
+                    <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid #334155; border-radius: 8px; padding: 8px 10px; height: 100%; display: flex; flex-direction: column; justify-content: space-between;">
+                        <div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+                                <b style="color: #38bdf8; font-size: 0.80rem;">3. Solidità Rosa (20%)</b>
+                                {_pillar_badge(p3.get('Winner', 'PARI'))}
+                            </div>
+                            <div style="font-size: 0.76rem; color: #f1f5f9; line-height: 1.35;">
+                                {p3.get('Descrizione', '')}
+                            </div>
                         </div>
-                        <div style="font-size: 0.88rem; color: #f1f5f9;">
-                            {p4.get('Descrizione', '')}
+                        <div style="font-size: 0.70rem; color: #94a3b8; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 3px;">
+                            Minuti & Garanzia Voto
                         </div>
                     </div>
                     """)
 
-                # 5. DETAILED STRATEGIC ANALYSIS
-                st.markdown("### 📋 Analisi Strategica Dettagliata")
+                with pil_c4:
+                    render_html(f"""
+                    <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid #334155; border-radius: 8px; padding: 8px 10px; height: 100%; display: flex; flex-direction: column; justify-content: space-between;">
+                        <div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+                                <b style="color: #38bdf8; font-size: 0.80rem;">4. Star & FVM (20%)</b>
+                                {_pillar_badge(p4.get('Winner', 'PARI'))}
+                            </div>
+                            <div style="font-size: 0.76rem; color: #f1f5f9; line-height: 1.35;">
+                                {p4.get('Descrizione', '')}
+                            </div>
+                        </div>
+                        <div style="font-size: 0.70rem; color: #94a3b8; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 3px;">
+                            Gerarchia & Top Player
+                        </div>
+                    </div>
+                    """)
+
+                # 4. DETAILED STRATEGIC ANALYSIS (Side-by-Side High-Density Executive Cards)
+                render_html("""
+                <div style="font-size: 0.82rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #94a3b8; margin: 8px 0 4px 0; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 2px;">
+                    📋 Analisi Strategica Dettagliata
+                </div>
+                """)
+
                 van_col, ris_col = st.columns(2)
                 with van_col:
-                    st.markdown("""
-                    <div style="background: rgba(16, 185, 129, 0.08); border-left: 3px solid #10b981; border-radius: 6px; padding: 10px 14px; margin-bottom: 10px;">
-                        <b style="color: #34d399; font-size: 0.95rem;">🟢 Vantaggi dello Scambio:</b>
-                    </div>
-                    """, unsafe_allow_html=True)
                     vantaggi_list = trade_res.get('Vantaggi', [])
                     if vantaggi_list:
-                        for v in vantaggi_list:
-                            st.markdown(f"- {v}")
+                        v_items = "".join(f"<li style='margin-bottom: 4px;'>{v}</li>" for v in vantaggi_list)
                     else:
-                        st.caption("Nessun vantaggio evidente segnalato dal modello.")
-                with ris_col:
-                    st.markdown("""
-                    <div style="background: rgba(239, 68, 68, 0.08); border-left: 3px solid #ef4444; border-radius: 6px; padding: 10px 14px; margin-bottom: 10px;">
-                        <b style="color: #f87171; font-size: 0.95rem;">🔴 Rischi e Controindicazioni:</b>
+                        v_items = "<li style='color: #94a3b8;'>Nessun vantaggio evidente segnalato dal modello.</li>"
+
+                    render_html(f"""
+                    <div style="background: rgba(16, 185, 129, 0.06); border: 1px solid rgba(16, 185, 129, 0.25); border-left: 3px solid #10b981; border-radius: 6px; padding: 8px 12px; height: 100%;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                            <b style="color: #34d399; font-size: 0.85rem;">🟢 Vantaggi dello Scambio</b>
+                            <span style="font-size: 0.70rem; background: rgba(16, 185, 129, 0.2); padding: 1px 6px; border-radius: 10px; color: #a7f3d0; font-weight: 600;">{len(vantaggi_list)}</span>
+                        </div>
+                        <ul style="margin: 0; padding-left: 16px; color: #f1f5f9; font-size: 0.82rem; line-height: 1.45;">
+                            {v_items}
+                        </ul>
                     </div>
-                    """, unsafe_allow_html=True)
+                    """)
+
+                with ris_col:
                     rischi_list = trade_res.get('Rischi', [])
                     if rischi_list:
-                        for r in rischi_list:
-                            st.markdown(f"- {r}")
+                        r_items = "".join(f"<li style='margin-bottom: 4px;'>{r}</li>" for r in rischi_list)
                     else:
-                        st.caption("Nessuna controindicazione critica segnalata dal modello.")
+                        r_items = "<li style='color: #94a3b8;'>Nessuna controindicazione critica segnalata dal modello.</li>"
+
+                    render_html(f"""
+                    <div style="background: rgba(239, 68, 68, 0.06); border: 1px solid rgba(239, 68, 68, 0.25); border-left: 3px solid #ef4444; border-radius: 6px; padding: 8px 12px; height: 100%;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                            <b style="color: #f87171; font-size: 0.85rem;">🔴 Rischi e Controindicazioni</b>
+                            <span style="font-size: 0.70rem; background: rgba(239, 68, 68, 0.2); padding: 1px 6px; border-radius: 10px; color: #fecaca; font-weight: 600;">{len(rischi_list)}</span>
+                        </div>
+                        <ul style="margin: 0; padding-left: 16px; color: #f1f5f9; font-size: 0.82rem; line-height: 1.45;">
+                            {r_items}
+                        </ul>
+                    </div>
+                    """)
 
                 # 6. COLLAPSED ADVANCED STATISTICAL EXPANDER
                 with st.expander("📊 Approfondimento Statistico Completo & Proiezione Temporale (Per Esperti)", expanded=False):
