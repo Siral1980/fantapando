@@ -1,0 +1,8 @@
+{
+  "last_sync_timestamp": 1793638204.217456,
+  "last_sync_datetime": "02/11/2026 17:50:04",
+  "status": "success",
+  "details": "Database sincronizzato: 603 calciatori, metriche Understat e voti reali",
+  "source": "auto_startup",
+  "interval_hours": 12.0
+}

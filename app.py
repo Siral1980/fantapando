@@ -20,6 +20,10 @@ APP_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, APP_DIR)
 
 from engine.data_loader import sync_and_build_database
+from engine.sync_manager import (
+    get_sync_state, save_sync_state, run_full_sync_pipeline,
+    format_last_sync_display, format_remaining_time, AUTO_SYNC_INTERVAL_HOURS
+)
 from engine.fanta_calendar import (
     get_or_create_calendar, get_schedule_matrix, get_fixture_info,
     TEAM_TIERS, compute_dynamic_team_ratings, compute_current_standings,
@@ -199,6 +203,21 @@ def cached_find_win_win_trades(my_team_name, league_sig, matchday, target_role_f
         max_proposals=max_proposals,
         league_type=league_type
     )
+
+# -------------------------------------------------------------
+# AUTO-CHECK & SYNC LIVE DATA (12-HOUR CYCLE)
+# -------------------------------------------------------------
+sync_state = get_sync_state()
+if sync_state.get('is_due', False):
+    with st.spinner("⏳ Auto-check 12h: Aggiornamento database live in corso (Fantacalcio.it + Understat)..."):
+        sync_ok, sync_msg = run_full_sync_pipeline(force_live_scrape=True, source="auto_startup")
+        if sync_ok:
+            st.cache_data.clear()
+            st.cache_resource.clear()
+            st.toast("✅ Database aggiornato automaticamente (ciclo 12h completato)!", icon="⚽")
+            sync_state = get_sync_state()
+        else:
+            st.toast(f"⚠️ Auto-check live non completato: {sync_msg}. Uso dati locali salvati.", icon="⚠️")
 
 master_csv_path = os.path.join(APP_DIR, "data", "players_master.csv")
 mtime_val = os.path.getmtime(master_csv_path) if os.path.exists(master_csv_path) else 0
@@ -475,16 +494,29 @@ if selected_giornata != auto_giornata:
         st.rerun()
 
 st.sidebar.markdown('---')
-col_sb_s1, col_sb_s2 = st.sidebar.columns([1.35, 1.0])
+last_sync_lbl = format_last_sync_display(sync_state)
+rem_lbl = format_remaining_time(sync_state.get('remaining_seconds', 0))
+
+col_sb_s1, col_sb_s2 = st.sidebar.columns([1.4, 0.9])
 with col_sb_s1:
-    st.markdown("<div style='font-size:0.75rem; color:#94a3b8; margin-top:4px;'>🟢 <b>Dati Live Attivi</b><br><span style='font-size:0.70rem; color:#64748b;'>Fantacalcio.it + Understat</span></div>", unsafe_allow_html=True)
+    st.markdown(
+        f"<div style='font-size:0.74rem; line-height:1.25; margin-top:2px;'>"
+        f"<span style='color:#4ade80;'>🟢 <b>Dati Live Attivi</b></span><br>"
+        f"<span style='color:#cbd5e1; font-size:0.70rem;'>⏱️ Sync: <b>{last_sync_lbl}</b></span><br>"
+        f"<span style='color:#64748b; font-size:0.68rem;'>Auto (12h): <b>tra {rem_lbl}</b></span>"
+        f"</div>",
+        unsafe_allow_html=True
+    )
 with col_sb_s2:
-    if st.button('🔄 Sync', key='sb_quick_sync_btn', width='stretch', help='Aggiorna voti e statistiche ufficiali live da Fantacalcio.it e Understat'):
+    if st.button('🔄 Sync', key='sb_quick_sync_btn', width='stretch', help=f'Aggiorna subito voti, statistiche e infortuni da Fantacalcio.it e Understat. (Ultimo: {sync_state.get("last_sync_datetime", "N/D")}. Prossimo auto-check tra: {rem_lbl})'):
         st.cache_data.clear()
         st.cache_resource.clear()
-        with st.spinner('Sincronizzazione dati live in corso...'):
-            df_master, _ = sync_and_build_database(force_live_scrape=True)
-        st.sidebar.success('Aggiornato!')
+        with st.spinner('Sincronizzazione in corso...'):
+            ok_sync, msg_sync = run_full_sync_pipeline(force_live_scrape=True, source="manual_sidebar")
+        if ok_sync:
+            st.sidebar.success('Aggiornato!')
+        else:
+            st.sidebar.error('Errore sync')
         st.rerun()
 
 st.sidebar.caption(f'📋 Rosa `{current_active_team}`: **{len(user_squad_names)} calciatori**')
@@ -3418,15 +3450,39 @@ with tab_impostazioni:
         render_league_upload_section("tab_imp", df_master, label_title="📥 Carica / Aggiorna File Rose della Lega (.xlsx, .xls, .csv)")
         st.markdown("---")
 
+        current_sync = get_sync_state()
+        sync_dt_disp = format_last_sync_display(current_sync)
+        sync_rem_disp = format_remaining_time(current_sync.get('remaining_seconds', 0))
+        sync_status_badge = "🟢 Sincronizzato con Successo" if current_sync.get('status') == 'success' else "⚠️ Attenzione o In Attesa"
+
+        st.markdown(f"""
+        <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 10px; padding: 14px 18px; margin-bottom: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <span style="font-weight: 700; color: #38bdf8; font-size: 1.05rem;">🔄 Auto-Sincronizzazione Database (Ogni 12 Ore)</span>
+                <span style="font-size: 0.8rem; background: rgba(56, 189, 248, 0.15); color: #7dd3fc; border: 1px solid rgba(56, 189, 248, 0.3); padding: 3px 8px; border-radius: 6px;">Auto-Check all'Avvio: <b>Attivo</b></span>
+            </div>
+            <div style="font-size: 0.88rem; color: #cbd5e1; margin-bottom: 8px;">
+                Il sistema verifica all'avvio dell'app se sono trascorse più di <b>12 ore</b> dall'ultimo aggiornamento. Se necessario, scarica automaticamente i nuovi voti, le statistiche ufficiali da Fantacalcio.it, le metriche Understat (xG, xA) e il bollettino infortuni.
+            </div>
+            <div style="display: flex; gap: 20px; font-size: 0.82rem; color: #94a3b8; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px; flex-wrap: wrap;">
+                <div>⏱️ Ultimo Aggiornamento: <b style="color: #f8fafc;">{current_sync.get('last_sync_datetime', 'N/D')}</b> ({sync_dt_disp})</div>
+                <div>⏳ Prossimo Controllo Automatico: <b style="color: #38bdf8;">tra {sync_rem_disp}</b></div>
+                <div>📡 Stato: <b style="color: #4ade80;">{sync_status_badge}</b></div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
         col_sync1, col_sync2 = st.columns([2, 1])
         with col_sync1:
-            if st.button("🚀 Sincronizza Tutti i Dati Live (Fantacalcio.it + Understat + Infortuni)", type="primary", width='stretch'):
+            if st.button("🚀 Sincronizza Tutti i Dati Live Adesso (Fantacalcio.it + Understat + Infortuni)", type="primary", width='stretch'):
                 st.cache_data.clear()
                 st.cache_resource.clear()
                 with st.spinner("Sincronizzazione completa in corso da Fantacalcio.it e Understat..."):
-                    fetch_live_injuries_from_fantacalcio()
-                    df_master, _ = sync_and_build_database(force_live_scrape=True)
-                st.success("✅ Database, statistiche, metriche Understat e infortuni aggiornati!")
+                    ok_sync, msg_sync = run_full_sync_pipeline(force_live_scrape=True, source="manual_settings")
+                if ok_sync:
+                    st.success("✅ Database, statistiche, metriche Understat e infortuni aggiornati con successo!")
+                else:
+                    st.error(f"Errore durante la sincronizzazione: {msg_sync}")
                 st.rerun()
         with col_sync2:
             if st.button("🧹 Svuota Cache", width='stretch'):
@@ -3450,6 +3506,7 @@ with tab_impostazioni:
                         f.write(uploaded_stats_file.getbuffer())
                     with st.spinner("Sincronizzazione ruoli e statistiche ufficiali..."):
                         sync_and_build_database(dest_stats)
+                        save_sync_state(status="success", details="Caricamento manuale file Excel statistiche", source="manual_excel")
                         st.cache_data.clear()
                     st.session_state['last_processed_stats_sig'] = file_sig
                     st.success("✅ Statistiche e ruoli ufficiali caricati con successo!")
