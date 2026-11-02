@@ -338,6 +338,8 @@
         document.getElementById("root").addEventListener("click", function(e) {
             const card = e.target.closest(".pitch-player-card");
             if (!card) return;
+            hideHoverHud();
+            currentHoveredCard = null;
             const player = card.getAttribute("data-player");
             if (player) {
                 sendValue(player);
