@@ -499,7 +499,7 @@ def render_player_profile_content(player_name_or_row, df_master, calendar=None, 
                 )
 
 
-@st.dialog("📋 Scheda Profilo Calciatore", width="large")
+@st.dialog("📋 Scheda Profilo Calciatore", width="medium")
 def show_player_profile_dialog(player_name, df_master, calendar=None, matchday=8, df_roster=None):
     """
     Displays the player profile as an interactive modal dialog overlay.

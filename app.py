@@ -61,7 +61,7 @@ from engine.injuries_manager import (
     fetch_live_injuries_from_fantacalcio, load_injuries_data,
     set_player_manual_override, clear_player_manual_override,
     clear_all_manual_overrides, get_all_unavailable_players,
-    parse_injury_details, get_all_unavailable_df
+    parse_injury_details, get_all_unavailable_df, classify_injury_status
 )
 from engine.probable_lineups import (
     load_probable_lineups, get_player_probable_info, refresh_live_lineups_and_injuries
@@ -1043,12 +1043,81 @@ with tab_formazione:
             mapped_pitch_slots = _map_players_to_pitch_slots(titolari_list, cur_modulo, is_classic)
 
             st.markdown(
-                f"<div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;'>"
+                f"<div style='display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;'>"
+                f"<div>"
                 f"<span style='font-weight: 800; font-size: 1.05rem; color: #f8fafc;'>🏟️ Lavagna Tattica Ufficiale ({cur_modulo})</span>"
+                f"<span style='font-size: 0.76rem; color: #38bdf8; margin-left: 8px;'>(⚡ Passa il mouse per scheda rapida)</span>"
+                f"</div>"
                 f"<span style='color: #38bdf8; font-weight: 700; font-size: 0.90rem;'>Punti Attesi Totali: {opt_res['Punti_Attesi_Totali']:.2f} pt</span>"
                 f"</div>",
                 unsafe_allow_html=True
             )
+
+            # Pre-compute next fixtures for all teams in starters (blazing fast)
+            team_next_fixtures = {}
+            for p_item in titolari_list:
+                sq_name = p_item.get('Squadra', '')
+                if sq_name and sq_name not in team_next_fixtures:
+                    fix_list = []
+                    for g_next in [selected_giornata + 1, selected_giornata + 2]:
+                        if g_next <= 38:
+                            fi = get_fixture_info(sq_name, g_next, calendar)
+                            if fi:
+                                loc = "C" if fi.get('IsHome') else "T"
+                                opp = str(fi.get('Avversario', ''))[:3].upper()
+                                fix_list.append({
+                                    'g': g_next,
+                                    'm': f"{opp} ({loc})",
+                                    'fdr': int(fi.get('FDR', 3))
+                                })
+                    team_next_fixtures[sq_name] = fix_list
+
+            def _build_hover_json(pl_dict, s_label, s_color, fdr_val, fdr_color, m_txt, pv_val, xfv_num, pv_pct):
+                p_name_val = pl_dict['Giocatore']
+                sq_val = pl_dict.get('Squadra', '')
+                inj_res = classify_injury_status(p_name_val)
+                st_val = inj_res.get('Stato', 'Disponibile')
+                if st_val == 'Disponibile':
+                    st_c = '#22c55e'
+                elif 'dubbio' in st_val.lower():
+                    st_c = '#eab308'
+                else:
+                    st_c = '#ef4444'
+
+                is_gk_val = s_label in ['Por', 'P']
+                d_info = {
+                    'name': p_name_val,
+                    'team': sq_val,
+                    'slot': s_label,
+                    'slot_color': s_color,
+                    'role': pl_dict.get('RuoloClassic' if is_classic else 'RuoloMantra', ''),
+                    'fdr': fdr_val,
+                    'fdr_color': fdr_color,
+                    'match': m_txt,
+                    'pred_v': round(float(pv_val or 6.0), 2),
+                    'xfv': round(float(xfv_num or 0.0), 2),
+                    'p_voto_pct': int(pv_pct),
+                    'bal': str(pl_dict.get('Ballottaggio_Info', '')).strip(),
+                    'is_gk': is_gk_val,
+                    'status': st_val,
+                    'status_color': st_c,
+                    'status_det': inj_res.get('Dettaglio', ''),
+                    'fm': round(float(pl_dict.get('FM_Stagione', 0.0) or 0.0), 2),
+                    'mv': round(float(pl_dict.get('MV_Stagione', 0.0) or 0.0), 2),
+                    'fvm': int(pl_dict.get('FVM', 0) or 0),
+                    'suff': round(float(pl_dict.get('Pct_Sufficienza', 0.0) or 0.0), 0),
+                    'gf': int(pl_dict.get('GF', 0) or 0),
+                    'ass': int(pl_dict.get('ASS', 0) or 0),
+                    'gs': int(pl_dict.get('GS', 0) or 0),
+                    'xg90': round(float(pl_dict.get('xG_90', 0.0) or 0.0), 2),
+                    'xa90': round(float(pl_dict.get('xA_90', 0.0) or 0.0), 2),
+                    'cs': int(pl_dict.get('Clean_Sheets_Tot', 0) or 0),
+                    'save_pct': round(float(pl_dict.get('Pct_Parate', 0.0) or 0.0), 1),
+                    'gp90': round(float(pl_dict.get('Goals_Prevented_90', 0.0) or 0.0), 2),
+                    'blunders': int(pl_dict.get('Errors_Leading_To_Goal', 0) or 0),
+                    'next_fixtures': team_next_fixtures.get(sq_val, [])
+                }
+                return html.escape(json.dumps(d_info, ensure_ascii=False), quote=True)
 
             if mapped_pitch_slots:
                 player_chips = []
@@ -1070,10 +1139,10 @@ with tab_formazione:
 
                     p_name = pl['Giocatore']
                     p_escaped = html.escape(p_name, quote=True)
+                    hover_json = _build_hover_json(pl, slot_label, slot_c, fdr, fdr_c, match_txt, pred_v, xfv_val, p_voto_pct)
 
                     chip_html = (
-                        f"<div class='pitch-player-card pitch-player-card-abs' data-player='{p_escaped}' "
-                        f"title='👆 Clicca per aprire la Scheda Dettagliata di {p_name}' "
+                        f"<div class='pitch-player-card pitch-player-card-abs' data-player='{p_escaped}' data-info='{hover_json}' "
                         f"style='position: absolute; left: {c['x']}%; top: {c['y']}%; transform: translate(-50%, -50%); "
                         f"width: 104px; z-index: 10; cursor: pointer; background: rgba(15,23,42,0.92); "
                         f"border: 1.5px solid {slot_c}; border-radius: 7px; padding: 4px 6px; text-align: center; "
@@ -1094,7 +1163,7 @@ with tab_formazione:
                 chips_markup = "".join(player_chips)
                 pitch_raw = (
                     "<style>.pitch-player-card:hover { transform: scale(1.06); box-shadow: 0 6px 20px rgba(56, 189, 248, 0.5) !important; border-color: #38bdf8 !important; }</style>"
-                    f"<div style='width: 100%; max-width: 680px; height: 620px; margin: 0 auto 16px auto; position: relative; "
+                    f"<div id='pitch-board' style='width: 100%; max-width: 680px; height: 620px; margin: 0 auto 16px auto; position: relative; "
                     f"border-radius: 14px; overflow: hidden; border: 2.5px solid rgba(255,255,255,0.4); "
                     f"box-shadow: 0 10px 30px rgba(0,0,0,0.6); "
                     f"background: radial-gradient(circle at 50% 50%, "
@@ -1140,9 +1209,9 @@ with tab_formazione:
                     xfv_val = float(pl.get('xFV', 0.0))
                     fb_name = pl['Giocatore']
                     fb_escaped = html.escape(fb_name, quote=True)
+                    fb_hover_json = _build_hover_json(pl, pl['Slot_Assegnato'], slot_c, fdr, fdr_c, f"{pl.get('Squadra','')} {pl.get('Match','')}", pred_v, xfv_val, int(float(pl.get('P_Voto', 0.90))*100))
                     return (
-                        f"<div class='pitch-player-card pitch-player-card-flex' data-player='{fb_escaped}' "
-                        f"title='👆 Clicca per aprire la Scheda Dettagliata di {fb_name}' "
+                        f"<div class='pitch-player-card pitch-player-card-flex' data-player='{fb_escaped}' data-info='{fb_hover_json}' "
                         f"style='background: rgba(15,23,42,0.92); border: 1.5px solid {slot_c}; border-radius: 8px; "
                         f"padding: 6px 8px; width: 124px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.6); flex-shrink: 0; cursor: pointer;'>"
                         f"<div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;'>"
@@ -1167,7 +1236,7 @@ with tab_formazione:
                 if trq_line: fb_rows.append(_render_fb_row(trq_line))
                 if att_line: fb_rows.append(_render_fb_row(att_line))
                 pitch_raw = (
-                    f"<div style='background: repeating-linear-gradient(180deg, #153e24 0px, #153e24 55px, #10331d 55px, #10331d 110px); "
+                    f"<div id='pitch-board' style='background: repeating-linear-gradient(180deg, #153e24 0px, #153e24 55px, #10331d 55px, #10331d 110px); "
                     f"border: 2px solid rgba(255, 255, 255, 0.4); border-radius: 12px; padding: 18px 10px; margin-bottom: 16px; "
                     f"position: relative; overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,0.45);'>"
                     f"<div style='position: relative; z-index: 2; display: flex; flex-direction: column; justify-content: space-between; gap: 14px; min-height: 480px;'>"

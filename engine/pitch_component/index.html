@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        body { background: transparent; overflow: hidden; width: 100%; display: flex; justify-content: center; }
-        #root { width: 100%; display: flex; justify-content: center; }
+        body { background: transparent; overflow: hidden; width: 100%; display: flex; justify-content: center; position: relative; }
+        #root { width: 100%; display: flex; justify-content: center; position: relative; }
         .pitch-player-card {
             cursor: pointer;
             user-select: none;
@@ -22,10 +22,145 @@
             box-shadow: 0 6px 20px rgba(56, 189, 248, 0.65) !important;
             border-color: #38bdf8 !important;
         }
+
+        /* TACTICAL HOVER HUD */
+        #player-hover-hud {
+            position: absolute;
+            width: 295px;
+            background: rgba(15, 23, 42, 0.97);
+            border: 1.5px solid #38bdf8;
+            border-radius: 10px;
+            padding: 10px 12px;
+            color: #f8fafc;
+            box-shadow: 0 16px 36px rgba(0, 0, 0, 0.85), 0 0 16px rgba(56, 189, 248, 0.35);
+            backdrop-filter: blur(12px);
+            pointer-events: none;
+            z-index: 99999;
+            opacity: 0;
+            visibility: hidden;
+            transform: scale(0.95);
+            transition: opacity 0.12s ease, transform 0.12s ease, visibility 0.12s ease;
+        }
+        #player-hover-hud.visible {
+            opacity: 1;
+            visibility: visible;
+            transform: scale(1);
+        }
+        .hud-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            padding-bottom: 5px;
+        }
+        .hud-player-name {
+            font-size: 0.95rem;
+            font-weight: 800;
+            color: #ffffff;
+            line-height: 1.1;
+        }
+        .hud-sub-title {
+            font-size: 0.72rem;
+            color: #94a3b8;
+            margin-top: 1px;
+        }
+        .hud-role-badge {
+            color: #ffffff;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.70rem;
+            font-weight: 800;
+        }
+        .hud-status-badge {
+            font-size: 0.68rem;
+            font-weight: 700;
+            padding: 1px 6px;
+            border-radius: 4px;
+            background: rgba(0,0,0,0.3);
+            white-space: nowrap;
+        }
+        .hud-target-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(30, 41, 59, 0.65);
+            border-radius: 6px;
+            padding: 4px 8px;
+            margin-bottom: 6px;
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+        .hud-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 4px;
+            margin-bottom: 6px;
+        }
+        .hud-stat-box {
+            background: rgba(15, 23, 42, 0.65);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 4px;
+            padding: 3px 4px;
+            text-align: center;
+        }
+        .hud-stat-lbl {
+            display: block;
+            font-size: 0.60rem;
+            color: #94a3b8;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+        .hud-stat-val {
+            font-size: 0.76rem;
+            color: #f1f5f9;
+        }
+        .hud-fixtures-row {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+            font-size: 0.68rem;
+            background: rgba(30, 41, 59, 0.45);
+            border-radius: 4px;
+            padding: 3px 6px;
+            margin-bottom: 4px;
+        }
+        .hud-fix-pill {
+            color: #cbd5e1;
+            background: rgba(15, 23, 42, 0.6);
+            padding: 1px 5px;
+            border-radius: 3px;
+        }
+        .hud-alert {
+            font-size: 0.70rem;
+            border-radius: 4px;
+            padding: 3px 6px;
+            margin-bottom: 5px;
+            line-height: 1.25;
+        }
+        .hud-alert-bal {
+            background: rgba(245, 158, 11, 0.14);
+            border-left: 2.5px solid #f59e0b;
+            color: #fde68a;
+        }
+        .hud-alert-med {
+            background: rgba(239, 68, 68, 0.14);
+            border-left: 2.5px solid #ef4444;
+            color: #fca5a5;
+        }
+        .hud-footer {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.65rem;
+            color: #64748b;
+            border-top: 1px solid rgba(255,255,255,0.06);
+            padding-top: 3px;
+            margin-top: 2px;
+        }
     </style>
 </head>
 <body>
     <div id="root"></div>
+    <div id="player-hover-hud"></div>
     <script>
         function sendValue(playerName) {
             if (!playerName) return;
@@ -35,6 +170,170 @@
                 value: { player: playerName, ts: Date.now() }
             }, "*");
         }
+
+        const hud = document.getElementById("player-hover-hud");
+        let currentHoveredCard = null;
+
+        function showHoverHud(card) {
+            const raw = card.getAttribute("data-info");
+            if (!raw) return;
+            let d;
+            try {
+                d = JSON.parse(raw);
+            } catch (err) {
+                return;
+            }
+
+            let statsRowHtml = "";
+            if (d.is_gk) {
+                statsRowHtml = `
+                    <div class="hud-stats-grid">
+                        <div class="hud-stat-box"><span class="hud-stat-lbl">FM</span><b class="hud-stat-val">${d.fm.toFixed(2)}</b></div>
+                        <div class="hud-stat-box"><span class="hud-stat-lbl">MV</span><b class="hud-stat-val">${d.mv.toFixed(2)}</b></div>
+                        <div class="hud-stat-box"><span class="hud-stat-lbl">CleanSh.</span><b class="hud-stat-val" style="color:#4ade80;">${d.cs}</b></div>
+                        <div class="hud-stat-box"><span class="hud-stat-lbl">Subiti</span><b class="hud-stat-val" style="color:#f87171;">${d.gs}</b></div>
+                        <div class="hud-stat-box"><span class="hud-stat-lbl">% Parate</span><b class="hud-stat-val">${d.save_pct}%</b></div>
+                        <div class="hud-stat-box"><span class="hud-stat-lbl">GP/90</span><b class="hud-stat-val" style="color:${d.gp90 >= 0 ? '#4ade80' : '#f59e0b'};">${d.gp90 >= 0 ? '+' : ''}${d.gp90.toFixed(2)}</b></div>
+                        <div class="hud-stat-box"><span class="hud-stat-lbl">Blunders</span><b class="hud-stat-val" style="color:${d.blunders > 0 ? '#ef4444' : '#4ade80'};">${d.blunders}</b></div>
+                        <div class="hud-stat-box"><span class="hud-stat-lbl">FVM</span><b class="hud-stat-val" style="color:#38bdf8;">${d.fvm}</b></div>
+                    </div>
+                `;
+            } else {
+                statsRowHtml = `
+                    <div class="hud-stats-grid">
+                        <div class="hud-stat-box"><span class="hud-stat-lbl">FM</span><b class="hud-stat-val">${d.fm.toFixed(2)}</b></div>
+                        <div class="hud-stat-box"><span class="hud-stat-lbl">MV</span><b class="hud-stat-val">${d.mv.toFixed(2)}</b></div>
+                        <div class="hud-stat-box"><span class="hud-stat-lbl">Gol/Ass</span><b class="hud-stat-val" style="color:#fde047;">${d.gf}G / ${d.ass}A</b></div>
+                        <div class="hud-stat-box"><span class="hud-stat-lbl">Suff.</span><b class="hud-stat-val">${d.suff}%</b></div>
+                        <div class="hud-stat-box"><span class="hud-stat-lbl">xG/90</span><b class="hud-stat-val">${d.xg90.toFixed(2)}</b></div>
+                        <div class="hud-stat-box"><span class="hud-stat-lbl">xA/90</span><b class="hud-stat-val">${d.xa90.toFixed(2)}</b></div>
+                        <div class="hud-stat-box"><span class="hud-stat-lbl">Titolarità</span><b class="hud-stat-val" style="color:${d.p_voto_pct >= 80 ? '#4ade80' : '#f59e0b'};">${d.p_voto_pct}%</b></div>
+                        <div class="hud-stat-box"><span class="hud-stat-lbl">FVM</span><b class="hud-stat-val" style="color:#38bdf8;">${d.fvm}</b></div>
+                    </div>
+                `;
+            }
+
+            let nextFixHtml = "";
+            if (d.next_fixtures && d.next_fixtures.length > 0) {
+                const fixItems = d.next_fixtures.map(f => {
+                    const fc = f.fdr <= 2 ? '#22c55e' : (f.fdr === 3 ? '#eab308' : '#ef4444');
+                    return `<span class="hud-fix-pill"><b>G${f.g}:</b> ${f.m} <span style="color:${fc}; font-weight:800;">(${f.fdr})</span></span>`;
+                }).join("");
+                nextFixHtml = `
+                    <div class="hud-fixtures-row">
+                        <span style="color:#94a3b8; font-size:0.65rem; font-weight:700;">PROSSIME:</span>
+                        ${fixItems}
+                    </div>
+                `;
+            }
+
+            let alertsHtml = "";
+            if (d.bal) {
+                alertsHtml += `<div class="hud-alert hud-alert-bal">⚖️ <b>Ballottaggio:</b> ${d.bal}</div>`;
+            }
+            if (d.status_det && d.status !== 'Disponibile') {
+                alertsHtml += `<div class="hud-alert hud-alert-med">🩹 <b>Infermeria:</b> ${d.status_det}</div>`;
+            }
+
+            hud.innerHTML = `
+                <div class="hud-header">
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <span class="hud-role-badge" style="background:${d.slot_color};">${d.slot}</span>
+                        <div>
+                            <div class="hud-player-name">${d.name}</div>
+                            <div class="hud-sub-title">${d.team} · <code style="color:#38bdf8;">${d.role}</code></div>
+                        </div>
+                    </div>
+                    <div style="text-align:right;">
+                        <span class="hud-status-badge" style="border:1px solid ${d.status_color}; color:${d.status_color};">
+                            ${d.status}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="hud-target-row">
+                    <div>
+                        <span style="color:#94a3b8; font-size:0.65rem; text-transform:uppercase;">Gara Turno:</span>
+                        <div style="font-weight:700; font-size:0.80rem; color:#f8fafc;">${d.match} <span style="color:${d.fdr_color}; font-weight:800;">(FDR ${d.fdr})</span></div>
+                    </div>
+                    <div style="text-align:right;">
+                        <span style="color:#94a3b8; font-size:0.65rem; text-transform:uppercase;">Atteso:</span>
+                        <div style="font-size:0.92rem; font-weight:800; color:#38bdf8;">xFV ${d.xfv.toFixed(2)} <span style="font-size:0.72rem; color:#94a3b8; font-weight:normal;">(V ${d.pred_v.toFixed(1)})</span></div>
+                    </div>
+                </div>
+
+                ${alertsHtml}
+                ${statsRowHtml}
+                ${nextFixHtml}
+
+                <div class="hud-footer">
+                    <span>⚡ Scheda rapida tattica (Mouseover)</span>
+                    <span style="color:#38bdf8;">👆 Clicca per dossier completo</span>
+                </div>
+            `;
+
+            // Smart positioning relative to pitch board
+            const pitch = document.getElementById("pitch-board") || document.getElementById("root");
+            const pRect = pitch.getBoundingClientRect();
+            const cRect = card.getBoundingClientRect();
+
+            const cCenterX = (cRect.left + cRect.width / 2) - pRect.left;
+            const cCenterY = (cRect.top + cRect.height / 2) - pRect.top;
+
+            const hudWidth = 295;
+            const hudHeight = 235;
+
+            let leftPos, topPos;
+
+            // Horizontal position:
+            if (cCenterX > pRect.width * 0.52) {
+                leftPos = (cRect.left - pRect.left) - hudWidth - 12;
+            } else if (cCenterX < pRect.width * 0.48) {
+                leftPos = (cRect.right - pRect.left) + 12;
+            } else {
+                leftPos = cCenterX - (hudWidth / 2);
+            }
+
+            // Vertical position:
+            if (cCenterY < pRect.height * 0.32) {
+                topPos = (cRect.bottom - pRect.top) + 10;
+            } else if (cCenterY > pRect.height * 0.66) {
+                topPos = (cRect.top - pRect.top) - hudHeight - 8;
+            } else {
+                topPos = cCenterY - (hudHeight / 2);
+            }
+
+            // Clamping within pitch boundaries
+            leftPos = Math.max(10, Math.min(pRect.width - hudWidth - 10, leftPos));
+            topPos = Math.max(10, Math.min(pRect.height - hudHeight - 10, topPos));
+
+            hud.style.left = (leftPos + pRect.left) + "px";
+            hud.style.top = (topPos + pRect.top) + "px";
+            hud.classList.add("visible");
+        }
+
+        function hideHoverHud() {
+            hud.classList.remove("visible");
+        }
+
+        document.getElementById("root").addEventListener("mouseover", function(e) {
+            const card = e.target.closest(".pitch-player-card");
+            if (!card) {
+                if (currentHoveredCard) {
+                    hideHoverHud();
+                    currentHoveredCard = null;
+                }
+                return;
+            }
+            if (card === currentHoveredCard) return;
+            currentHoveredCard = card;
+            showHoverHud(card);
+        });
+
+        document.getElementById("root").addEventListener("mouseleave", function(e) {
+            hideHoverHud();
+            currentHoveredCard = null;
+        });
 
         document.getElementById("root").addEventListener("click", function(e) {
             const card = e.target.closest(".pitch-player-card");
