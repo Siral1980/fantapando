@@ -1,3 +1,4 @@
+import urllib.parse
 """
 FantaMantra AI - Applicazione di Gestione Rosa, Formazioni e Valutatore Scambi.
 Combina statistiche del fantacalcio e metriche reali dei calciatori (xG, xA, tiri, passaggi, duelli).
@@ -777,17 +778,40 @@ with tab_formazione:
                 })
             df_bench_display = pd.DataFrame(bench_rows)
 
-            # View Mode Selector
+            # Handle click on tactical pitch chip via query params
+            if 'view' in st.query_params and st.query_params['view'] == 'pitch':
+                st.session_state[f"lineup_view_mode_{current_active_team}"] = "🏟️ Lavagna Tattica"
+                del st.query_params['view']
+
+            if 'giornata' in st.query_params:
+                try:
+                    st.session_state['selected_giornata'] = int(st.query_params['giornata'])
+                except Exception:
+                    pass
+                del st.query_params['giornata']
+
+            if 'pitch_player' in st.query_params:
+                clicked_pitch_player = st.query_params['pitch_player']
+                del st.query_params['pitch_player']
+                show_player_profile_dialog(
+                    clicked_pitch_player,
+                    df_master,
+                    calendar=calendar,
+                    matchday=selected_giornata,
+                    df_roster=df_my_roster
+                )
+
+            # View Mode Selector (2 clean options: Compatta or Lavagna Tattica)
             v_col1, v_col2 = st.columns([2.6, 1.4])
             with v_col1:
                 lineup_view_mode = st.radio(
                     "Modalità Formazione:",
-                    options=["⚡ Vista Compatta Affiancata (Consigliata)", "🏟️ Lavagna Tattica", "🃏 Schede Dettagliate"],
+                    options=["⚡ Vista Compatta Affiancata (Consigliata)", "🏟️ Lavagna Tattica"],
                     horizontal=True,
                     key=f"lineup_view_mode_{current_active_team}"
                 )
             with v_col2:
-                st.caption("💡 *Clicca su un calciatore per aprire la scheda di approfondimento.*")
+                st.caption("💡 *Clicca su un calciatore (in campo o in panchina) per aprire la Scheda Dettagliata.*")
 
             # 3. Render Lineup Based on Mode
             if lineup_view_mode == "⚡ Vista Compatta Affiancata (Consigliata)":
@@ -1139,26 +1163,34 @@ with tab_formazione:
                         pred_v = float(pl.get('Pred_Voto', 6.0))
                         match_txt = f"{pl.get('Squadra', '')} {pl.get('Match', '')}"
 
+                        p_name = pl['Giocatore']
+                        p_quoted = urllib.parse.quote(p_name)
+                        chip_url = f"?pitch_player={p_quoted}&view=pitch&giornata={selected_giornata}"
+
                         chip_html = (
-                            f"<div style='position: absolute; left: {c['x']}%; top: {c['y']}%; transform: translate(-50%, -50%); "
-                            f"width: 104px; z-index: 10; background: rgba(15,23,42,0.92); border: 1.5px solid {slot_c}; "
+                            f"<a href='{chip_url}' target='_self' title='👆 Clicca per aprire la Scheda Dettagliata di {p_name}' "
+                            f"style='text-decoration: none; color: inherit; display: block; position: absolute; "
+                            f"left: {c['x']}%; top: {c['y']}%; transform: translate(-50%, -50%); "
+                            f"width: 104px; z-index: 10; cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease;'>"
+                            f"<div class='pitch-player-card' style='background: rgba(15,23,42,0.92); border: 1.5px solid {slot_c}; "
                             f"border-radius: 7px; padding: 4px 6px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.65); "
-                            f"backdrop-filter: blur(4px);'>"
+                            f"backdrop-filter: blur(4px); transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;'>"
                             f"<div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;'>"
                             f"<span style='background: {slot_c}; color: #ffffff; padding: 1px 4px; border-radius: 3px; font-size: 0.65rem; font-weight: 800;'>{slot_label}</span>"
                             f"<span style='font-size: 0.65rem; color: {fdr_c}; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 62px;'>{match_txt}</span>"
                             f"</div>"
-                            f"<div style='font-weight: 700; font-size: 0.82rem; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;' title='{pl['Giocatore']}'>"
-                            f"{pl['Giocatore']}{bal_badge}</div>"
+                            f"<div style='font-weight: 700; font-size: 0.82rem; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'>"
+                            f"{p_name}{bal_badge}</div>"
                             f"<div style='display: flex; justify-content: space-between; align-items: center; margin-top: 2px; font-size: 0.70rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 2px;'>"
                             f"<span style='color: #94a3b8;'>V {pred_v:.1f}</span>"
                             f"<span style='color: #38bdf8; font-weight: 800;'>xFV {xfv_val:.2f}</span>"
-                            f"</div></div>"
+                            f"</div></div></a>"
                         )
                         player_chips.append(chip_html)
 
                     chips_markup = "".join(player_chips)
                     pitch_raw = (
+                        f"<style>.pitch-player-card:hover { transform: scale(1.06); box-shadow: 0 6px 20px rgba(56, 189, 248, 0.5) !important; border-color: #38bdf8 !important; }</style>"
                         f"<div style='width: 100%; max-width: 680px; height: 620px; margin: 0 auto 16px auto; position: relative; "
                         f"border-radius: 14px; overflow: hidden; border: 2.5px solid rgba(255,255,255,0.4); "
                         f"box-shadow: 0 10px 30px rgba(0,0,0,0.6); "
@@ -1203,18 +1235,22 @@ with tab_formazione:
                         fdr_c = "#22c55e" if fdr <= 2 else ("#eab308" if fdr == 3 else "#ef4444")
                         pred_v = float(pl.get('Pred_Voto', 6.0))
                         xfv_val = float(pl.get('xFV', 0.0))
+                        fb_name = pl['Giocatore']
+                        fb_q = urllib.parse.quote(fb_name)
+                        fb_url = f"?pitch_player={fb_q}&view=pitch&giornata={selected_giornata}"
                         return (
-                            f"<div style='background: rgba(15,23,42,0.92); border: 1.5px solid {slot_c}; border-radius: 8px; "
-                            f"padding: 6px 8px; width: 124px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.6); flex-shrink: 0;'>"
+                            f"<a href='{fb_url}' target='_self' title='👆 Clicca per aprire la Scheda Dettagliata di {fb_name}' style='text-decoration: none; color: inherit;'>"
+                            f"<div class='pitch-player-card' style='background: rgba(15,23,42,0.92); border: 1.5px solid {slot_c}; border-radius: 8px; "
+                            f"padding: 6px 8px; width: 124px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.6); flex-shrink: 0; cursor: pointer; transition: transform 0.15s ease;'>"
                             f"<div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;'>"
                             f"<span style='background: {slot_c}; color: #ffffff; padding: 1px 5px; border-radius: 4px; font-size: 0.68rem; font-weight: 800;'>{pl['Slot_Assegnato']}</span>"
                             f"<span style='font-size: 0.68rem; color: {fdr_c}; font-weight: 700;'>{pl.get('Squadra','')} {pl.get('Match','')}</span>"
                             f"</div>"
-                            f"<div style='font-weight: 700; font-size: 0.86rem; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'>{pl['Giocatore']}</div>"
+                            f"<div style='font-weight: 700; font-size: 0.86rem; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'>{fb_name}</div>"
                             f"<div style='display: flex; justify-content: space-between; align-items: center; margin-top: 3px; font-size: 0.74rem;'>"
                             f"<span style='color: #94a3b8;'>Voto {pred_v:.1f}</span>"
                             f"<span style='color: #38bdf8; font-weight: 800;'>xFV {xfv_val:.2f}</span>"
-                            f"</div></div>"
+                            f"</div></div></a>"
                         )
                     def _render_fb_row(players):
                         if not players: return ""
@@ -1272,184 +1308,9 @@ with tab_formazione:
                                 df_roster=df_my_roster
                             )
 
-            else:
-                # Detailed Tactical Cards View (Deep Dive)
-                por_line = [t for t in titolari_list if t['Slot_Assegnato'] in ['Por', 'P']]
-                def_line = [t for t in titolari_list if t['Slot_Assegnato'] in ['Dc', 'Dd', 'Ds', 'Dc/B', 'B', 'D']]
-                mid_line = [t for t in titolari_list if t['Slot_Assegnato'] in ['E', 'E/W', 'M', 'M/C', 'C', 'C/T', 'W', 'W/T', 'T', 'T/A']]
-                att_line = [t for t in titolari_list if t['Slot_Assegnato'] in ['A/Pc', 'W/A', 'Pc', 'A', 'T/A/Pc']]
-
-                def def_title_lbl():
-                    return "🛡️ DIFESA (MODIFICATORE)" if is_classic else "🛡️ DIFESA (D-FACTOR REPARTO)"
-                def mid_title_lbl():
-                    return "⚙️ CENTROCAMPO" if is_classic else "⚙️ CENTROCAMPO & TREQUARTI"
-                for section_name, section_players in [
-                    ("🧤 PORTIERE", por_line),
-                    (def_title_lbl(), def_line),
-                    (mid_title_lbl(), mid_line),
-                    ("⚽ ATTACCO", att_line)
-                ]:
-                    if section_players:
-                        st.markdown(f"**{section_name}**")
-                        cols = st.columns(len(section_players))
-                        for idx, p in enumerate(section_players):
-                            with cols[idx]:
-                                fdr = p['FDR']
-                                fdr_class = f"badge-fdr-{fdr}"
-                                slot = p.get('Slot_Assegnato', '')
-                                
-                                pct_suff = float(p.get('Pct_Sufficienza', 0.0))
-                                df_badge = str(p.get('D_Factor_Badge', ''))
-                                mv_stag = float(p.get('MV_Stagione', 6.0))
-                                
-                                if slot in ['Por', 'P']:
-                                    save_pct = float(p.get('Pct_Parate', 70.0))
-                                    gp = float(p.get('Goals_Prevented', 0.0))
-                                    metric_html = f'<div style="font-size: 0.78rem; color: #38bdf8; margin-top: 3px;">🧤 Parate: <b>{save_pct:.0f}%</b> | Gol Evitati: <b>{gp:+.1f}</b></div>'
-                                elif any(r in slot for r in ['Dc', 'Dd', 'Ds', 'B', 'D']):
-                                    metric_html = f'<div style="font-size: 0.78rem; color: #93c5fd; margin-top: 3px;">🛡️ Suff: <b>{pct_suff:.0f}%</b> | MV: <b>{mv_stag:.2f}</b></div>'
-                                elif any(r in slot for r in ['E', 'M']):
-                                    kp = float(p.get('Key_Passes_90', 0.0))
-                                    metric_html = f'<div style="font-size: 0.78rem; color: #93c5fd; margin-top: 3px;">🛡️ Suff: <b>{pct_suff:.0f}%</b> | KP: <b>{kp:.1f}/90</b></div>'
-                                elif any(r in slot for r in ['W', 'T', 'C']):
-                                    kp = float(p.get('Key_Passes_90', 0.0))
-                                    xa = float(p.get('xA_90', 0.0))
-                                    metric_html = f'<div style="font-size: 0.78rem; color: #c4b5fd; margin-top: 3px;">🎯 KP: <b>{kp:.1f}/90</b> | xA/90: <b>{xa:.2f}</b></div>'
-                                else:
-                                    tiri = float(p.get('Tiri_90', 0.0))
-                                    xg = float(p.get('xG_90', 0.0))
-                                    metric_html = f'<div style="font-size: 0.78rem; color: #6ee7b7; margin-top: 3px;">⚽ Tiri: <b>{tiri:.1f}/90</b> | xG/90: <b>{xg:.2f}</b></div>'
-                                    
-                                bonus_html = ""
-                                exp_gf = float(p.get('Exp_GF', 0.0))
-                                exp_ass = float(p.get('Exp_ASS', 0.0))
-                                if slot in ['Por', 'P']:
-                                    bonus_imb = float(p.get('Bonus_Imbattibilita', 0.0))
-                                    exp_gs = float(p.get('Exp_GS', 0.0))
-                                    if bonus_imb > 0.05:
-                                        bonus_html += f'<span style="background: #0369a1; color: #bae6fd; padding: 1px 5px; border-radius: 3px; font-size: 0.74rem; margin-right: 4px;">🛡️ CS: +{bonus_imb:.2f}</span>'
-                                    bonus_html += f'<span style="background: #7f1d1d; color: #fecaca; padding: 1px 5px; border-radius: 3px; font-size: 0.74rem;">xGS: -{exp_gs:.2f}</span>'
-                                else:
-                                    if exp_gf >= 0.08:
-                                        bonus_html += f'<span style="background: #064e3b; color: #6ee7b7; padding: 1px 5px; border-radius: 3px; font-size: 0.74rem; margin-right: 4px;">+GF: {exp_gf:.2f}</span>'
-                                    if exp_ass >= 0.08:
-                                        bonus_html += f'<span style="background: #4c1d95; color: #c4b5fd; padding: 1px 5px; border-radius: 3px; font-size: 0.74rem;">+ASS: {exp_ass:.2f}</span>'
-
-                                p_voto_pct = int(float(p.get('P_Voto', 0.90)) * 100)
-                                tit_badge = str(p.get('Status_Titolarita', '🟢 TITOLARE'))
-                                pres_val = int(p.get('Presenze_Tot', p.get('Presenze', 0)))
-                                tot_g = int(p.get('Tot_Giornate', 0) or max(pres_val, int(selected_giornata - 1) if selected_giornata > 1 else 1))
-                                tot_g = max(tot_g, pres_val, 1)
-                                pres_txt = f"{pres_val}/{tot_g}"
-                                bal_info = str(p.get('Ballottaggio_Info', '')).strip()
-                                bal_line = f'<div style="font-size: 0.75rem; color: #fbbf24; margin-top: 2px;">⚖️ {bal_info}</div>' if bal_info else ''
-                                tit_html = f'<div style="font-size: 0.78rem; color: #94a3b8; margin-top: 2px;">{tit_badge} • <b>{p_voto_pct}%</b> ({pres_txt} pres)</div>{bal_line}'
-                                bonus_block = f'<div style="margin-top: 3px;">{bonus_html}</div>' if bonus_html else ''
-                                
-                                card_html = (
-                                    f'<div class="player-card">'
-                                    f'<div style="display: flex; justify-content: space-between; align-items: center;">'
-                                    f'<strong style="color: #00f0ff; font-size: 1.05rem; text-shadow: 0 0 10px rgba(0, 240, 255, 0.4);">[{p["Slot_Assegnato"]}] {p["Giocatore"]}</strong>'
-                                    f'<span class="{fdr_class}">FDR {fdr}</span>'
-                                    f'</div>'
-                                    f'<div style="font-size: 0.86rem; color: #f1f5f9; margin-top: 3px; font-weight: 600;">'
-                                    f'{p["Squadra"]} vs <b>{p["Match"]}</b>'
-                                    f'</div>'
-                                    f'{tit_html}'
-                                    f'{metric_html}'
-                                    f'{bonus_block}'
-                                    f'<hr style="margin: 6px 0; border: none; border-top: 1.5px solid #132d4e;">'
-                                    f'<div style="display: flex; justify-content: space-between; font-size: 0.90rem; color: #f8fafc;">'
-                                    f'<span>Voto: <b>{p["Pred_Voto"]}</b></span>'
-                                    f'<span style="color: #00f0ff; font-weight: 900; font-size: 1.12rem; text-shadow: 0 0 12px rgba(0, 240, 255, 0.6);">xFV: {p["xFV"]}</span>'
-                                    f'</div>'
-                                    f'</div>'
-                                )
-                                st.markdown(card_html, unsafe_allow_html=True)
-
-                st.markdown("---")
-                st.markdown("**🟡 Panchina Consigliata (Ordine 1-12)**")
-                st.dataframe(df_bench_display, hide_index=True, width='stretch')
-
-            st.markdown("---")
-            st.caption("🔬 **Approfondimenti & Strumenti Avanzati di Giornata** *(clicca per espandere)*:")
-
-            # 1. Tactical Rationale Expander (Collapsed by Default)
-            with st.expander("🔍 Perché l'AI ha scelto questi 11 titolari? (Analisi Dati Reali & Ballottaggi)", expanded=False):
-                st.markdown("""
-                L'algoritmo seleziona la formazione valutando le **metriche reali specifiche per ciascun ruolo**
-                e confrontando la resa attesa contro l'avversario di giornata:
-                """)
-                analysis_rows = []
-                for t in titolari_list:
-                    slot_n = t['Slot_Assegnato']
-                    tiri_v = float(t.get('Tiri_90', 0.0))
-                    xg_v = float(t.get('xG_90', 0.0))
-                    kp_v = float(t.get('Key_Passes_90', 0.0))
-                    xa_v = float(t.get('xA_90', 0.0))
-                    exp_gf_v = float(t.get('Exp_GF', 0.0))
-                    exp_ass_v = float(t.get('Exp_ASS', 0.0))
-                    suff_v = float(t.get('Pct_Sufficienza', 0.0))
-                    mv_v = float(t.get('MV_Stagione', 6.0))
-                    
-                    if slot_n in ['Por', 'P']:
-                        cs_p = int(t.get('Clean_Sheet_Prob', 0)*100)
-                        imb_b = float(t.get('Bonus_Imbattibilita', 0.0))
-                        parate_p = float(t.get('Pct_Parate', 70.0))
-                        def_xga = float(t.get('Team_xGA', 1.40))
-                        exp_gs = float(t.get('Exp_GS', 1.0))
-                        gp = float(t.get('Goals_Prevented', 0.0))
-                        gp90 = float(t.get('Goals_Prevented_90', 0.0))
-                        blunders = int(t.get('Errors_Leading_To_Goal', 0))
-                        blunder_txt = f"{blunders} blunders" if blunders > 0 else "0 errori decisivi"
-                        metrica_chiave = f"🧤 Goals Prevented: {gp:+.2f} ({gp90:+.2f}/90) | Parate: {parate_p:.1f}% | {blunder_txt}"
-                        impatto_bonus = f"Imbattibilità: +{imb_b:.2f} pt (xGS: -{exp_gs:.2f}) | CS: {cs_p}%"
-                        motivo = f"Shot-stopping ({gp:+.2f} gol evitati vs PSxG, {parate_p:.1f}% parate) e tenuta difensiva ({def_xga:.2f} xGA contro {t['Match']})."
-                    elif any(r in slot_n for r in ['Dc', 'Dd', 'Ds', 'B', 'D']):
-                        metrica_chiave = f"🛡️ Sufficienza: {suff_v:.1f}% (>=6) | MV: {mv_v:.2f}"
-                        impatto_bonus = f"{'Modificatore Difesa' if is_classic else 'D-Factor Reparto'} (Voto atteso: {t['Pred_Voto']})"
-                        motivo = f"Pilastro difensivo: garantisce costanza di voto ({suff_v:.1f}% >= 6)."
-                    elif any(r in slot_n for r in ['E', 'M']):
-                        metrica_chiave = f"🛡️ Suff: {suff_v:.1f}% | KP: {kp_v:.1f}/90 | xA: {xa_v:.2f}"
-                        impatto_bonus = f"+ASS: {exp_ass_v:.2f} | Filtro reparto"
-                        motivo = f"Equilibrio difensivo ({suff_v:.1f}% sufficienze) con spinta in costruzione ({kp_v:.1f} passaggi chiave/90)."
-                    elif any(r in slot_n for r in ['W', 'T', 'C']):
-                        metrica_chiave = f"🎯 KP: {kp_v:.1f}/90 | xA: {xa_v:.2f} | MV: {mv_v:.2f}"
-                        impatto_bonus = f"+ASS: {exp_ass_v:.2f} | +GF: {exp_gf_v:.2f}"
-                        motivo = f"Generatore di bonus: produce {kp_v:.1f} occasioni e {xa_v:.2f} assist attesi/90 contro {t['Match']}."
-                    else:
-                        metrica_chiave = f"⚽ Tiri: {tiri_v:.1f}/90 | xG: {xg_v:.2f} | MV: {mv_v:.2f}"
-                        impatto_bonus = f"+GF: {exp_gf_v:.2f} (Bonus +3 atteso)"
-                        motivo = f"Finalizzatore primario: alto volume offensivo ({tiri_v:.1f} tiri e {xg_v:.2f} xG/90)."
-
-                    p_voto_val = int(float(t.get('P_Voto', 0.90)) * 100)
-                    stat_tit = t.get('Status_Titolarita', '🟢 TITOLARE')
-                    mins_avg = int(t.get('Min_Per_App', 0))
-                    bal_t = t.get('Ballottaggio_Info', '')
-                    pres_tot = int(t.get('Presenze_Tot', t.get('Presenze', 0)))
-                    tot_g = int(t.get('Tot_Giornate', 0) or max(pres_tot, int(selected_giornata - 1) if selected_giornata > 1 else 1))
-                    tot_g = max(tot_g, pres_tot, 1)
-                    tit_display = f"{stat_tit} | P(Voto): {p_voto_val}% ({pres_tot}/{tot_g} • {mins_avg}'/g)"
-                    if bal_t:
-                        tit_display += f" • ⚖️ {bal_t}"
-
-                    analysis_rows.append({
-                        'Slot': slot_n,
-                        'Calciatore': t['Giocatore'],
-                        'Squadra': t['Squadra'],
-                        'Avversario (FDR)': f"{t['Match']} (FDR {t['FDR']})",
-                        'Titolarità P(Voto)': tit_display,
-                        'Metrica Chiave': metrica_chiave,
-                        'Bonus Atteso': impatto_bonus,
-                        'Voto Atteso': t['Pred_Voto'],
-                        'xFV': t['xFV'],
-                        'Razionale Tattico': motivo
-                    })
-                st.dataframe(pd.DataFrame(analysis_rows), width='stretch', hide_index=True)
-
-                if 'Panchina' in opt_res and opt_res['Panchina']:
-                    st.markdown("---")
-                    st.markdown("##### ⚖️ Ballottaggi Chiave Decisi dall'Algoritmo (Chi è rimasto fuori e perché)")
+            # Ballottaggi Chiave Decisi dall'Algoritmo (Disponibile come expander pulito)
+            if 'Panchina' in opt_res and opt_res['Panchina']:
+                with st.expander("⚖️ Ballottaggi Chiave Decisi dall'Algoritmo (Chi è rimasto fuori e perché)", expanded=False):
                     ballottaggi = []
                     por_tit = [t for t in titolari_list if t['Slot_Assegnato'] in ['Por', 'P']]
                     por_bench = [b for b in opt_res['Panchina'] if ('Por' in b.get('RuoloMantra', '')) or (b.get('RuoloClassic') == 'P')]
