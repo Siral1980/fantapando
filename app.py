@@ -862,139 +862,378 @@ with tab_formazione:
                                 )
 
             elif lineup_view_mode == "🏟️ Lavagna Tattica":
-                # Categorize into 5 tactical lines
-                por_line = []
-                def_line = []
-                mid_line = []
-                trq_line = []
-                att_line = []
+                # Official Mantra Experience 2026/2027 Coordinate Layouts (x% from left, y% from top)
+                MANTRA_OFFICIAL_COORDS = {
+                    '3-4-3': [
+                        {'slot': 'Por', 'x': 50, 'y': 6},
+                        {'slot': 'Dc', 'x': 32, 'y': 18},
+                        {'slot': 'Dc', 'x': 50, 'y': 18},
+                        {'slot': 'Dc/B', 'x': 68, 'y': 18},
+                        {'slot': 'E', 'x': 14, 'y': 36},
+                        {'slot': 'M/C', 'x': 38, 'y': 38},
+                        {'slot': 'C', 'x': 62, 'y': 38},
+                        {'slot': 'E', 'x': 86, 'y': 36},
+                        {'slot': 'W/A', 'x': 22, 'y': 65},
+                        {'slot': 'W/A', 'x': 78, 'y': 65},
+                        {'slot': 'A/Pc', 'x': 50, 'y': 86}
+                    ],
+                    '3-4-1-2': [
+                        {'slot': 'Por', 'x': 50, 'y': 6},
+                        {'slot': 'Dc', 'x': 32, 'y': 18},
+                        {'slot': 'Dc', 'x': 50, 'y': 18},
+                        {'slot': 'Dc/B', 'x': 68, 'y': 18},
+                        {'slot': 'E', 'x': 14, 'y': 36},
+                        {'slot': 'M/C', 'x': 38, 'y': 38},
+                        {'slot': 'C', 'x': 62, 'y': 38},
+                        {'slot': 'E', 'x': 86, 'y': 36},
+                        {'slot': 'T', 'x': 50, 'y': 62},
+                        {'slot': 'A/Pc', 'x': 35, 'y': 86},
+                        {'slot': 'A/Pc', 'x': 65, 'y': 86}
+                    ],
+                    '3-4-2-1': [
+                        {'slot': 'Por', 'x': 50, 'y': 6},
+                        {'slot': 'Dc', 'x': 32, 'y': 18},
+                        {'slot': 'Dc', 'x': 50, 'y': 18},
+                        {'slot': 'Dc/B', 'x': 68, 'y': 18},
+                        {'slot': 'M', 'x': 36, 'y': 34},
+                        {'slot': 'M/C', 'x': 64, 'y': 34},
+                        {'slot': 'E/W', 'x': 14, 'y': 46},
+                        {'slot': 'E', 'x': 86, 'y': 36},
+                        {'slot': 'T', 'x': 34, 'y': 64},
+                        {'slot': 'T/A', 'x': 66, 'y': 64},
+                        {'slot': 'A/Pc', 'x': 50, 'y': 86}
+                    ],
+                    '3-5-2': [
+                        {'slot': 'Por', 'x': 50, 'y': 6},
+                        {'slot': 'Dc', 'x': 32, 'y': 18},
+                        {'slot': 'Dc', 'x': 50, 'y': 18},
+                        {'slot': 'Dc/B', 'x': 68, 'y': 18},
+                        {'slot': 'M', 'x': 50, 'y': 30},
+                        {'slot': 'E/W', 'x': 14, 'y': 46},
+                        {'slot': 'M/C', 'x': 34, 'y': 43},
+                        {'slot': 'C', 'x': 66, 'y': 43},
+                        {'slot': 'E', 'x': 86, 'y': 36},
+                        {'slot': 'A/Pc', 'x': 35, 'y': 86},
+                        {'slot': 'A/Pc', 'x': 65, 'y': 86}
+                    ],
+                    '3-5-1-1': [
+                        {'slot': 'Por', 'x': 50, 'y': 6},
+                        {'slot': 'Dc', 'x': 32, 'y': 18},
+                        {'slot': 'Dc', 'x': 50, 'y': 18},
+                        {'slot': 'Dc/B', 'x': 68, 'y': 18},
+                        {'slot': 'M', 'x': 36, 'y': 33},
+                        {'slot': 'M', 'x': 64, 'y': 33},
+                        {'slot': 'C', 'x': 50, 'y': 45},
+                        {'slot': 'E/W', 'x': 14, 'y': 46},
+                        {'slot': 'E/W', 'x': 86, 'y': 46},
+                        {'slot': 'T/A', 'x': 50, 'y': 65},
+                        {'slot': 'A/Pc', 'x': 50, 'y': 86}
+                    ],
+                    '4-3-3': [
+                        {'slot': 'Por', 'x': 50, 'y': 6},
+                        {'slot': 'Dd', 'x': 16, 'y': 18},
+                        {'slot': 'Dc', 'x': 38, 'y': 18},
+                        {'slot': 'Dc', 'x': 62, 'y': 18},
+                        {'slot': 'Ds', 'x': 84, 'y': 18},
+                        {'slot': 'M/C', 'x': 22, 'y': 40},
+                        {'slot': 'M', 'x': 50, 'y': 40},
+                        {'slot': 'C', 'x': 78, 'y': 40},
+                        {'slot': 'W/A', 'x': 22, 'y': 65},
+                        {'slot': 'W/A', 'x': 78, 'y': 65},
+                        {'slot': 'A/Pc', 'x': 50, 'y': 86}
+                    ],
+                    '4-3-1-2': [
+                        {'slot': 'Por', 'x': 50, 'y': 6},
+                        {'slot': 'Dd', 'x': 16, 'y': 18},
+                        {'slot': 'Dc', 'x': 38, 'y': 18},
+                        {'slot': 'Dc', 'x': 62, 'y': 18},
+                        {'slot': 'Ds', 'x': 84, 'y': 18},
+                        {'slot': 'M/C', 'x': 22, 'y': 40},
+                        {'slot': 'M', 'x': 50, 'y': 40},
+                        {'slot': 'C', 'x': 78, 'y': 40},
+                        {'slot': 'T', 'x': 50, 'y': 62},
+                        {'slot': 'T/A/Pc', 'x': 35, 'y': 86},
+                        {'slot': 'A/Pc', 'x': 65, 'y': 86}
+                    ],
+                    '4-4-2': [
+                        {'slot': 'Por', 'x': 50, 'y': 6},
+                        {'slot': 'Dd', 'x': 16, 'y': 18},
+                        {'slot': 'Dc', 'x': 38, 'y': 18},
+                        {'slot': 'Dc', 'x': 62, 'y': 18},
+                        {'slot': 'Ds', 'x': 84, 'y': 18},
+                        {'slot': 'E/W', 'x': 14, 'y': 46},
+                        {'slot': 'M/C', 'x': 38, 'y': 36},
+                        {'slot': 'M/C', 'x': 62, 'y': 36},
+                        {'slot': 'E', 'x': 86, 'y': 36},
+                        {'slot': 'A/Pc', 'x': 35, 'y': 86},
+                        {'slot': 'A/Pc', 'x': 65, 'y': 86}
+                    ],
+                    '4-1-4-1': [
+                        {'slot': 'Por', 'x': 50, 'y': 6},
+                        {'slot': 'Dd', 'x': 16, 'y': 18},
+                        {'slot': 'Dc', 'x': 38, 'y': 18},
+                        {'slot': 'Dc', 'x': 62, 'y': 18},
+                        {'slot': 'Ds', 'x': 84, 'y': 18},
+                        {'slot': 'M', 'x': 50, 'y': 31},
+                        {'slot': 'C/T', 'x': 36, 'y': 46},
+                        {'slot': 'T', 'x': 64, 'y': 46},
+                        {'slot': 'E/W', 'x': 14, 'y': 58},
+                        {'slot': 'W', 'x': 86, 'y': 58},
+                        {'slot': 'A/Pc', 'x': 50, 'y': 86}
+                    ],
+                    '4-4-1-1': [
+                        {'slot': 'Por', 'x': 50, 'y': 6},
+                        {'slot': 'Dd', 'x': 16, 'y': 18},
+                        {'slot': 'Dc', 'x': 38, 'y': 18},
+                        {'slot': 'Dc', 'x': 62, 'y': 18},
+                        {'slot': 'Ds', 'x': 84, 'y': 18},
+                        {'slot': 'M', 'x': 36, 'y': 35},
+                        {'slot': 'C', 'x': 64, 'y': 35},
+                        {'slot': 'E/W', 'x': 14, 'y': 46},
+                        {'slot': 'E/W', 'x': 86, 'y': 46},
+                        {'slot': 'T/A', 'x': 50, 'y': 65},
+                        {'slot': 'A/Pc', 'x': 50, 'y': 86}
+                    ],
+                    '4-2-3-1': [
+                        {'slot': 'Por', 'x': 50, 'y': 6},
+                        {'slot': 'Dd', 'x': 16, 'y': 18},
+                        {'slot': 'Dc', 'x': 38, 'y': 18},
+                        {'slot': 'Dc', 'x': 62, 'y': 18},
+                        {'slot': 'Ds', 'x': 84, 'y': 18},
+                        {'slot': 'M', 'x': 36, 'y': 35},
+                        {'slot': 'M/C', 'x': 64, 'y': 35},
+                        {'slot': 'W/T', 'x': 20, 'y': 60},
+                        {'slot': 'T', 'x': 50, 'y': 60},
+                        {'slot': 'W/A', 'x': 80, 'y': 60},
+                        {'slot': 'A/Pc', 'x': 50, 'y': 86}
+                    ]
+                }
 
-                for t in titolari_list:
-                    slot = t['Slot_Assegnato']
-                    if slot in ['Por', 'P']:
-                        por_line.append(t)
-                    elif any(r in slot for r in ['Dc', 'Dd', 'Ds', 'B', 'D']):
-                        def_line.append(t)
-                    elif any(r in slot for r in ['W', 'T']):
-                        trq_line.append(t)
-                    elif any(r in slot for r in ['E', 'M', 'C']):
-                        mid_line.append(t)
-                    elif any(r in slot for r in ['A', 'Pc']):
-                        att_line.append(t)
-                    else:
-                        mid_line.append(t)
+                CLASSIC_OFFICIAL_COORDS = {
+                    '3-4-3': [
+                        {'slot': 'P', 'x': 50, 'y': 6},
+                        {'slot': 'D', 'x': 30, 'y': 18}, {'slot': 'D', 'x': 50, 'y': 18}, {'slot': 'D', 'x': 70, 'y': 18},
+                        {'slot': 'C', 'x': 16, 'y': 44}, {'slot': 'C', 'x': 38, 'y': 44}, {'slot': 'C', 'x': 62, 'y': 44}, {'slot': 'C', 'x': 84, 'y': 44},
+                        {'slot': 'A', 'x': 25, 'y': 78}, {'slot': 'A', 'x': 50, 'y': 86}, {'slot': 'A', 'x': 75, 'y': 78}
+                    ],
+                    '3-5-2': [
+                        {'slot': 'P', 'x': 50, 'y': 6},
+                        {'slot': 'D', 'x': 30, 'y': 18}, {'slot': 'D', 'x': 50, 'y': 18}, {'slot': 'D', 'x': 70, 'y': 18},
+                        {'slot': 'C', 'x': 14, 'y': 44}, {'slot': 'C', 'x': 32, 'y': 44}, {'slot': 'C', 'x': 50, 'y': 44}, {'slot': 'C', 'x': 68, 'y': 44}, {'slot': 'C', 'x': 86, 'y': 44},
+                        {'slot': 'A', 'x': 35, 'y': 86}, {'slot': 'A', 'x': 65, 'y': 86}
+                    ],
+                    '4-3-3': [
+                        {'slot': 'P', 'x': 50, 'y': 6},
+                        {'slot': 'D', 'x': 16, 'y': 18}, {'slot': 'D', 'x': 38, 'y': 18}, {'slot': 'D', 'x': 62, 'y': 18}, {'slot': 'D', 'x': 84, 'y': 18},
+                        {'slot': 'C', 'x': 24, 'y': 44}, {'slot': 'C', 'x': 50, 'y': 44}, {'slot': 'C', 'x': 76, 'y': 44},
+                        {'slot': 'A', 'x': 22, 'y': 76}, {'slot': 'A', 'x': 50, 'y': 86}, {'slot': 'A', 'x': 78, 'y': 76}
+                    ],
+                    '4-4-2': [
+                        {'slot': 'P', 'x': 50, 'y': 6},
+                        {'slot': 'D', 'x': 16, 'y': 18}, {'slot': 'D', 'x': 38, 'y': 18}, {'slot': 'D', 'x': 62, 'y': 18}, {'slot': 'D', 'x': 84, 'y': 18},
+                        {'slot': 'C', 'x': 16, 'y': 44}, {'slot': 'C', 'x': 38, 'y': 44}, {'slot': 'C', 'x': 62, 'y': 44}, {'slot': 'C', 'x': 84, 'y': 44},
+                        {'slot': 'A', 'x': 35, 'y': 86}, {'slot': 'A', 'x': 65, 'y': 86}
+                    ],
+                    '4-5-1': [
+                        {'slot': 'P', 'x': 50, 'y': 6},
+                        {'slot': 'D', 'x': 16, 'y': 18}, {'slot': 'D', 'x': 38, 'y': 18}, {'slot': 'D', 'x': 62, 'y': 18}, {'slot': 'D', 'x': 84, 'y': 18},
+                        {'slot': 'C', 'x': 14, 'y': 44}, {'slot': 'C', 'x': 32, 'y': 44}, {'slot': 'C', 'x': 50, 'y': 44}, {'slot': 'C', 'x': 68, 'y': 44}, {'slot': 'C', 'x': 86, 'y': 44},
+                        {'slot': 'A', 'x': 50, 'y': 86}
+                    ],
+                    '5-3-2': [
+                        {'slot': 'P', 'x': 50, 'y': 6},
+                        {'slot': 'D', 'x': 12, 'y': 18}, {'slot': 'D', 'x': 31, 'y': 18}, {'slot': 'D', 'x': 50, 'y': 18}, {'slot': 'D', 'x': 69, 'y': 18}, {'slot': 'D', 'x': 88, 'y': 18},
+                        {'slot': 'C', 'x': 25, 'y': 44}, {'slot': 'C', 'x': 50, 'y': 44}, {'slot': 'C', 'x': 75, 'y': 44},
+                        {'slot': 'A', 'x': 35, 'y': 86}, {'slot': 'A', 'x': 65, 'y': 86}
+                    ],
+                    '5-4-1': [
+                        {'slot': 'P', 'x': 50, 'y': 6},
+                        {'slot': 'D', 'x': 12, 'y': 18}, {'slot': 'D', 'x': 31, 'y': 18}, {'slot': 'D', 'x': 50, 'y': 18}, {'slot': 'D', 'x': 69, 'y': 18}, {'slot': 'D', 'x': 88, 'y': 18},
+                        {'slot': 'C', 'x': 16, 'y': 44}, {'slot': 'C', 'x': 38, 'y': 44}, {'slot': 'C', 'x': 62, 'y': 44}, {'slot': 'C', 'x': 84, 'y': 44},
+                        {'slot': 'A', 'x': 50, 'y': 86}
+                    ]
+                }
 
-                # Sort defense horizontally (Ds on left, Dc/B center, Dd right)
-                def _def_sort_key(p):
-                    s = p['Slot_Assegnato']
-                    if 'Ds' in s:
-                        return 0
-                    if 'B' in s or 'Dc' in s:
-                        return 1
-                    if 'Dd' in s:
-                        return 2
-                    return 1
-                def_line = sorted(def_line, key=_def_sort_key)
+                def _get_official_slot_color(slot):
+                    s = str(slot).upper()
+                    if 'P' in s and 'PC' not in s:
+                        return '#f97316'   # Por: Arancio
+                    elif any(x in s for x in ['PC', 'A']) and 'W' not in s and 'T' not in s:
+                        return '#dc2626'   # Attacco: Rosso rubino
+                    elif any(x in s for x in ['W', 'T']):
+                        return '#d946ef' if 'T' in s else '#9333ea'  # T/W: Magenta / Viola
+                    elif 'E/W' in s:
+                        return '#7c3aed'   # E/W: Viola-blu
+                    elif 'E' in s:
+                        return '#0284c7'   # E: Ciano / Azzurro
+                    elif any(x in s for x in ['M', 'C']):
+                        return '#2563eb'   # M/C: Blu reale
+                    elif any(x in s for x in ['D', 'DC', 'DD', 'DS', 'B']):
+                        return '#65a30d'   # Difesa: Verde prato / lime
+                    return '#64748b'
 
-                # Sort midfield horizontally (left E -> central M/C -> right E)
-                if len([p for p in mid_line if 'E' in p['Slot_Assegnato']]) == 2:
-                    e_list = [p for p in mid_line if 'E' in p['Slot_Assegnato']]
-                    c_list = [p for p in mid_line if 'E' not in p['Slot_Assegnato']]
-                    mid_line = [e_list[0]] + c_list + [e_list[1]]
-
-                # Sort trq/att (W on wings, T in center; A on wings, Pc in center)
-                def _att_sort_key(p):
-                    s = p['Slot_Assegnato']
-                    if 'W' in s or 'A' in s:
-                        return 0
-                    if 'Pc' in s:
-                        return 1
-                    return 0
-                att_line = sorted(att_line, key=_att_sort_key)
-
-                def _render_pitch_chip(pl):
-                    slot = pl['Slot_Assegnato']
-                    if any(x in slot for x in ['A', 'Pc']):
-                        slot_c = "#ef4444"
-                    elif any(x in slot for x in ['W', 'T']):
-                        slot_c = "#a855f7"
-                    elif any(x in slot for x in ['M', 'C']):
-                        slot_c = "#3b82f6"
-                    elif any(x in slot for x in ['E']):
-                        slot_c = "#06b6d4"
-                    elif any(x in slot for x in ['D', 'Dc', 'Dd', 'Ds', 'B']):
-                        slot_c = "#10b981"
-                    else:
-                        slot_c = "#f59e0b"
-
-                    fdr = int(pl.get('FDR', 3))
-                    fdr_c = "#22c55e" if fdr <= 2 else ("#eab308" if fdr == 3 else "#ef4444")
+                def _map_players_to_pitch_slots(players, mod, is_classic_mode):
+                    coords_dict = CLASSIC_OFFICIAL_COORDS if is_classic_mode else MANTRA_OFFICIAL_COORDS
+                    coords = coords_dict.get(mod)
+                    if not coords:
+                        return None
+                    unassigned_coords = list(enumerate(coords))
+                    assigned = [None] * len(coords)
+                    unassigned_players = list(players)
                     
-                    p_voto = float(pl.get('P_Voto', 0.90))
-                    p_voto_pct = int(p_voto * 100)
-                    bal_badge = ""
-                    if p_voto < 0.70 or str(pl.get('Ballottaggio_Info', '')).strip():
-                        bal_badge = f"<span style='color: #f59e0b; font-size: 0.68rem; margin-left: 2px;' title='Ballottaggio ({p_voto_pct}%)'>⚖️</span>"
+                    # Pass 1: Exact match on assigned slot
+                    for p in list(unassigned_players):
+                        slot = str(p.get('Slot_Assegnato', '')).strip().upper()
+                        for idx, (c_idx, c) in enumerate(unassigned_coords):
+                            if c['slot'].upper() == slot:
+                                assigned[c_idx] = p
+                                unassigned_coords.pop(idx)
+                                unassigned_players.remove(p)
+                                break
+                                
+                    # Pass 2: Compatible match (e.g. Dc for Dc/B, or E for E/W)
+                    for p in list(unassigned_players):
+                        slot = str(p.get('Slot_Assegnato', '')).strip().upper()
+                        for idx, (c_idx, c) in enumerate(unassigned_coords):
+                            c_slot = c['slot'].upper()
+                            if slot in c_slot or c_slot in slot or any(r in c_slot for r in slot.split('/')):
+                                assigned[c_idx] = p
+                                unassigned_coords.pop(idx)
+                                unassigned_players.remove(p)
+                                break
 
-                    xfv_val = float(pl.get('xFV', 0.0))
-                    pred_v = float(pl.get('Pred_Voto', 6.0))
-                    match_txt = f"{pl.get('Squadra', '')} {pl.get('Match', '')}"
+                    # Pass 3: Fill any remaining
+                    for p in list(unassigned_players):
+                        if unassigned_coords:
+                            c_idx, c = unassigned_coords.pop(0)
+                            assigned[c_idx] = p
+                            
+                    return list(zip(coords, assigned))
 
-                    return (
-                        f"<div style='background: rgba(15,23,42,0.92); border: 1.5px solid {slot_c}; border-radius: 8px; "
-                        f"padding: 6px 8px; width: 124px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.6); flex-shrink: 0;'>"
-                        f"<div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;'>"
-                        f"<span style='background: {slot_c}; color: #ffffff; padding: 1px 5px; border-radius: 4px; font-size: 0.68rem; font-weight: 800;'>{slot}</span>"
-                        f"<span style='font-size: 0.68rem; color: {fdr_c}; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 75px;'>{match_txt}</span>"
-                        f"</div>"
-                        f"<div style='font-weight: 700; font-size: 0.86rem; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;' title='{pl['Giocatore']}'>"
-                        f"{pl['Giocatore']}{bal_badge}</div>"
-                        f"<div style='display: flex; justify-content: space-between; align-items: center; margin-top: 3px; font-size: 0.74rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 2px;'>"
-                        f"<span style='color: #94a3b8;'>Voto {pred_v:.1f}</span>"
-                        f"<span style='color: #38bdf8; font-weight: 800;'>xFV {xfv_val:.2f}</span>"
-                        f"</div></div>"
-                    )
-
-                def _render_pitch_row(players):
-                    if not players:
-                        return ""
-                    chips = "".join(_render_pitch_chip(p) for p in players)
-                    return f"<div style='display: flex; justify-content: center; gap: 10px; width: 100%; margin: 3px 0;'>{chips}</div>"
-
-                rows_html = []
-                if att_line:
-                    rows_html.append(_render_pitch_row(att_line))
-                if trq_line:
-                    rows_html.append(_render_pitch_row(trq_line))
-                if mid_line:
-                    rows_html.append(_render_pitch_row(mid_line))
-                if def_line:
-                    rows_html.append(_render_pitch_row(def_line))
-                if por_line:
-                    rows_html.append(_render_pitch_row(por_line))
-
-                all_rows = "".join(rows_html)
+                cur_modulo = opt_res['Modulo']
+                mapped_pitch_slots = _map_players_to_pitch_slots(titolari_list, cur_modulo, is_classic)
 
                 st.markdown(
                     f"<div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;'>"
-                    f"<span style='font-weight: 800; font-size: 1.05rem; color: #f8fafc;'>⚽ 11 Titolari in Campo ({opt_res['Modulo']})</span>"
+                    f"<span style='font-weight: 800; font-size: 1.05rem; color: #f8fafc;'>🏟️ Lavagna Tattica Ufficiale ({cur_modulo})</span>"
                     f"<span style='color: #38bdf8; font-weight: 700; font-size: 0.90rem;'>Punti Attesi Totali: {opt_res['Punti_Attesi_Totali']:.2f} pt</span>"
                     f"</div>",
                     unsafe_allow_html=True
                 )
 
-                pitch_raw = (
-                    f"<div style='background: repeating-linear-gradient(180deg, #153e24 0px, #153e24 55px, #10331d 55px, #10331d 110px); "
-                    f"border: 2px solid rgba(255, 255, 255, 0.4); border-radius: 12px; padding: 18px 10px; margin-bottom: 16px; "
-                    f"position: relative; overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,0.45);'>"
-                    f"<div style='position: absolute; top: 50%; left: 0; right: 0; height: 1.5px; background: rgba(255,255,255,0.22); pointer-events: none;'></div>"
-                    f"<div style='position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 84px; height: 84px; border: 1.5px solid rgba(255,255,255,0.22); border-radius: 50%; pointer-events: none;'></div>"
-                    f"<div style='position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 5px; height: 5px; background: rgba(255,255,255,0.4); border-radius: 50%; pointer-events: none;'></div>"
-                    f"<div style='position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 220px; height: 65px; border-top: 1.5px solid rgba(255,255,255,0.22); border-left: 1.5px solid rgba(255,255,255,0.22); border-right: 1.5px solid rgba(255,255,255,0.22); border-radius: 4px 4px 0 0; pointer-events: none;'></div>"
-                    f"<div style='position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 220px; height: 65px; border-bottom: 1.5px solid rgba(255,255,255,0.22); border-left: 1.5px solid rgba(255,255,255,0.22); border-right: 1.5px solid rgba(255,255,255,0.22); border-radius: 0 0 4px 4px; pointer-events: none;'></div>"
-                    f"<div style='position: relative; z-index: 2; display: flex; flex-direction: column; justify-content: space-between; gap: 14px; min-height: 480px;'>"
-                    f"{all_rows}</div></div>"
-                )
+                if mapped_pitch_slots:
+                    player_chips = []
+                    for c, pl in mapped_pitch_slots:
+                        if not pl:
+                            continue
+                        slot_label = c['slot']
+                        slot_c = _get_official_slot_color(slot_label)
+                        fdr = int(pl.get('FDR', 3))
+                        fdr_c = "#22c55e" if fdr <= 2 else ("#eab308" if fdr == 3 else "#ef4444")
+                        p_voto = float(pl.get('P_Voto', 0.90))
+                        p_voto_pct = int(p_voto * 100)
+                        bal_badge = ""
+                        if p_voto < 0.70 or str(pl.get('Ballottaggio_Info', '')).strip():
+                            bal_badge = f"<span style='color: #f59e0b; font-size: 0.65rem; margin-left: 2px;' title='Ballottaggio ({p_voto_pct}%)'>⚖️</span>"
+                        xfv_val = float(pl.get('xFV', 0.0))
+                        pred_v = float(pl.get('Pred_Voto', 6.0))
+                        match_txt = f"{pl.get('Squadra', '')} {pl.get('Match', '')}"
+
+                        chip_html = (
+                            f"<div style='position: absolute; left: {c['x']}%; top: {c['y']}%; transform: translate(-50%, -50%); "
+                            f"width: 104px; z-index: 10; background: rgba(15,23,42,0.92); border: 1.5px solid {slot_c}; "
+                            f"border-radius: 7px; padding: 4px 6px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.65); "
+                            f"backdrop-filter: blur(4px);'>"
+                            f"<div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;'>"
+                            f"<span style='background: {slot_c}; color: #ffffff; padding: 1px 4px; border-radius: 3px; font-size: 0.65rem; font-weight: 800;'>{slot_label}</span>"
+                            f"<span style='font-size: 0.65rem; color: {fdr_c}; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 62px;'>{match_txt}</span>"
+                            f"</div>"
+                            f"<div style='font-weight: 700; font-size: 0.82rem; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;' title='{pl['Giocatore']}'>"
+                            f"{pl['Giocatore']}{bal_badge}</div>"
+                            f"<div style='display: flex; justify-content: space-between; align-items: center; margin-top: 2px; font-size: 0.70rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 2px;'>"
+                            f"<span style='color: #94a3b8;'>V {pred_v:.1f}</span>"
+                            f"<span style='color: #38bdf8; font-weight: 800;'>xFV {xfv_val:.2f}</span>"
+                            f"</div></div>"
+                        )
+                        player_chips.append(chip_html)
+
+                    chips_markup = "".join(player_chips)
+                    pitch_raw = (
+                        f"<div style='width: 100%; max-width: 680px; height: 620px; margin: 0 auto 16px auto; position: relative; "
+                        f"border-radius: 14px; overflow: hidden; border: 2.5px solid rgba(255,255,255,0.4); "
+                        f"box-shadow: 0 10px 30px rgba(0,0,0,0.6); "
+                        f"background: radial-gradient(circle at 50% 50%, "
+                        f"#2e7d32 0%, #2e7d32 12%, "
+                        f"#256d2b 12%, #256d2b 24%, "
+                        f"#2e7d32 24%, #2e7d32 36%, "
+                        f"#256d2b 36%, #256d2b 48%, "
+                        f"#2e7d32 48%, #2e7d32 60%, "
+                        f"#256d2b 60%, #256d2b 72%, "
+                        f"#2e7d32 72%, #2e7d32 84%, "
+                        f"#256d2b 84%, #256d2b 100%);'>"
+                        # Outer boundary
+                        f"<div style='position: absolute; top: 12px; bottom: 12px; left: 12px; right: 12px; border: 1.5px solid rgba(255,255,255,0.4); pointer-events: none;'></div>"
+                        # Halfway line
+                        f"<div style='position: absolute; top: 50%; left: 12px; right: 12px; height: 1.5px; background: rgba(255,255,255,0.35); pointer-events: none;'></div>"
+                        # Center circle
+                        f"<div style='position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 100px; height: 100px; border: 1.5px solid rgba(255,255,255,0.35); border-radius: 50%; pointer-events: none;'></div>"
+                        # Center dot
+                        f"<div style='position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 6px; height: 6px; background: rgba(255,255,255,0.6); border-radius: 50%; pointer-events: none;'></div>"
+                        # TOP PENALTY AREA (Goalkeeper)
+                        f"<div style='position: absolute; top: 12px; left: 50%; transform: translateX(-50%); width: 220px; height: 85px; border-bottom: 1.5px solid rgba(255,255,255,0.35); border-left: 1.5px solid rgba(255,255,255,0.35); border-right: 1.5px solid rgba(255,255,255,0.35); pointer-events: none;'></div>"
+                        f"<div style='position: absolute; top: 12px; left: 50%; transform: translateX(-50%); width: 100px; height: 35px; border-bottom: 1.5px solid rgba(255,255,255,0.35); border-left: 1.5px solid rgba(255,255,255,0.35); border-right: 1.5px solid rgba(255,255,255,0.35); pointer-events: none;'></div>"
+                        f"<div style='position: absolute; top: 97px; left: 50%; transform: translateX(-50%); width: 70px; height: 28px; border-bottom: 1.5px solid rgba(255,255,255,0.35); border-radius: 0 0 50% 50%; pointer-events: none;'></div>"
+                        # BOTTOM PENALTY AREA (Attack)
+                        f"<div style='position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); width: 220px; height: 85px; border-top: 1.5px solid rgba(255,255,255,0.35); border-left: 1.5px solid rgba(255,255,255,0.35); border-right: 1.5px solid rgba(255,255,255,0.35); pointer-events: none;'></div>"
+                        f"<div style='position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); width: 100px; height: 35px; border-top: 1.5px solid rgba(255,255,255,0.35); border-left: 1.5px solid rgba(255,255,255,0.35); border-right: 1.5px solid rgba(255,255,255,0.35); pointer-events: none;'></div>"
+                        f"<div style='position: absolute; bottom: 97px; left: 50%; transform: translateX(-50%); width: 70px; height: 28px; border-top: 1.5px solid rgba(255,255,255,0.35); border-radius: 50% 50% 0 0; pointer-events: none;'></div>"
+                        f"{chips_markup}</div>"
+                    )
+                else:
+                    # Clean fallback if custom modulo
+                    por_line = [t for t in titolari_list if t['Slot_Assegnato'] in ['Por', 'P']]
+                    def_line = [t for t in titolari_list if any(r in t['Slot_Assegnato'] for r in ['Dc', 'Dd', 'Ds', 'B', 'D'])]
+                    mid_line = [t for t in titolari_list if any(r in t['Slot_Assegnato'] for r in ['E', 'M', 'C'])]
+                    trq_line = [t for t in titolari_list if any(r in t['Slot_Assegnato'] for r in ['W', 'T'])]
+                    att_line = [t for t in titolari_list if any(r in t['Slot_Assegnato'] for r in ['A', 'Pc'])]
+
+                    def _render_fb_chip(pl):
+                        slot_c = _get_official_slot_color(pl['Slot_Assegnato'])
+                        fdr = int(pl.get('FDR', 3))
+                        fdr_c = "#22c55e" if fdr <= 2 else ("#eab308" if fdr == 3 else "#ef4444")
+                        pred_v = float(pl.get('Pred_Voto', 6.0))
+                        xfv_val = float(pl.get('xFV', 0.0))
+                        return (
+                            f"<div style='background: rgba(15,23,42,0.92); border: 1.5px solid {slot_c}; border-radius: 8px; "
+                            f"padding: 6px 8px; width: 124px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.6); flex-shrink: 0;'>"
+                            f"<div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;'>"
+                            f"<span style='background: {slot_c}; color: #ffffff; padding: 1px 5px; border-radius: 4px; font-size: 0.68rem; font-weight: 800;'>{pl['Slot_Assegnato']}</span>"
+                            f"<span style='font-size: 0.68rem; color: {fdr_c}; font-weight: 700;'>{pl.get('Squadra','')} {pl.get('Match','')}</span>"
+                            f"</div>"
+                            f"<div style='font-weight: 700; font-size: 0.86rem; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'>{pl['Giocatore']}</div>"
+                            f"<div style='display: flex; justify-content: space-between; align-items: center; margin-top: 3px; font-size: 0.74rem;'>"
+                            f"<span style='color: #94a3b8;'>Voto {pred_v:.1f}</span>"
+                            f"<span style='color: #38bdf8; font-weight: 800;'>xFV {xfv_val:.2f}</span>"
+                            f"</div></div>"
+                        )
+                    def _render_fb_row(players):
+                        if not players: return ""
+                        chips = "".join(_render_fb_chip(p) for p in players)
+                        return f"<div style='display: flex; justify-content: center; gap: 10px; width: 100%; margin: 3px 0;'>{chips}</div>"
+
+                    fb_rows = []
+                    if por_line: fb_rows.append(_render_fb_row(por_line))
+                    if def_line: fb_rows.append(_render_fb_row(def_line))
+                    if mid_line: fb_rows.append(_render_fb_row(mid_line))
+                    if trq_line: fb_rows.append(_render_fb_row(trq_line))
+                    if att_line: fb_rows.append(_render_fb_row(att_line))
+                    pitch_raw = (
+                        f"<div style='background: repeating-linear-gradient(180deg, #153e24 0px, #153e24 55px, #10331d 55px, #10331d 110px); "
+                        f"border: 2px solid rgba(255, 255, 255, 0.4); border-radius: 12px; padding: 18px 10px; margin-bottom: 16px; "
+                        f"position: relative; overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,0.45);'>"
+                        f"<div style='position: relative; z-index: 2; display: flex; flex-direction: column; justify-content: space-between; gap: 14px; min-height: 480px;'>"
+                        f"{''.join(fb_rows)}</div></div>"
+                    )
 
                 # Strip all line indentation to guarantee CommonMark markdown never creates code blocks
                 clean_pitch_html = "".join(line.strip() for line in pitch_raw.splitlines())
