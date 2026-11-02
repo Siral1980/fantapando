@@ -2503,7 +2503,18 @@ with tab_scambi:
         
         col_hor1, col_hor2 = st.columns([1, 1])
         with col_hor1:
-            horizon = st.slider("Orizzonte di valutazione (Giornate future):", min_value=3, max_value=15, value=6, step=1, key="sim_horizon_slider")
+            rem_giornate = max(1, 38 - selected_giornata + 1)
+            st.markdown(
+                f"""
+                <div style="background: rgba(15, 23, 42, 0.65); border: 1px solid #334155; border-radius: 8px; padding: 10px 14px; margin-top: 2px;">
+                    <div style="font-size: 0.78rem; text-transform: uppercase; color: #94a3b8; font-weight: 700; letter-spacing: 0.5px;">📅 Orizzonte di Valutazione</div>
+                    <div style="font-size: 0.95rem; color: #38bdf8; font-weight: 700; margin-top: 2px;">
+                        Resto della Stagione: {rem_giornate} turni ({selected_giornata}ª ➔ 38ª Giornata)
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
         with col_hor2:
             weight_mode_label = st.selectbox(
                 "Metodo Valutazione Pacchetto Multiplo:",
@@ -2532,7 +2543,7 @@ with tab_scambi:
                     receive_selection,
                     df_master,
                     start_matchday=selected_giornata,
-                    horizon=horizon,
+                    horizon=None,
                     calendar=calendar,
                     weight_mode=chosen_weight_mode
                 )

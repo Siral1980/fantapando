@@ -89,12 +89,13 @@ def evaluate_trade(
     receive_names, 
     df_master, 
     start_matchday=6, 
-    horizon=5, 
+    horizon=None, 
     calendar=None, 
     weight_mode='rank_decay'
 ):
     """
-    Evaluates an exchange between two packages of players over N matchdays.
+    Evaluates an exchange between two packages of players over N matchdays
+    (defaults to the remainder of the season through matchday 38).
     Multi-player packages are balanced via weighted average (media ponderata)
     to normalize the evaluation scale to single-slot quality, eliminating
     the distortion of raw additive sums.
@@ -120,6 +121,8 @@ def evaluate_trade(
     give_weights = compute_package_weights(give_df, weight_mode=weight_mode)
     receive_weights = compute_package_weights(receive_df, weight_mode=weight_mode)
 
+    if horizon is None:
+        horizon = max(1, 38 - start_matchday + 1)
     matchdays = list(range(start_matchday, min(39, start_matchday + horizon)))
 
     give_timeline = []
@@ -293,20 +296,20 @@ def evaluate_trade(
                 f"Valutato tramite media ponderata per misurare la qualità media a slot ed evitare le distorsioni della somma cumulativa."
             )
 
-    # Thresholds on delta_totale_ponderato (scale normalized to single-starter equivalent across horizon)
-    if delta_totale_ponderato >= 3.5:
+    # Thresholds on delta_medio_partita (scale normalized to single-starter equivalent per match)
+    if delta_medio_partita >= 0.60:
         verdict = "SCAMBIO CONSIGLIATISSIMO"
         status_color = "green"
-        reasons.append(f"Guadagno atteso significativo: +{delta_totale_ponderato} xFV complessivi (+{delta_medio_partita:+.2f} xFV a giornata) sull'orizzonte di {num_g} turni.")
-    elif delta_totale_ponderato >= 1.0:
+        reasons.append(f"Guadagno atteso significativo: {delta_totale_ponderato:+.2f} xFV complessivi ({delta_medio_partita:+.2f} xFV a giornata) sull'orizzonte di {num_g} turni.")
+    elif delta_medio_partita >= 0.20:
         verdict = "SCAMBIO FAVOREVOLE"
         status_color = "lightgreen"
-        reasons.append(f"Margine positivo favorevole (+{delta_totale_ponderato} xFV ponderati, +{delta_medio_partita:+.2f} xFV/partita).")
-    elif delta_totale_ponderato >= -1.0:
+        reasons.append(f"Margine positivo favorevole ({delta_totale_ponderato:+.2f} xFV ponderati, {delta_medio_partita:+.2f} xFV/partita).")
+    elif delta_medio_partita >= -0.20:
         verdict = "SCAMBIO EQUILIBRATO"
         status_color = "gray"
         reasons.append(f"Proiezione sostanzialmente alla pari (differenziale bilanciato {delta_totale_ponderato:+.2f} xFV, {delta_medio_partita:+.2f} xFV/partita).")
-    elif delta_totale_ponderato >= -3.5:
+    elif delta_medio_partita >= -0.60:
         verdict = "SCAMBIO SFAVOREVOLE"
         status_color = "orange"
         reasons.append(f"Perdita di punti attesi prevista ({delta_totale_ponderato:+.2f} xFV ponderati, {delta_medio_partita:+.2f} xFV/partita).")
