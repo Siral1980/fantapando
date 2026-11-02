@@ -862,53 +862,176 @@ with tab_formazione:
                                 )
 
             elif lineup_view_mode == "🏟️ Lavagna Tattica":
-                por_line = [t for t in titolari_list if t['Slot_Assegnato'] in ['Por', 'P']]
-                def_line = [t for t in titolari_list if t['Slot_Assegnato'] in ['Dc', 'Dd', 'Ds', 'Dc/B', 'B', 'D']]
-                mid_line = [t for t in titolari_list if t['Slot_Assegnato'] in ['E', 'E/W', 'M', 'M/C', 'C', 'C/T', 'W', 'W/T', 'T', 'T/A']]
-                att_line = [t for t in titolari_list if t['Slot_Assegnato'] in ['A/Pc', 'W/A', 'Pc', 'A', 'T/A/Pc']]
+                # Categorize into 5 tactical lines
+                por_line = []
+                def_line = []
+                mid_line = []
+                trq_line = []
+                att_line = []
 
-                def _render_line_chips(players):
-                    chips = []
-                    for pl in players:
-                        slot_c = "#ef4444" if any(x in pl['Slot_Assegnato'] for x in ['A', 'Pc']) else (
-                            "#a855f7" if any(x in pl['Slot_Assegnato'] for x in ['W', 'T']) else (
-                                "#3b82f6" if any(x in pl['Slot_Assegnato'] for x in ['M', 'C', 'E']) else (
-                                    "#22c55e" if any(x in pl['Slot_Assegnato'] for x in ['D', 'Dc', 'Dd', 'Ds', 'B']) else "#eab308"
-                                )
-                            )
-                        )
-                        fdr_c = "#22c55e" if pl.get('FDR', 3) <= 2 else ("#eab308" if pl.get('FDR', 3) == 3 else "#ef4444")
-                        chips.append(f"""
-                        <div style="background: rgba(15,23,42,0.88); border: 1.5px solid {slot_c}; border-radius: 8px; padding: 6px 10px; margin: 4px; min-width: 125px; text-align: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.5);">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
-                                <span style="background: {slot_c}; color: #ffffff; padding: 1px 5px; border-radius: 4px; font-size: 0.72rem; font-weight: 800;">{pl['Slot_Assegnato']}</span>
-                                <span style="font-size: 0.72rem; color: {fdr_c}; font-weight: 700;">{pl['Squadra']} vs {pl['Match']}</span>
-                            </div>
-                            <div style="font-weight: 700; font-size: 0.90rem; color: #f8fafc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{pl['Giocatore']}</div>
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 3px; font-size: 0.78rem;">
-                                <span style="color: #94a3b8;">Voto {float(pl.get('Pred_Voto', 6.0)):.1f}</span>
-                                <span style="color: #00f0ff; font-weight: 800;">xFV {pl.get('xFV')}</span>
-                            </div>
-                        </div>
-                        """)
-                    return f"<div style='display: flex; justify-content: center; gap: 8px; flex-wrap: wrap;'>{''.join(chips)}</div>"
+                for t in titolari_list:
+                    slot = t['Slot_Assegnato']
+                    if slot in ['Por', 'P']:
+                        por_line.append(t)
+                    elif any(r in slot for r in ['Dc', 'Dd', 'Ds', 'B', 'D']):
+                        def_line.append(t)
+                    elif any(r in slot for r in ['W', 'T']):
+                        trq_line.append(t)
+                    elif any(r in slot for r in ['E', 'M', 'C']):
+                        mid_line.append(t)
+                    elif any(r in slot for r in ['A', 'Pc']):
+                        att_line.append(t)
+                    else:
+                        mid_line.append(t)
 
-                pitch_html = f"""
-                <div style="background: radial-gradient(circle, #1e3a24 0%, #0d1f12 100%); border: 2px solid #22c55e; border-radius: 12px; padding: 16px 12px; margin-bottom: 14px; position: relative;">
-                    <div style="position: absolute; top: 50%; left: 0; right: 0; height: 1px; background: rgba(255,255,255,0.15);"></div>
-                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 70px; height: 70px; border: 1px solid rgba(255,255,255,0.15); border-radius: 50%;"></div>
-                    <div style="position: relative; z-index: 2; display: flex; flex-direction: column; gap: 14px;">
-                        <div>{_render_line_chips(att_line)}</div>
-                        <div>{_render_line_chips(mid_line)}</div>
-                        <div>{_render_line_chips(def_line)}</div>
-                        <div>{_render_line_chips(por_line)}</div>
-                    </div>
-                </div>
-                """
-                st.markdown(pitch_html, unsafe_allow_html=True)
+                # Sort defense horizontally (Ds on left, Dc/B center, Dd right)
+                def _def_sort_key(p):
+                    s = p['Slot_Assegnato']
+                    if 'Ds' in s:
+                        return 0
+                    if 'B' in s or 'Dc' in s:
+                        return 1
+                    if 'Dd' in s:
+                        return 2
+                    return 1
+                def_line = sorted(def_line, key=_def_sort_key)
+
+                # Sort midfield horizontally (left E -> central M/C -> right E)
+                if len([p for p in mid_line if 'E' in p['Slot_Assegnato']]) == 2:
+                    e_list = [p for p in mid_line if 'E' in p['Slot_Assegnato']]
+                    c_list = [p for p in mid_line if 'E' not in p['Slot_Assegnato']]
+                    mid_line = [e_list[0]] + c_list + [e_list[1]]
+
+                # Sort trq/att (W on wings, T in center; A on wings, Pc in center)
+                def _att_sort_key(p):
+                    s = p['Slot_Assegnato']
+                    if 'W' in s or 'A' in s:
+                        return 0
+                    if 'Pc' in s:
+                        return 1
+                    return 0
+                att_line = sorted(att_line, key=_att_sort_key)
+
+                def _render_pitch_chip(pl):
+                    slot = pl['Slot_Assegnato']
+                    if any(x in slot for x in ['A', 'Pc']):
+                        slot_c = "#ef4444"
+                    elif any(x in slot for x in ['W', 'T']):
+                        slot_c = "#a855f7"
+                    elif any(x in slot for x in ['M', 'C']):
+                        slot_c = "#3b82f6"
+                    elif any(x in slot for x in ['E']):
+                        slot_c = "#06b6d4"
+                    elif any(x in slot for x in ['D', 'Dc', 'Dd', 'Ds', 'B']):
+                        slot_c = "#10b981"
+                    else:
+                        slot_c = "#f59e0b"
+
+                    fdr = int(pl.get('FDR', 3))
+                    fdr_c = "#22c55e" if fdr <= 2 else ("#eab308" if fdr == 3 else "#ef4444")
+                    
+                    p_voto = float(pl.get('P_Voto', 0.90))
+                    p_voto_pct = int(p_voto * 100)
+                    bal_badge = ""
+                    if p_voto < 0.70 or str(pl.get('Ballottaggio_Info', '')).strip():
+                        bal_badge = f"<span style='color: #f59e0b; font-size: 0.68rem; margin-left: 2px;' title='Ballottaggio ({p_voto_pct}%)'>⚖️</span>"
+
+                    xfv_val = float(pl.get('xFV', 0.0))
+                    pred_v = float(pl.get('Pred_Voto', 6.0))
+                    match_txt = f"{pl.get('Squadra', '')} {pl.get('Match', '')}"
+
+                    return (
+                        f"<div style='background: rgba(15,23,42,0.92); border: 1.5px solid {slot_c}; border-radius: 8px; "
+                        f"padding: 6px 8px; width: 124px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.6); flex-shrink: 0;'>"
+                        f"<div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;'>"
+                        f"<span style='background: {slot_c}; color: #ffffff; padding: 1px 5px; border-radius: 4px; font-size: 0.68rem; font-weight: 800;'>{slot}</span>"
+                        f"<span style='font-size: 0.68rem; color: {fdr_c}; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 75px;'>{match_txt}</span>"
+                        f"</div>"
+                        f"<div style='font-weight: 700; font-size: 0.86rem; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;' title='{pl['Giocatore']}'>"
+                        f"{pl['Giocatore']}{bal_badge}</div>"
+                        f"<div style='display: flex; justify-content: space-between; align-items: center; margin-top: 3px; font-size: 0.74rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 2px;'>"
+                        f"<span style='color: #94a3b8;'>Voto {pred_v:.1f}</span>"
+                        f"<span style='color: #38bdf8; font-weight: 800;'>xFV {xfv_val:.2f}</span>"
+                        f"</div></div>"
+                    )
+
+                def _render_pitch_row(players):
+                    if not players:
+                        return ""
+                    chips = "".join(_render_pitch_chip(p) for p in players)
+                    return f"<div style='display: flex; justify-content: center; gap: 10px; width: 100%; margin: 3px 0;'>{chips}</div>"
+
+                rows_html = []
+                if att_line:
+                    rows_html.append(_render_pitch_row(att_line))
+                if trq_line:
+                    rows_html.append(_render_pitch_row(trq_line))
+                if mid_line:
+                    rows_html.append(_render_pitch_row(mid_line))
+                if def_line:
+                    rows_html.append(_render_pitch_row(def_line))
+                if por_line:
+                    rows_html.append(_render_pitch_row(por_line))
+
+                all_rows = "".join(rows_html)
+
+                st.markdown(
+                    f"<div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;'>"
+                    f"<span style='font-weight: 800; font-size: 1.05rem; color: #f8fafc;'>⚽ 11 Titolari in Campo ({opt_res['Modulo']})</span>"
+                    f"<span style='color: #38bdf8; font-weight: 700; font-size: 0.90rem;'>Punti Attesi Totali: {opt_res['Punti_Attesi_Totali']:.2f} pt</span>"
+                    f"</div>",
+                    unsafe_allow_html=True
+                )
+
+                pitch_raw = (
+                    f"<div style='background: repeating-linear-gradient(180deg, #153e24 0px, #153e24 55px, #10331d 55px, #10331d 110px); "
+                    f"border: 2px solid rgba(255, 255, 255, 0.4); border-radius: 12px; padding: 18px 10px; margin-bottom: 16px; "
+                    f"position: relative; overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,0.45);'>"
+                    f"<div style='position: absolute; top: 50%; left: 0; right: 0; height: 1.5px; background: rgba(255,255,255,0.22); pointer-events: none;'></div>"
+                    f"<div style='position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 84px; height: 84px; border: 1.5px solid rgba(255,255,255,0.22); border-radius: 50%; pointer-events: none;'></div>"
+                    f"<div style='position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 5px; height: 5px; background: rgba(255,255,255,0.4); border-radius: 50%; pointer-events: none;'></div>"
+                    f"<div style='position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 220px; height: 65px; border-top: 1.5px solid rgba(255,255,255,0.22); border-left: 1.5px solid rgba(255,255,255,0.22); border-right: 1.5px solid rgba(255,255,255,0.22); border-radius: 4px 4px 0 0; pointer-events: none;'></div>"
+                    f"<div style='position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 220px; height: 65px; border-bottom: 1.5px solid rgba(255,255,255,0.22); border-left: 1.5px solid rgba(255,255,255,0.22); border-right: 1.5px solid rgba(255,255,255,0.22); border-radius: 0 0 4px 4px; pointer-events: none;'></div>"
+                    f"<div style='position: relative; z-index: 2; display: flex; flex-direction: column; justify-content: space-between; gap: 14px; min-height: 480px;'>"
+                    f"{all_rows}</div></div>"
+                )
+
+                # Strip all line indentation to guarantee CommonMark markdown never creates code blocks
+                clean_pitch_html = "".join(line.strip() for line in pitch_raw.splitlines())
+                st.markdown(clean_pitch_html, unsafe_allow_html=True)
 
                 st.markdown("**🟡 Panchina Consigliata (Ordine 1-12)**")
-                st.dataframe(df_bench_display, hide_index=True, width='stretch')
+                bench_event = st.dataframe(
+                    df_bench_display,
+                    column_config={
+                        "Ord": st.column_config.TextColumn("Ord", width="small"),
+                        "Calciatore": st.column_config.TextColumn("Calciatore", width="medium"),
+                        "Ruolo": st.column_config.TextColumn("Ruolo", width="small"),
+                        "Squadra": st.column_config.TextColumn("Eq", width="small"),
+                        "Match": st.column_config.TextColumn("Match (FDR)", width="medium"),
+                        "Titolarità": st.column_config.TextColumn("Titolarità", width="small"),
+                        "Score": st.column_config.NumberColumn("Score", format="%.2f", width="small"),
+                    },
+                    hide_index=True,
+                    width='stretch',
+                    height=380,
+                    selection_mode="single-row",
+                    on_select="rerun",
+                    key=f"bench_table_pitch_{current_active_team}"
+                )
+                if bench_event and hasattr(bench_event, 'selection'):
+                    b_rows = bench_event.selection.get('rows', [])
+                    if b_rows and len(b_rows) > 0:
+                        r_idx = b_rows[0]
+                        if r_idx < len(df_bench_display):
+                            p_name = df_bench_display.iloc[r_idx]['Calciatore']
+                            show_player_profile_dialog(
+                                p_name,
+                                df_master,
+                                calendar=calendar,
+                                matchday=selected_giornata,
+                                df_roster=df_my_roster
+                            )
 
             else:
                 # Detailed Tactical Cards View (Deep Dive)
