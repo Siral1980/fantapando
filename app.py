@@ -70,6 +70,15 @@ from engine.player_profile_view import (
     show_player_profile_dialog, render_player_profile_content
 )
 from engine.theme_helper import get_global_theme_css
+
+def clean_html(raw_html: str) -> str:
+    """Strips leading/trailing whitespace from each line to guarantee CommonMark never treats it as a code block."""
+    return "\n".join(line.strip() for line in raw_html.strip().splitlines() if line.strip())
+
+def render_html(raw_html: str, *args, **kwargs):
+    """Renders raw HTML safely in Streamlit without triggering CommonMark indented code blocks."""
+    st.markdown(clean_html(raw_html), unsafe_allow_html=True)
+
 from engine.auth_manager import (
     get_current_user, is_current_user_admin, render_login_screen,
     load_users_db, save_users_db, create_or_update_user, delete_user_account,
@@ -692,7 +701,7 @@ with tab_formazione:
                         for idx_a, safe_alt in enumerate(safe_alts):
                             with cols_alt[idx_a]:
                                 delta_c = "#34d399" if abs(safe_alt['Delta_Punti']) <= 0.8 else "#f59e0b"
-                                st.markdown(f"""
+                                render_html(f"""
                                 <div style="background: rgba(16, 185, 129, 0.08); border: 1.5px solid #10b981; border-radius: 8px; padding: 10px 14px; height: 100%;">
                                     <div style="display: flex; justify-content: space-between; align-items: center;">
                                         <span style="font-weight: 800; font-size: 1.05rem; color: #34d399;">🛡️ {safe_alt['Modulo']}</span>
@@ -1874,7 +1883,7 @@ with tab_scambi:
                 delta_xfv = prop.get('Delta_xFV', round(tot_x_rec - tot_x_give, 2))
                 
                 with st.container():
-                    st.markdown(f"""
+                    render_html(f"""
                     <div style="background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 16px 20px; margin-bottom: 18px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #334155; padding-bottom: 8px;">
                             <div>
@@ -1894,7 +1903,7 @@ with tab_scambi:
                     c_give, c_rec = st.columns(2)
                     with c_give:
                         n_g = len(give_list)
-                        st.markdown(f"""
+                        render_html(f"""
                         <div style="font-size: 0.82rem; color: #ef4444; font-weight: bold; text-transform: uppercase; margin-bottom: 6px;">
                             🔴 Tu Cedi ({n_g} calciator{'e' if n_g == 1 else 'i'}) | Tot FVM/1000: <b>{tot_c_give}</b> | Tot xFV: <b>{tot_x_give:.2f}</b>
                         </div>
@@ -1902,7 +1911,7 @@ with tab_scambi:
                         for cedi in give_list:
                             sig_badge = f"<span style='background:#f97316;color:white;padding:1px 6px;border-radius:4px;font-size:0.75rem;font-weight:bold;'>{cedi.get('Signal', '')}</span>" if 'SELL-HIGH' in cedi.get('Signal', '') else ""
                             role_disp_give = cedi.get('RuoloClassic' if is_classic else 'RuoloMantra', cedi.get('RuoloMantra', ''))
-                            st.markdown(f"""
+                            render_html(f"""
                             <div style="background: rgba(239, 68, 68, 0.08); border-left: 4px solid #ef4444; padding: 10px 14px; border-radius: 6px; margin-bottom: 8px;">
                                 <div style="font-size: 1.05rem; font-weight: bold; color: #f8fafc;">
                                     {cedi['Giocatore']} {sig_badge}
@@ -1916,7 +1925,7 @@ with tab_scambi:
                     with c_rec:
                         delta_color = "#10b981" if delta_xfv >= 0 else "#f59e0b"
                         n_r = len(rec_list)
-                        st.markdown(f"""
+                        render_html(f"""
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                             <span style="font-size: 0.82rem; color: #10b981; font-weight: bold; text-transform: uppercase;">
                                 🟢 Tu Ricevi ({n_r} calciator{'e' if n_r == 1 else 'i'}) | Tot FVM/1000: <b>{tot_c_rec}</b>
@@ -1940,7 +1949,7 @@ with tab_scambi:
                             stash_badge = f"<span style='background:#d97706;color:white;padding:1px 6px;border-radius:4px;font-size:0.75rem;font-weight:bold;'>🩹 STASH INFORTUNIO</span>" if ricevi.get('Is_Stash_Injury') else ""
 
                             role_disp_rec = ricevi.get('RuoloClassic' if is_classic else 'RuoloMantra', ricevi.get('RuoloMantra', ''))
-                            st.markdown(f"""
+                            render_html(f"""
                             <div style="background: rgba(16, 185, 129, 0.08); border-left: 4px solid #10b981; padding: 10px 14px; border-radius: 6px; margin-bottom: 8px;">
                                 <div style="font-size: 1.05rem; font-weight: bold; color: #f8fafc;">
                                     {ricevi['Giocatore']} {tit_badge} {stash_badge} {sig_rec_badge} {bench_badge}
@@ -2139,7 +2148,7 @@ with tab_scambi:
                             st.markdown("##### 🔴 Cosa Cedi Tu")
                             for p in prop['Tu_Cedi']:
                                 role_display = p.get('RuoloClassic' if is_classic else 'RuoloMantra', p.get('Ruolo', ''))
-                                st.markdown(f"""
+                                render_html(f"""
                                 <div style="background: rgba(255,255,255,0.04); border-left: 3px solid #38bdf8; padding: 8px 12px; border-radius: 6px; margin-bottom: 6px;">
                                     <div style="font-weight: 700; color: #ffffff;">{p['Giocatore']} <span style="font-weight: 450; color: #94a3b8; font-size: 0.85rem;">({role_display} - {p['Squadra']})</span></div>
                                     <div style="font-size: 0.8rem; color: #cbd5e1;">FM: <strong>{p['FM']:.2f}</strong> | xFV: <strong>{p['xFV']:.2f}</strong> | FVM: <strong>{p.get('FVM', p.get('Costo', 0))}</strong></div>
@@ -2151,7 +2160,7 @@ with tab_scambi:
                             st.markdown(f"##### 🟢 Cosa Ricevi da {target_opp_team}")
                             for p in prop['Tu_Ricevi']:
                                 role_display = p.get('RuoloClassic' if is_classic else 'RuoloMantra', p.get('Ruolo', ''))
-                                st.markdown(f"""
+                                render_html(f"""
                                 <div style="background: rgba(16, 185, 129, 0.08); border-left: 3px solid #10b981; padding: 8px 12px; border-radius: 6px; margin-bottom: 6px;">
                                     <div style="font-weight: 700; color: #ffffff;">{p['Giocatore']} <span style="font-weight: 450; color: #94a3b8; font-size: 0.85rem;">({role_display} - {p['Squadra']})</span></div>
                                     <div style="font-size: 0.8rem; color: #cbd5e1;">FM: <strong>{p['FM']:.2f}</strong> | xFV: <strong>{p['xFV']:.2f}</strong> | FVM: <strong>{p.get('FVM', p.get('Costo', 0))}</strong></div>
@@ -2165,7 +2174,7 @@ with tab_scambi:
 
                         col_imp1, col_imp2 = st.columns(2)
                         with col_imp1:
-                            st.markdown(f"""
+                            render_html(f"""
                             <div style='background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 8px 12px; margin-bottom: 8px;'>
                                 <div style='font-size: 0.78rem; text-transform: uppercase; color: #94a3b8; font-weight: 700;'>📊 La Tua Formazione Titolare</div>
                                 <div style='font-size: 0.95rem; font-weight: 700; color: #ffffff; margin: 2px 0;'>
@@ -2183,7 +2192,7 @@ with tab_scambi:
                             opp_mod = prop.get('Modulo_Avversario_Nuovo', 'N/D')
                             reassure_msg = prop['Reassurances_Avversario'][0] if prop.get('Reassurances_Avversario') else "✅ Nessuna nuova criticità creata per l'avversario"
 
-                            st.markdown(f"""
+                            render_html(f"""
                             <div style='background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 8px 12px; margin-bottom: 8px;'>
                                 <div style='font-size: 0.78rem; text-transform: uppercase; color: #94a3b8; font-weight: 700;'>👔 Formazione {target_opp_team} Post-Scambio</div>
                                 <div style='font-size: 0.95rem; font-weight: 700; color: #ffffff; margin: 2px 0;'>
@@ -2203,7 +2212,7 @@ with tab_scambi:
                                     t_pct = int(p_match['target_itit'] * 100)
                                     d_val = p_match['delta']
                                     d_color = "#10b981" if d_val >= 0 else "#f59e0b"
-                                    st.markdown(f"""
+                                    render_html(f"""
                                     <div style='background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 6px; padding: 6px 12px; margin-bottom: 5px; font-size: 0.88rem; display: flex; justify-content: space-between; align-items: center;'>
                                         <div>
                                             🔴 <strong>{p_match['give_name']}</strong> (Titolarità {g_pct}%, {int(p_match.get('give_mins', 0))} min/p)
@@ -2433,7 +2442,7 @@ with tab_scambi:
                 archetipo_desc = trade_res.get('Archetipo_Descrizione', '')
                 tier_desc_txt = trade_res.get('Tier_Desc', '')
 
-                st.markdown(f"""
+                render_html(f"""
                 <div style="background: {v_bg}; {v_border}; border-radius: 12px; padding: 20px 24px; margin-top: 15px; margin-bottom: 16px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
                         <div style="display: flex; gap: 8px; align-items: center;">
@@ -2454,8 +2463,6 @@ with tab_scambi:
                     <div style="color: #f1f5f9; font-size: 1.05rem; line-height: 1.45; margin-bottom: 14px; font-weight: 500;">
                         {trade_res.get('Sintesi_Umana', '')}
                     </div>
-
-                    <!-- Gradual Convenience Gauge (0 - 100) -->
                     <div style="background: rgba(15, 23, 42, 0.45); border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.06);">
                         <div style="display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 700; color: #cbd5e1; margin-bottom: 6px;">
                             <span>Indice di Convenienza dello Scambio:</span>
@@ -2465,7 +2472,6 @@ with tab_scambi:
                             <div style="background: {v_color}; height: 100%; width: {idx_conv}%; border-radius: 999px;"></div>
                         </div>
                     </div>
-
                     <div style="display: flex; gap: 20px; align-items: center; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.08); font-size: 0.92rem; flex-wrap: wrap;">
                         <div>
                             <span style="color: #94a3b8;">Differenziale Totale:</span> 
@@ -2483,32 +2489,32 @@ with tab_scambi:
                         </div>
                     </div>
                 </div>
-                """, unsafe_allow_html=True)
+                """)
 
                 # Strategic Conditions & Tactical Guidelines
                 conds = trade_res.get('Condizioni_Strategiche', [])
                 if conds:
-                    st.markdown(f"""
+                    cond_items = "".join(f"<div style='font-size: 0.86rem; color: #cbd5e1; margin-left: 6px; margin-bottom: 4px;'>• {c}</div>" for c in conds)
+                    render_html(f"""
                     <div style="background: rgba(30, 41, 59, 0.65); border: 1px solid #334155; border-left: 4px solid {v_color}; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px;">
                         <div style="font-weight: 700; color: #f8fafc; font-size: 0.92rem; margin-bottom: 6px;">
                             💡 Il Consiglio Strategico del Modello (Condizioni Chiave per Concludere):
                         </div>
-                    """, unsafe_allow_html=True)
-                    for c in conds:
-                        st.markdown(f"<div style='font-size: 0.86rem; color: #cbd5e1; margin-left: 6px; margin-bottom: 4px;'>• {c}</div>", unsafe_allow_html=True)
-                    st.markdown("</div>", unsafe_allow_html=True)
+                        {cond_items}
+                    </div>
+                    """)
 
                 # 2. CLINICAL & SUSPENSION NOTES (if any)
                 if trade_res.get('Note_Cliniche'):
-                    st.markdown("""
+                    note_items = "".join(f"<div style='font-size: 0.85rem; color: #cbd5e1; margin-left: 10px;'>• {nc}</div>" for nc in trade_res['Note_Cliniche'])
+                    render_html(f"""
                     <div style="background: rgba(239, 68, 68, 0.08); border-left: 4px solid #ef4444; border-radius: 6px; padding: 10px 14px; margin-bottom: 18px;">
                         <div style="font-weight: 700; color: #f87171; font-size: 0.9rem; margin-bottom: 4px;">
                             🚑 Aggiornamento Infermeria & Squalifiche (Impatto sulle proiezioni):
                         </div>
-                    """, unsafe_allow_html=True)
-                    for nc in trade_res['Note_Cliniche']:
-                        st.markdown(f"<div style='font-size: 0.85rem; color: #cbd5e1; margin-left: 10px;'>• {nc}</div>", unsafe_allow_html=True)
-                    st.markdown("</div>", unsafe_allow_html=True)
+                        {note_items}
+                    </div>
+                    """)
 
                 # 3. SIDE-BY-SIDE COCKPIT
                 st.markdown("### 👥 Confronto Diretto Calciatori")
@@ -2558,11 +2564,11 @@ with tab_scambi:
                 with c_give_col:
                     st.markdown(f"**🔴 Calciatori Ceduti ({len(trade_res['Cards_Give'])})**")
                     for c in trade_res['Cards_Give']:
-                        st.markdown(_render_cockpit_card(c, is_give=True), unsafe_allow_html=True)
+                        render_html(_render_cockpit_card(c, is_give=True))
                 with c_rec_col:
                     st.markdown(f"**🟢 Calciatori Ricevuti ({len(trade_res['Cards_Rec'])})**")
                     for c in trade_res['Cards_Rec']:
-                        st.markdown(_render_cockpit_card(c, is_give=False), unsafe_allow_html=True)
+                        render_html(_render_cockpit_card(c, is_give=False))
 
                 # 4. 4 PILLARS CONSENSUS COCKPIT
                 st.markdown("### 🏛️ I 4 Pilastri di Valutazione (Consenso Multi-Algoritmo)")
@@ -2580,7 +2586,7 @@ with tab_scambi:
 
                 pil_c1, pil_c2 = st.columns(2)
                 with pil_c1:
-                    st.markdown(f"""
+                    render_html(f"""
                     <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid #334155; border-radius: 8px; padding: 14px; margin-bottom: 12px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                             <b style="color: #38bdf8; font-size: 0.95rem;">1. {p1.get('Nome', 'Valore Netto Effettivo')} (35%)</b>
@@ -2593,9 +2599,9 @@ with tab_scambi:
                             Partite saltate per infortunio/squalifica: Ceduti: <b>{p1.get('Missed_Games_Give', 0)}</b> vs Ricevuti: <b>{p1.get('Missed_Games_Rec', 0)}</b>
                         </div>
                     </div>
-                    """, unsafe_allow_html=True)
-                    
-                    st.markdown(f"""
+                    """)
+
+                    render_html(f"""
                     <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid #334155; border-radius: 8px; padding: 14px; margin-bottom: 12px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                             <b style="color: #38bdf8; font-size: 0.95rem;">3. {p3.get('Nome', 'Solidità Rosa & Garanzia Voto')} (20%)</b>
@@ -2605,10 +2611,10 @@ with tab_scambi:
                             {p3.get('Descrizione', '')}
                         </div>
                     </div>
-                    """, unsafe_allow_html=True)
+                    """)
 
                 with pil_c2:
-                    st.markdown(f"""
+                    render_html(f"""
                     <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid #334155; border-radius: 8px; padding: 14px; margin-bottom: 12px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                             <b style="color: #38bdf8; font-size: 0.95rem;">2. {p2.get('Nome', 'Momentum & Trend Recente')} (25%)</b>
@@ -2618,9 +2624,9 @@ with tab_scambi:
                             {p2.get('Descrizione', '')}
                         </div>
                     </div>
-                    """, unsafe_allow_html=True)
+                    """)
 
-                    st.markdown(f"""
+                    render_html(f"""
                     <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid #334155; border-radius: 8px; padding: 14px; margin-bottom: 12px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                             <b style="color: #38bdf8; font-size: 0.95rem;">4. {p4.get('Nome', 'Gerarchia Star & FVM')} (20%)</b>
@@ -2630,7 +2636,7 @@ with tab_scambi:
                             {p4.get('Descrizione', '')}
                         </div>
                     </div>
-                    """, unsafe_allow_html=True)
+                    """)
 
                 # 5. DETAILED STRATEGIC ANALYSIS
                 st.markdown("### 📋 Analisi Strategica Dettagliata")
