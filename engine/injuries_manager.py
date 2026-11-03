@@ -474,12 +474,10 @@ def get_all_unavailable_df(df_master=None, current_giornata=10):
         return pd.DataFrame(columns=['Giocatore', 'Ruolo', 'Squadra', 'Stato', 'Diagnosi', 'Rientro Stimato', 'Giornata Prevista', 'Giornata_Target', 'Dettaglio Completo'])
     
     role_map = {}
-    if df_master is not None and not df_master.empty:
-        for _, row in df_master.iterrows():
-            g = row.get('Giocatore')
-            r = row.get('RuoloMantra') or row.get('RuoloClassic') or row.get('Ruolo', '')
-            if g and r:
-                role_map[g] = r
+    if df_master is not None and not df_master.empty and 'Giocatore' in df_master.columns:
+        r_col = 'RuoloMantra' if 'RuoloMantra' in df_master.columns else ('RuoloClassic' if 'RuoloClassic' in df_master.columns else 'Ruolo')
+        if r_col in df_master.columns:
+            role_map = dict(zip(df_master['Giocatore'].astype(str), df_master[r_col].fillna('').astype(str)))
 
     rows = []
     for u in unavail:

@@ -18,6 +18,7 @@ import json
 import unicodedata
 import re
 import datetime
+import time
 import copy
 import pandas as pd
 
@@ -1616,6 +1617,12 @@ def sync_user_roster_from_league(league_data=None, team_name='Bluelock', league_
     return []
 
 
+_LOAN_REGISTRY_CACHE = {}
+
+def clear_loan_cache():
+    global _LOAN_REGISTRY_CACHE
+    _LOAN_REGISTRY_CACHE.clear()
+
 def build_loan_registry(league_data=None, league_id=None):
     """
     Builds the active loan registry for the given league:
@@ -1628,6 +1635,12 @@ def build_loan_registry(league_data=None, league_id=None):
     5. Returns (loan_map, df_loans).
     """
     lid = league_id or get_active_league_id()
+    now_t = time.time()
+    if league_data is None and lid in _LOAN_REGISTRY_CACHE:
+        c_entry = _LOAN_REGISTRY_CACHE[lid]
+        if (now_t - c_entry['ts']) < 60:
+            return c_entry['loan_map'].copy(), c_entry['df_loans'].copy()
+    league_data_was_none = (league_data is None)
     if league_data is None:
         league_data = load_league_rosters(lid)
 
@@ -1770,6 +1783,12 @@ def build_loan_registry(league_data=None, league_id=None):
     else:
         df_loans = pd.DataFrame(columns=['Calciatore', 'Ruolo', 'RuoloClassic', 'Squadra', 'Proprietario', 'In_Prestito_A', 'Costo_Asta', 'Costo_Prestito', 'Tipo'])
 
+    if league_data_was_none:
+        _LOAN_REGISTRY_CACHE[lid] = {
+            'ts': time.time(),
+            'loan_map': loan_map.copy(),
+            'df_loans': df_loans.copy()
+        }
     return loan_map, df_loans
 
 

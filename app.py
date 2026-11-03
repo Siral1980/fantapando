@@ -472,13 +472,13 @@ if league_dict and current_active_team in league_dict:
 else:
     user_squad_names = load_user_roster()
 
-# Automatic reload of Probable Lineups and Injuries/Suspensions every time the active team changes
-current_team_sync_key = f'{active_league}::{current_active_team}'
-if st.session_state.get('_last_live_synced_team') != current_team_sync_key:
-    with st.spinner(f' Aggiornamento Probabili Formazioni e Infortunati/Squalificati per {current_active_team}...'):
-        refresh_live_lineups_and_injuries()
-        st.cache_data.clear()
-    st.session_state['_last_live_synced_team'] = current_team_sync_key
+# Live lineups and injuries are loaded once from local disk cache, updated via 12h cycle or button
+if '_live_lineups_initialized' not in st.session_state:
+    try:
+        load_probable_lineups(force_refresh=False)
+    except Exception:
+        pass
+    st.session_state['_live_lineups_initialized'] = True
 
 # Top-level calculation of df_my_roster so all tabs immediately inherit the active team
 df_my_roster = get_roster_dataframe(df_master, user_squad_names)
@@ -2025,43 +2025,60 @@ with tab_scambi:
             )
             selected_starter_filter = starter_filter_map[selected_starter_label]
             
-        # Run search
-        with st.spinner("Scansione rose avversarie e calcolo scambi Win-Win in corso..."):
-            try:
-                proposals = cached_find_win_win_trades(
-                    my_team, _league_signature(league_dict, active_league_type), selected_giornata,
-                    selected_target_role, selected_give_player, selected_opp_team,
-                    selected_starter_filter, selected_format_filter, 30,
-                    current_code_version, league_dict, df_master,
-                    league_type=active_league_type
-                )
-            except TypeError:
-                # Fallback for cached or legacy function signatures
+        # Action Bar: On-Demand Scan to prevent locking Trade Center for 30s on page load
+        radar_session_key = f"winwin_proposals_{active_league}_{my_team}"
+        has_cached_proposals = (radar_session_key in st.session_state and st.session_state[radar_session_key] is not None)
+        
+        btn_c1, btn_c2 = st.columns([1.6, 2.8])
+        with btn_c1:
+            btn_label = "🟢 Avvia Scansione Win-Win" if not has_cached_proposals else "🔄 Ricalcola Scansione"
+            run_winwin_scan = st.button(btn_label, type="primary", key=f"btn_scan_winwin_{my_team}", width='stretch')
+        with btn_c2:
+            if has_cached_proposals:
+                st.caption(f"⚡ Proposte pronte in memoria: **{len(st.session_state[radar_session_key])} scambi Win-Win**. Risultati salvati istantaneamente.")
+            else:
+                st.caption("ℹ️ Clicca sul pulsante verde per scansionare le rose degli 11 avversari ed elaborare le offerte ottimali.")
+
+        if run_winwin_scan:
+            with st.spinner("Scansione rose avversarie e calcolo scambi Win-Win in corso..."):
                 try:
-                    proposals = find_win_win_trades(
-                        my_team_name=my_team,
-                        league_data=league_dict,
-                        df_master=df_master,
-                        matchday=selected_giornata,
-                        target_role_filter=selected_target_role,
-                        give_player_filter=selected_give_player,
-                        opp_team_filter=selected_opp_team,
-                        min_starter_filter=selected_starter_filter,
-                        max_proposals=30,
+                    proposals = cached_find_win_win_trades(
+                        my_team, _league_signature(league_dict, active_league_type), selected_giornata,
+                        selected_target_role, selected_give_player, selected_opp_team,
+                        selected_starter_filter, selected_format_filter, 30,
+                        current_code_version, league_dict, df_master,
                         league_type=active_league_type
                     )
-                except Exception as inner_e:
+                    st.session_state[radar_session_key] = proposals
+                except TypeError:
+                    try:
+                        proposals = find_win_win_trades(
+                            my_team_name=my_team,
+                            league_data=league_dict,
+                            df_master=df_master,
+                            matchday=selected_giornata,
+                            target_role_filter=selected_target_role,
+                            give_player_filter=selected_give_player,
+                            opp_team_filter=selected_opp_team,
+                            min_starter_filter=selected_starter_filter,
+                            max_proposals=30,
+                            league_type=active_league_type
+                        )
+                        st.session_state[radar_session_key] = proposals
+                    except Exception as inner_e:
+                        import traceback
+                        st.error(f"Errore durante l'elaborazione degli scambi: {inner_e}")
+                        proposals = []
+                except Exception as e:
                     import traceback
-                    st.error(f"Errore durante l'elaborazione degli scambi: {inner_e}")
-                    st.code(traceback.format_exc())
+                    st.error(f"Errore durante l'elaborazione degli scambi: {e}")
                     proposals = []
-            except Exception as e:
-                import traceback
-                st.error(f"Errore durante l'elaborazione degli scambi: {e}")
-                st.code(traceback.format_exc())
-                proposals = []
-            
-        if not proposals:
+        else:
+            proposals = st.session_state.get(radar_session_key, None)
+
+        if proposals is None:
+            st.info("💡 **Premi il pulsante verde 'Avvia Scansione Win-Win'** per analizzare le 11 rose avversarie e trovare le migliori proposte di scambio.")
+        elif not proposals:
             st.warning("Nessuna proposta Win-Win trovata con i filtri correnti. Prova a impostare 'TUTTI' nei filtri per allargare la ricerca.")
         else:
             st.success(f" Trovate **{len(proposals)} proposte di scambio Win-Win** su misura per la tua rosa!")
@@ -3494,7 +3511,15 @@ with tab_esplora:
         with col_cal2:
             cal_end = st.number_input("A Giornata:", min_value=cal_start + 1, max_value=38, value=min(38, cal_start + 6), key="cal_en")
     
-        matrix_df = get_schedule_matrix(start_giornata=cal_start, end_giornata=cal_end, calendar=calendar)
+        @st.cache_data(show_spinner=False, ttl=1800)
+        def _get_cached_schedule_matrix(st_g, end_g, _cal):
+            return get_schedule_matrix(start_giornata=st_g, end_giornata=end_g, calendar=_cal)
+
+        @st.cache_data(show_spinner=False, ttl=1800)
+        def _get_cached_dynamic_ratings(g):
+            return compute_dynamic_team_ratings(g)
+
+        matrix_df = _get_cached_schedule_matrix(cal_start, cal_end, calendar)
         st.dataframe(matrix_df, width='stretch', hide_index=True)
 
         c_fav1, c_fav2 = st.columns(2)
@@ -3506,7 +3531,7 @@ with tab_esplora:
             st.dataframe(matrix_df.tail(5)[['Squadra', 'Power_Dinamico', 'Posizione_Attuale', 'FDR_Medio']], width='stretch', hide_index=True)
 
         with st.expander(" Classifica Reale Serie A & Power Rating Dinamico Squadre", expanded=False):
-            ratings_dict, df_ratings = compute_dynamic_team_ratings(selected_giornata)
+            ratings_dict, df_ratings = _get_cached_dynamic_ratings(selected_giornata)
             cols_ratings = ['Posizione_Attuale', 'Squadra', 'Punti_Attuali', 'DR_Attuale', 'Power_Attuale', 'Power_Triennio', 'Power_Dinamico']
             st.dataframe(df_ratings[cols_ratings].sort_values(by='Posizione_Attuale', ascending=True), width='stretch', hide_index=True)
 
