@@ -1452,7 +1452,9 @@
       "GS": 13,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0
+      "ESP": 0,
+      "Prestito_OUT": true,
+      "Controparte": "Tonny Rio Malen by Pedony"
     },
     {
       "Cod": 6662,
@@ -1492,7 +1494,9 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0
+      "ESP": 0,
+      "Prestito_OUT": true,
+      "Controparte": "Tonny Rio Malen by Pedony"
     },
     {
       "Cod": 7611,
@@ -1544,7 +1548,7 @@
       "RuoloClassic": "P",
       "RuoloMantra": "Por",
       "Costo": 0,
-      "InPrestito": false,
+      "InPrestito": true,
       "FuoriSerieA": false,
       "Presenze": 0,
       "MV_Stagione": 0.0,
@@ -1708,7 +1712,9 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0
+      "ESP": 0,
+      "Prestito_OUT": true,
+      "Controparte": "Tonny Rio Malen by Pedony"
     },
     {
       "Cod": 5675,
@@ -2741,27 +2747,6 @@
       "ESP": 0
     },
     {
-      "Cod": 5823,
-      "Giocatore": "Baldanzi",
-      "NomeGrezzo": "Baldanzi",
-      "Squadra": "Genoa",
-      "RuoloClassic": "C",
-      "RuoloMantra": "T",
-      "Costo": 0,
-      "InPrestito": true,
-      "FuoriSerieA": false,
-      "Presenze": 5,
-      "MV_Stagione": 5.8,
-      "FM_Stagione": 5.8,
-      "GF": 0,
-      "GS": 0,
-      "ASS": 0,
-      "AMM": 0,
-      "ESP": 0,
-      "Prestito_OUT": false,
-      "Controparte": "MAULUX FC"
-    },
-    {
       "Cod": 2167,
       "Giocatore": "Orsolini",
       "NomeGrezzo": "Orsolini",
@@ -2874,28 +2859,6 @@
       "ASS": 1,
       "AMM": 1,
       "ESP": 0
-    },
-    {
-      "Cod": 7554,
-      "Giocatore": "Romero D.",
-      "NomeGrezzo": "Romero D.",
-      "Squadra": "Parma",
-      "RuoloClassic": "A",
-      "RuoloMantra": "Pc",
-      "Costo": 0,
-      "InPrestito": false,
-      "FuoriSerieA": false,
-      "Presenze": 6,
-      "MV_Stagione": 6.33,
-      "FM_Stagione": 7.33,
-      "GF": 2,
-      "GS": 0,
-      "ASS": 0,
-      "AMM": 0,
-      "ESP": 0,
-      "Prestito_OUT": false,
-      "Prestito_Da_Confermare": true,
-      "Controparte": "BORTETA FC"
     }
   ],
   "Free Piallo": [
@@ -3697,7 +3660,9 @@
       "GS": 5,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0
+      "ESP": 0,
+      "Prestito_OUT": true,
+      "Controparte": "Tonny Rio Malen by Pedony"
     },
     {
       "Cod": 6462,
@@ -3987,27 +3952,6 @@
       "ESP": 0
     },
     {
-      "Cod": 6659,
-      "Giocatore": "Lucchesi",
-      "NomeGrezzo": "Lucchesi",
-      "Squadra": "Monza",
-      "RuoloClassic": "D",
-      "RuoloMantra": "Dc",
-      "Costo": 0,
-      "InPrestito": true,
-      "FuoriSerieA": false,
-      "Presenze": 6,
-      "MV_Stagione": 5.5,
-      "FM_Stagione": 5.17,
-      "GF": 0,
-      "GS": 0,
-      "ASS": 0,
-      "AMM": 2,
-      "ESP": 1,
-      "Prestito_OUT": false,
-      "Controparte": "AMIT Partizan Folagra"
-    },
-    {
       "Cod": 4137,
       "Giocatore": "Diego Carlos",
       "NomeGrezzo": "Diego Carlos",
@@ -4015,7 +3959,7 @@
       "RuoloClassic": "D",
       "RuoloMantra": "Dc",
       "Costo": 0,
-      "InPrestito": false,
+      "InPrestito": true,
       "FuoriSerieA": false,
       "Presenze": 5,
       "MV_Stagione": 5.4,
@@ -4276,7 +4220,9 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0
+      "ESP": 0,
+      "Prestito_OUT": true,
+      "Controparte": "La Joya"
     },
     {
       "Cod": 7409,
@@ -4296,28 +4242,6 @@
       "ASS": 0,
       "AMM": 0,
       "ESP": 0
-    },
-    {
-      "Cod": 6783,
-      "Giocatore": "Unai Gomez",
-      "NomeGrezzo": "Unai Gomez",
-      "Squadra": "Udinese",
-      "RuoloClassic": "C",
-      "RuoloMantra": "T",
-      "Costo": 0,
-      "InPrestito": false,
-      "FuoriSerieA": false,
-      "Presenze": 6,
-      "MV_Stagione": 5.5,
-      "FM_Stagione": 5.67,
-      "GF": 0,
-      "GS": 0,
-      "ASS": 1,
-      "AMM": 1,
-      "ESP": 0,
-      "Prestito_OUT": false,
-      "Prestito_Da_Confermare": true,
-      "Controparte": "BORTETA FC"
     },
     {
       "Cod": 5761,
@@ -7206,7 +7130,7 @@
       "RuoloClassic": "C",
       "RuoloMantra": "M;C",
       "Costo": 0,
-      "InPrestito": false,
+      "InPrestito": true,
       "FuoriSerieA": false,
       "Presenze": 4,
       "MV_Stagione": 6.38,
@@ -7304,7 +7228,7 @@
       "RuoloClassic": "C",
       "RuoloMantra": "T",
       "Costo": 0,
-      "InPrestito": false,
+      "InPrestito": true,
       "FuoriSerieA": false,
       "Presenze": 5,
       "MV_Stagione": 5.6,
@@ -7491,7 +7415,9 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0
+      "ESP": 0,
+      "Prestito_OUT": true,
+      "Controparte": "BORTETA FC"
     },
     {
       "Cod": 158,
@@ -7520,7 +7446,7 @@
       "RuoloClassic": "P",
       "RuoloMantra": "Por",
       "Costo": 0,
-      "InPrestito": false,
+      "InPrestito": true,
       "FuoriSerieA": false,
       "Presenze": 5,
       "MV_Stagione": 5.9,
@@ -7542,7 +7468,7 @@
       "RuoloClassic": "P",
       "RuoloMantra": "Por",
       "Costo": 0,
-      "InPrestito": false,
+      "InPrestito": true,
       "FuoriSerieA": false,
       "Presenze": 0,
       "MV_Stagione": 0.0,
@@ -7564,7 +7490,7 @@
       "RuoloClassic": "P",
       "RuoloMantra": "Por",
       "Costo": 0,
-      "InPrestito": false,
+      "InPrestito": true,
       "FuoriSerieA": false,
       "Presenze": 7,
       "MV_Stagione": 5.86,
@@ -7702,7 +7628,7 @@
       "RuoloClassic": "D",
       "RuoloMantra": "Ds;E",
       "Costo": 0,
-      "InPrestito": false,
+      "InPrestito": true,
       "FuoriSerieA": false,
       "Presenze": 7,
       "MV_Stagione": 6.07,
@@ -7733,7 +7659,9 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0
+      "ESP": 0,
+      "Prestito_OUT": true,
+      "Controparte": "MAULUX FC"
     },
     {
       "Cod": 4210,
@@ -7924,7 +7852,8 @@
       "ASS": 0,
       "AMM": 0,
       "ESP": 0,
-      "Prestito_OUT": false
+      "Prestito_OUT": true,
+      "Controparte": "La Joya"
     },
     {
       "Cod": 333,
@@ -8039,28 +7968,6 @@
       "ASS": 0,
       "AMM": 0,
       "ESP": 0
-    },
-    {
-      "Cod": 6678,
-      "Giocatore": "Liberali",
-      "NomeGrezzo": "Liberali",
-      "Squadra": "Como",
-      "RuoloClassic": "C",
-      "RuoloMantra": "T",
-      "Costo": 0,
-      "InPrestito": false,
-      "FuoriSerieA": false,
-      "Presenze": 2,
-      "MV_Stagione": 6.5,
-      "FM_Stagione": 8.0,
-      "GF": 1,
-      "GS": 0,
-      "ASS": 0,
-      "AMM": 0,
-      "ESP": 0,
-      "Prestito_OUT": false,
-      "Prestito_Da_Confermare": true,
-      "Controparte": "Lestofanti FC"
     },
     {
       "Cod": 6833,
@@ -8329,27 +8236,6 @@
       "ASS": 0,
       "AMM": 0,
       "ESP": 0
-    },
-    {
-      "Cod": 4485,
-      "Giocatore": "Thiam",
-      "NomeGrezzo": "Thiam",
-      "Squadra": "Monza",
-      "RuoloClassic": "P",
-      "RuoloMantra": "Por",
-      "Costo": 0,
-      "InPrestito": true,
-      "FuoriSerieA": false,
-      "Presenze": 3,
-      "MV_Stagione": 5.17,
-      "FM_Stagione": 2.83,
-      "GF": 0,
-      "GS": 7,
-      "ASS": 0,
-      "AMM": 0,
-      "ESP": 0,
-      "Prestito_OUT": false,
-      "Controparte": "MAULUX FC"
     },
     {
       "Cod": 4976,

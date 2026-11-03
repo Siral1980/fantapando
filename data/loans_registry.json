@@ -1,17 +1,18 @@
 {
+  "league_id": "Lega_Piombo_Fuso",
   "loans": [
     {
-      "player_name": "Mrozek",
-      "owner_team": "Bluelock",
-      "borrower_team": "BORTETA FC",
+      "player_name": "Corvi",
+      "owner_team": "BORTETA FC",
+      "borrower_team": "Bluelock",
       "cost": 1,
       "loan_fee": 0,
       "status": "active"
     },
     {
-      "player_name": "Corvi",
-      "owner_team": "BORTETA FC",
-      "borrower_team": "Bluelock",
+      "player_name": "Mrozek",
+      "owner_team": "Bluelock",
+      "borrower_team": "BORTETA FC",
       "cost": 1,
       "loan_fee": 0,
       "status": "active"
@@ -25,56 +26,117 @@
       "status": "active"
     },
     {
-      "player_name": "Baldanzi",
-      "owner_team": "MAULUX FC",
-      "borrower_team": "Lestofanti FC",
-      "cost": 27,
+      "player_name": "De Gea",
+      "owner_team": "Tonny Rio Malen by Pedony",
+      "borrower_team": "BORTETA FC",
+      "cost": 45,
       "loan_fee": 0,
       "status": "active"
     },
     {
-      "player_name": "Thiam",
-      "owner_team": "MAULUX FC",
-      "borrower_team": "AMIT Partizan Folagra",
-      "cost": 12,
-      "loan_fee": 0,
-      "status": "active"
-    },
-    {
-      "player_name": "Lucchesi",
-      "owner_team": "AMIT Partizan Folagra",
-      "borrower_team": "MAULUX FC",
+      "player_name": "Christensen O.",
+      "owner_team": "Tonny Rio Malen by Pedony",
+      "borrower_team": "BORTETA FC",
       "cost": 1,
       "loan_fee": 0,
       "status": "active"
     },
     {
-      "player_name": "Kaiki",
-      "owner_team": "Enel Energia",
+      "player_name": "Bijlow",
+      "owner_team": "BORTETA FC",
       "borrower_team": "Tonny Rio Malen by Pedony",
-      "cost": 23,
+      "cost": 18,
+      "loan_fee": 0,
+      "status": "active"
+    },
+    {
+      "player_name": "Stolz",
+      "owner_team": "BORTETA FC",
+      "borrower_team": "Tonny Rio Malen by Pedony",
+      "cost": 1,
+      "loan_fee": 0,
+      "status": "active"
+    },
+    {
+      "player_name": "Kamara H.",
+      "owner_team": "BORTETA FC",
+      "borrower_team": "Tonny Rio Malen by Pedony",
+      "cost": 12,
+      "loan_fee": 0,
+      "status": "active"
+    },
+    {
+      "player_name": "Diego Carlos",
+      "owner_team": "Tonny Rio Malen by Pedony",
+      "borrower_team": "MAULUX FC",
+      "cost": 39,
+      "loan_fee": 0,
+      "status": "active"
+    },
+    {
+      "player_name": "Perri",
+      "owner_team": "MAULUX FC",
+      "borrower_team": "Tonny Rio Malen by Pedony",
+      "cost": 54,
+      "loan_fee": 0,
+      "status": "active"
+    },
+    {
+      "player_name": "Odgaard",
+      "owner_team": "MAULUX FC",
+      "borrower_team": "La Joya",
+      "cost": 20,
       "loan_fee": 0,
       "status": "active"
     },
     {
       "player_name": "Milla",
       "owner_team": "Tonny Rio Malen by Pedony",
-      "borrower_team": "Enel Energia",
+      "borrower_team": "La Joya",
       "cost": 16,
       "loan_fee": 0,
       "status": "active"
     },
     {
-      "player_name": "De Gea",
-      "owner_team": "Tonny Rio Malen by Pedony",
-      "borrower_team": "BORTETA FC",
-      "cost": 45,
+      "player_name": "Kaiki",
+      "owner_team": "La Joya",
+      "borrower_team": "Tonny Rio Malen by Pedony",
+      "cost": 23,
       "loan_fee": 0,
-      "status": "active",
-      "notes": "Prestito confermato"
+      "status": "active"
     }
   ],
   "terminated_loans": [
+    {
+      "player_name": "Baldanzi",
+      "owner_team": "MAULUX FC",
+      "borrower_team": "Lestofanti FC"
+    },
+    {
+      "player_name": "Thiam",
+      "owner_team": "MAULUX FC",
+      "borrower_team": "AMIT Partizan Folagra"
+    },
+    {
+      "player_name": "Lucchesi",
+      "owner_team": "AMIT Partizan Folagra",
+      "borrower_team": "MAULUX FC"
+    },
+    {
+      "player_name": "Unai Gomez",
+      "owner_team": "BORTETA FC",
+      "borrower_team": "MAULUX FC"
+    },
+    {
+      "player_name": "Romero D.",
+      "owner_team": "BORTETA FC",
+      "borrower_team": "Lestofanti FC"
+    },
+    {
+      "player_name": "Liberali",
+      "owner_team": "Lestofanti FC",
+      "borrower_team": "Tonny Rio Malen by Pedony"
+    },
     {
       "player_name": "Marin R.",
       "owner_team": "Lestofanti FC",
@@ -95,5 +157,6 @@
       "owner_team": "Lestofanti FC",
       "borrower_team": "BORTETA FC"
     }
-  ]
+  ],
+  "last_updated": "2026-11-03 14:39:54"
 }
