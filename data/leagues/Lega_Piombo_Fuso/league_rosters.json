@@ -48,7 +48,8 @@
       "xG_Tot": 0.0,
       "xA_Tot": 0.0,
       "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "Errors_Leading_To_Goal": 0,
+      "Prestito_OUT": true
     },
     {
       "Cod": 7463,
@@ -223,7 +224,8 @@
       "xG_Tot": 0.12,
       "xA_Tot": 0.1,
       "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "Errors_Leading_To_Goal": 0,
+      "Prestito_OUT": true
     },
     {
       "Cod": 7564,
@@ -1902,7 +1904,8 @@
       "xG_Tot": 0.0,
       "xA_Tot": 0.0,
       "Goals_Prevented": 0.48,
-      "Errors_Leading_To_Goal": 0
+      "Errors_Leading_To_Goal": 0,
+      "Prestito_OUT": true
     },
     {
       "Cod": 6569,
@@ -2280,31 +2283,6 @@
       "Errors_Leading_To_Goal": 0
     },
     {
-      "Cod": 6638,
-      "Giocatore": "Marin R.",
-      "NomeGrezzo": "Marin R.",
-      "Squadra": "Napoli",
-      "RuoloClassic": "D",
-      "RuoloMantra": "Dc",
-      "Costo": 0,
-      "InPrestito": true,
-      "FuoriSerieA": false,
-      "Presenze": 6,
-      "MV_Stagione": 5.67,
-      "FM_Stagione": 5.58,
-      "GF": 0,
-      "GS": 0,
-      "ASS": 0,
-      "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 47.5,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.48,
-      "xA_Tot": 0.18,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
-    },
-    {
       "Cod": 5792,
       "Giocatore": "Ederson D.S.",
       "NomeGrezzo": "Ederson D.S.",
@@ -2451,31 +2429,6 @@
       "Pct_Parate": 0.0,
       "xG_Tot": 0.02,
       "xA_Tot": 0.08,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
-    },
-    {
-      "Cod": 7198,
-      "Giocatore": "Piotrowski",
-      "NomeGrezzo": "Piotrowski",
-      "Squadra": "Udinese",
-      "RuoloClassic": "C",
-      "RuoloMantra": "M;C",
-      "Costo": 0,
-      "InPrestito": true,
-      "FuoriSerieA": false,
-      "Presenze": 3,
-      "MV_Stagione": 6.0,
-      "FM_Stagione": 6.83,
-      "GF": 1,
-      "GS": 0,
-      "ASS": 0,
-      "AMM": 2,
-      "ESP": 0,
-      "Pct_Sufficienza": 50.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.42,
-      "xA_Tot": 0.24,
       "Goals_Prevented": 0.0,
       "Errors_Leading_To_Goal": 0
     },
@@ -2680,31 +2633,6 @@
       "Errors_Leading_To_Goal": 0
     },
     {
-      "Cod": 5422,
-      "Giocatore": "Zalewski",
-      "NomeGrezzo": "Zalewski",
-      "Squadra": "Atalanta",
-      "RuoloClassic": "C",
-      "RuoloMantra": "W",
-      "Costo": 0,
-      "InPrestito": true,
-      "FuoriSerieA": false,
-      "Presenze": 4,
-      "MV_Stagione": 6.12,
-      "FM_Stagione": 6.62,
-      "GF": 0,
-      "GS": 0,
-      "ASS": 2,
-      "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 78.2,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.39,
-      "xA_Tot": 0.99,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
-    },
-    {
       "Cod": 5734,
       "Giocatore": "Soulè",
       "NomeGrezzo": "Soulè",
@@ -2878,6 +2806,32 @@
       "xA_Tot": 0.38,
       "Goals_Prevented": 0.0,
       "Errors_Leading_To_Goal": 0
+    },
+    {
+      "Cod": 2521,
+      "Giocatore": "De Gea",
+      "NomeGrezzo": "De Gea",
+      "Squadra": "Fiorentina",
+      "RuoloClassic": "P",
+      "RuoloMantra": "Por",
+      "Costo": 0,
+      "InPrestito": true,
+      "FuoriSerieA": false,
+      "Presenze": 7,
+      "MV_Stagione": 5.79,
+      "FM_Stagione": 3.29,
+      "GF": 0,
+      "GS": 17,
+      "ASS": 0,
+      "AMM": 1,
+      "ESP": 0,
+      "Pct_Sufficienza": 49.7,
+      "Pct_Parate": 50.0,
+      "xG_Tot": 0.0,
+      "xA_Tot": 0.29,
+      "Goals_Prevented": -3.74,
+      "Errors_Leading_To_Goal": 1,
+      "Prestito_OUT": false
     }
   ],
   "Lestofanti FC": [
@@ -3453,31 +3407,6 @@
       "Pct_Parate": 0.0,
       "xG_Tot": 0.0,
       "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
-    },
-    {
-      "Cod": 7165,
-      "Giocatore": "Liteta",
-      "NomeGrezzo": "Liteta",
-      "Squadra": "Cagliari",
-      "RuoloClassic": "C",
-      "RuoloMantra": "M;C",
-      "Costo": 0,
-      "InPrestito": true,
-      "FuoriSerieA": false,
-      "Presenze": 0,
-      "MV_Stagione": 0.0,
-      "FM_Stagione": 0.0,
-      "GF": 0,
-      "GS": 0,
-      "ASS": 0,
-      "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 75.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.01,
       "Goals_Prevented": 0.0,
       "Errors_Leading_To_Goal": 0
     },
@@ -4908,7 +4837,8 @@
       "xG_Tot": 0.0,
       "xA_Tot": 0.04,
       "Goals_Prevented": -1.57,
-      "Errors_Leading_To_Goal": 2
+      "Errors_Leading_To_Goal": 2,
+      "Prestito_OUT": true
     },
     {
       "Cod": 7411,
@@ -5533,7 +5463,8 @@
       "xG_Tot": 0.97,
       "xA_Tot": 0.2,
       "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "Errors_Leading_To_Goal": 0,
+      "Prestito_OUT": true
     },
     {
       "Cod": 4896,
@@ -9091,7 +9022,8 @@
       "xG_Tot": 1.31,
       "xA_Tot": 1.0,
       "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "Errors_Leading_To_Goal": 0,
+      "Prestito_OUT": true
     },
     {
       "Cod": 7329,
@@ -9718,7 +9650,8 @@
       "xG_Tot": 0.0,
       "xA_Tot": 0.29,
       "Goals_Prevented": -3.74,
-      "Errors_Leading_To_Goal": 1
+      "Errors_Leading_To_Goal": 1,
+      "Prestito_OUT": true
     },
     {
       "Cod": 6403,
@@ -10193,7 +10126,8 @@
       "xG_Tot": 0.53,
       "xA_Tot": 1.3,
       "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "Errors_Leading_To_Goal": 0,
+      "Prestito_OUT": true
     },
     {
       "Cod": 333,
@@ -10995,7 +10929,8 @@
       "xG_Tot": 0.55,
       "xA_Tot": 0.28,
       "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "Errors_Leading_To_Goal": 0,
+      "Prestito_OUT": true
     },
     {
       "Cod": 6020,
