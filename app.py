@@ -60,7 +60,9 @@ from engine.league_manager import (
     terminate_loan, add_or_update_loan,
     get_available_leagues, get_active_league_id, set_active_league_id,
     create_new_league, delete_league, get_league_type, set_league_type,
-    purge_team_and_league_session_state
+    purge_team_and_league_session_state,
+    find_latest_roster_export_file, auto_sync_league_rosters_from_downloads,
+    clear_loan_cache
 )
 from engine.understat_loader import sync_understat_metrics, get_understat_teams_metrics
 from engine.injuries_manager import (
@@ -537,13 +539,19 @@ if is_current_user_admin():
             unsafe_allow_html=True
         )
     with col_sb_s2:
-        if st.button('Sync', key='sb_quick_sync_btn', width='stretch', help=f'Aggiorna subito voti, statistiche e infortuni da Fantacalcio.it e Understat. (Ultimo: {sync_state.get("last_sync_datetime", "N/D")}. Prossimo auto-check tra: {rem_lbl})'):
+        if st.button('Sync', key='sb_quick_sync_btn', width='stretch', help=f'Aggiorna subito voti, statistiche, infortuni e rose da Fantacalcio.it. (Ultimo: {sync_state.get("last_sync_datetime", "N/D")}. Prossimo auto-check tra: {rem_lbl})'):
             st.cache_data.clear()
             st.cache_resource.clear()
-            with st.spinner('Sincronizzazione in corso...'):
+            with st.spinner('Sincronizzazione in corso (voti, rose e infortuni)...'):
                 ok_sync, msg_sync = run_full_sync_pipeline(force_live_scrape=True, source="manual_sidebar")
             if ok_sync:
-                st.sidebar.success('Aggiornato!')
+                sync_st_now = get_sync_state()
+                if sync_st_now.get('roster_imported'):
+                    st.toast("🟢 Rose di lega aggiornate da nuovo export Fantacalcio.it!", icon="⚽")
+                    st.sidebar.success('Rose & Dati Aggiornati!')
+                else:
+                    st.toast("🟢 Statistiche e voti live sincronizzati!", icon="⚽")
+                    st.sidebar.success('Aggiornato!')
             else:
                 st.sidebar.error('Errore sync')
             st.rerun()
@@ -3625,6 +3633,99 @@ with tab_impostazioni:
                 </div>
             </div>
             """, unsafe_allow_html=True)
+
+            # -------------------------------------------------------------
+            # AUTO-SYNC ROSE DI LEGA DA FANTACALCIO.IT
+            # -------------------------------------------------------------
+            active_lid = get_active_league_id()
+            reg_leagues = get_available_leagues()
+            active_lname = reg_leagues.get(active_lid, {}).get('name', active_lid)
+            roster_cand = find_latest_roster_export_file(active_lid)
+            league_meta_info = get_league_metadata(active_lid)
+            last_imported_fn = league_meta_info.get('last_imported_file') or league_meta_info.get('filename', 'File iniziale')
+            last_imported_dt = league_meta_info.get('last_imported_datetime') or league_meta_info.get('last_updated', 'N/D')
+
+            cand_badge = "⚪ Nessun export rilevato in Downloads"
+            cand_desc = "Non sono stati rilevati file recenti esportati da Fantacalcio.it nella tua cartella Downloads."
+            if roster_cand.get('found'):
+                size_kb = round(roster_cand['size_bytes'] / 1024, 1)
+                if roster_cand.get('is_newer'):
+                    cand_badge = "🟡 Nuovo Export Rilevato in Downloads!"
+                    cand_desc = f"Trovato file più recente: <b>{roster_cand['filename']}</b> ({roster_cand['datetime_str']}, {size_kb} KB). Verrà importato automaticamente al prossimo clic su <b>Sync</b> oppure cliccando sul pulsante qui sotto."
+                else:
+                    cand_badge = "🟢 Rose Allineate all'Ultimo Export"
+                    cand_desc = f"Ultimo file in Downloads: <b>{roster_cand['filename']}</b> ({roster_cand['datetime_str']}, {size_kb} KB) &mdash; sincronizzato con la lega attiva."
+
+            st.markdown(f"""
+            <div style="background: rgba(16, 38, 26, 0.75); border: 1.5px solid rgba(74, 222, 128, 0.35); border-radius: 10px; padding: 16px 20px; margin-bottom: 16px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap;">
+                    <span style="font-weight: 700; color: #4ade80; font-size: 1.05rem;">Sincronizzazione Rose di Lega (Fantacalcio.it)</span>
+                    <span style="font-size: 0.8rem; background: rgba(74, 222, 128, 0.15); color: #86efac; border: 1px solid rgba(74, 222, 128, 0.3); padding: 3px 8px; border-radius: 6px;">Lega Attiva: <b>{active_lname}</b></span>
+                </div>
+                <div style="font-size: 0.88rem; color: #cbd5e1; margin-bottom: 10px; line-height: 1.45;">
+                    💡 <b>Come aggiornare le rose in 1 click:</b><br>
+                    1. Su <i>Leghe Fantacalcio</i>, vai su <b>Rose</b> &rarr; <b>Esporta Rose in Excel</b> (il file viene scaricato nei tuoi <i>Download</i>).<br>
+                    2. Clicca sul tasto <b>Sync</b> nella barra laterale di FantaPandoAssistant: l'app rileva il file ed aggiorna tutte le squadre in tempo reale!
+                </div>
+                <div style="font-size: 0.83rem; color: #94a3b8; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 8px;">
+                    <div>Stato rilevamento: <b>{cand_badge}</b></div>
+                    <div style="color: #cbd5e1; margin-top: 3px;">{cand_desc}</div>
+                    <div style="margin-top: 4px; font-size: 0.78rem; color: #64748b;">File attualmente in uso nel database: <span style="color: #94a3b8;">{last_imported_fn}</span> (Aggiornato: {last_imported_dt})</div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+            if roster_cand.get('found'):
+                col_r_act1, col_r_act2 = st.columns([1.8, 1.2])
+                with col_r_act1:
+                    btn_lbl = f"📥 Importa Adesso da Downloads: {roster_cand['filename'][:32]}..." if len(roster_cand['filename']) > 32 else f"📥 Importa Adesso: {roster_cand['filename']}"
+                    if st.button(btn_lbl, key="btn_force_import_cand_roster", type="primary", width='stretch', help="Ricarica forzatamente le rose da questo file nei Download"):
+                        st.cache_data.clear()
+                        st.cache_resource.clear()
+                        with st.spinner("Importazione ed elaborazione rose in corso..."):
+                            imp_ok, imp_msg, imp_fn = auto_sync_league_rosters_from_downloads(league_id=active_lid, df_master=df_master, force=True)
+                        if imp_ok:
+                            st.success(f"{imp_msg}")
+                            st.toast("🟢 Rose aggiornate con successo!", icon="⚽")
+                            st.rerun()
+                        else:
+                            st.error(f"Errore durante l'importazione: {imp_msg}")
+                with col_r_act2:
+                    st.caption(f"File: `{roster_cand['filename']}` ({roster_cand['datetime_str']})")
+
+            with st.expander("📁 Caricamento Rapido Alternativo File Rose (Drag & Drop)", expanded=False):
+                st.markdown("Se preferisci non usare i Download o sei su Cloud, puoi trascinare direttamente il file qui:")
+                quick_up_roster = st.file_uploader(
+                    "Trascina qui il file delle rose (.xlsx, .xls, .csv):",
+                    type=['xlsx', 'xls', 'csv'],
+                    key="quick_roster_sync_dragdrop"
+                )
+                if quick_up_roster is not None:
+                    q_sig = f"{quick_up_roster.name}_{quick_up_roster.size}"
+                    if st.session_state.get('last_quick_roster_sig') != q_sig:
+                        try:
+                            with st.spinner("Lettura ed elaborazione delle rose in corso..."):
+                                q_parsed = parse_official_league_excel(quick_up_roster, df_master)
+                                if q_parsed:
+                                    save_league_rosters(q_parsed, league_id=active_lid)
+                                    save_league_metadata(
+                                        source=f"Caricamento rapido ({quick_up_roster.name})",
+                                        filename=quick_up_roster.name,
+                                        league_id=active_lid,
+                                        extra={'last_imported_file': quick_up_roster.name, 'teams_count': len(q_parsed), 'players_count': sum(len(p) for p in q_parsed.values())}
+                                    )
+                                    clear_loan_cache()
+                                    cur_t = get_active_my_team(active_lid)
+                                    if cur_t in q_parsed:
+                                        sync_user_roster_from_league(q_parsed, cur_t, league_id=active_lid)
+                                    st.session_state['last_quick_roster_sig'] = q_sig
+                                    st.cache_data.clear()
+                                    st.cache_resource.clear()
+                                    st.success(f"Rose caricate con successo! Rilevate {len(q_parsed)} squadre e {sum(len(p) for p in q_parsed.values())} calciatori.")
+                                    st.toast("🟢 Rose caricate e salvate con successo!", icon="⚽")
+                                    st.rerun()
+                        except Exception as ex_q:
+                            st.error(f"Errore elaborazione file: {ex_q}")
 
             col_sync1, col_sync2 = st.columns([2, 1])
             with col_sync1:

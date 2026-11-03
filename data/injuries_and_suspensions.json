@@ -1,5 +1,12 @@
 {
   "auto": {
+    "Hien": {
+      "Giocatore": "Hien",
+      "NomeOriginale": "Hien",
+      "Squadra": "Atalanta",
+      "Stato": "Infortunato",
+      "Dettaglio": "il difensore operato a fine giugno per una lesione del tendine prossimale del muscolo semimembranoso della coscia sinistra, in recupero e pronto a tornare in campo dalla metà di novembre."
+    },
     "Kossounou": {
       "Giocatore": "Kossounou",
       "NomeOriginale": "Kossounou",
@@ -26,35 +33,35 @@
       "NomeOriginale": "Gaetano",
       "Squadra": "Atalanta",
       "Stato": "Infortunato",
-      "Dettaglio": "il centrocampista giovedì scorso a Firenze ha lasciato il campo per un fastidio muscolare all'inguine che rimane da valutare. Viaggia verso il forfait per lunedì contro il Parma."
+      "Dettaglio": "il centrocampista frenato nella gara di fine ottobre a Firenze per una distrazione di medio grado ai muscoli adduttori della coscia destra, recuperabile da fine novembre."
     },
     "Raspadori": {
       "Giocatore": "Raspadori",
       "NomeOriginale": "Raspadori",
       "Squadra": "Atalanta",
       "Stato": "Infortunato",
-      "Dettaglio": "Nuovo stop muscolare per l'attaccante, frenato il 15 ottobre in Conference League da una distrazione muscolare di basso grado al bicipite femorale della coscia destra, rientro dall'inizio di novembre."
+      "Dettaglio": "Nuovo stop muscolare per l'attaccante, frenato il 15 ottobre in Conference League da una distrazione muscolare di basso grado al bicipite femorale della coscia destra. Punta a rientrare dall'inizio di novembre, ma da valutare la convocazione già domenica a Monza."
     },
     "Scamacca": {
       "Giocatore": "Scamacca",
       "NomeOriginale": "Scamacca",
       "Squadra": "Atalanta",
       "Stato": "Infortunato",
-      "Dettaglio": "L'attaccante fuori causa per giovedì a Firenze a causa di un risentimento ai muscoli flessori della coscia destra. Verrà rivalutato, si proverà ad averlo a disposizione già da inizio novembre."
+      "Dettaglio": "L'attaccante fuori causa dal match di fine ottobre a Firenze a causa di un risentimento ai muscoli flessori della coscia destra. Verrà rivalutato, si proverà ad averlo a disposizione già da inizio novembre nella trasferta di Monza."
     },
     "Kristensen T.": {
       "Giocatore": "Kristensen T.",
       "NomeOriginale": "Kristensen T.",
       "Squadra": "Atalanta",
       "Stato": "Infortunato",
-      "Dettaglio": "il difensore costretto al cambio il 29 ottobre a Firenze dopo pochi minuti di gara a causa di un fastidio muscolare alla gamba. Da valutare, out lunedì contro il Parma."
+      "Dettaglio": "il difensore costretto al cambio il 29 ottobre a Firenze dopo pochi minuti di gara a causa di una distrazione di basso grado ai muscoli flessori della coscia sinistra. Recuperabile dalla seconda metà di novembre."
     },
     "Kessiè": {
       "Giocatore": "Kessiè",
       "NomeOriginale": "Kessiè",
       "Squadra": "Atalanta",
       "Stato": "Infortunato",
-      "Dettaglio": "L'ivoriano condizionato da una distrazione di basso grado al polpaccio della gamba destra, tentativo rientro da inizio novembre."
+      "Dettaglio": "L'ivoriano condizionato da una distrazione di basso grado al polpaccio della gamba destra, tentativo rientro da inizio novembre e da valutare l'eventuale convocazione già domenica a Monza."
     },
     "Pompei": {
       "Giocatore": "Pompei",
@@ -63,26 +70,12 @@
       "Stato": "Infortunato",
       "Dettaglio": "Il portiere fermo da inizio ottobre per la frattura della falange della mano destra, out nel prossimo turno di campionato. Tempi di recupero da valutare."
     },
-    "Hien": {
-      "Giocatore": "Hien",
-      "NomeOriginale": "Hien",
-      "Squadra": "Atalanta",
-      "Stato": "Infortunato",
-      "Dettaglio": "il difensore operato a fine giugno per una lesione del tendine prossimale del muscolo semimembranoso della coscia sinistra, in recupero e pronto a tornare in campo dalla metà di novembre."
-    },
-    "Enem": {
-      "Giocatore": "Enem",
-      "NomeOriginale": "Enem",
+    "De Silvestri": {
+      "Giocatore": "De Silvestri",
+      "NomeOriginale": "De Silvestri",
       "Squadra": "Bologna",
       "Stato": "Infortunato",
-      "Dettaglio": "Lavoro a parte negli ultimi giorni per l'attaccante a causa di un lieve affaticamento muscolare alla gamba. Out contro Milan e Monza, da valutare in vista della 11a giornata."
-    },
-    "Piccoli": {
-      "Giocatore": "Piccoli",
-      "NomeOriginale": "Piccoli",
-      "Squadra": "Bologna",
-      "Stato": "Infortunato",
-      "Dettaglio": "l'attaccante indisponibile a causa di un guaio muscolare al bicipite femorale della coscia destra. Recuperabile dalla metà di novembre."
+      "Dettaglio": "Il difensore out contro Milan e Monza per un risentimento muscolare ai flessori della coscia destra, non ci sarà neppure domenica a Parma. Da valutare in vista della 12a giornata."
     },
     "Holm": {
       "Giocatore": "Holm",
@@ -91,12 +84,19 @@
       "Stato": "Infortunato",
       "Dettaglio": "Lo svedese KO in Nazionale il 26 settembre vittima di un problema al tendine della coscia destra. Ha deciso di operarsi e affronterà un lungo stop. Ipotesi di rientro in campo da fine febbraio."
     },
-    "De Silvestri": {
-      "Giocatore": "De Silvestri",
-      "NomeOriginale": "De Silvestri",
+    "Piccoli": {
+      "Giocatore": "Piccoli",
+      "NomeOriginale": "Piccoli",
       "Squadra": "Bologna",
       "Stato": "Infortunato",
-      "Dettaglio": "Il difensore out contro Milan e Monza per un risentimento muscolare ai flessori della coscia destra. Da valutare in vista della 11a giornata."
+      "Dettaglio": "l'attaccante indisponibile a causa di un guaio muscolare al bicipite femorale della coscia destra. Recuperabile dalla metà di novembre, ma sta provando a forzare il rientro già domenica a Parma."
+    },
+    "Enem": {
+      "Giocatore": "Enem",
+      "NomeOriginale": "Enem",
+      "Squadra": "Bologna",
+      "Stato": "Infortunato",
+      "Dettaglio": "Lavoro a parte negli ultimi giorni per l'attaccante a causa di un lieve affaticamento muscolare alla gamba. Out contro Milan e Monza, da valutare in vista di domenica a Parma nella 11a giornata."
     },
     "Idrissi R.": {
       "Giocatore": "Idrissi R.",
@@ -112,6 +112,27 @@
       "Stato": "Infortunato",
       "Dettaglio": "il centrocampista KO il 7 settembre contro il Lecce in casa vittima della rottura del legamento crociato anteriore. Verrà operato e costretto a un lungo stop (ipotizziamo un rientro da marzo)."
     },
+    "Fadera": {
+      "Giocatore": "Fadera",
+      "NomeOriginale": "Fadera",
+      "Squadra": "Cagliari",
+      "Stato": "Infortunato",
+      "Dettaglio": "il centrocampista offensivo dei sardi fermo dalla gara contro la Lazio (1 novembre) per un problema muscolare al flessore della coscia, tentativo di rientro dall'inizio di dicembre."
+    },
+    "Obert": {
+      "Giocatore": "Obert",
+      "NomeOriginale": "Obert",
+      "Squadra": "Cagliari",
+      "Stato": "Squalificato",
+      "Dettaglio": "Squalificato per il prossimo turno"
+    },
+    "Di Gregorio": {
+      "Giocatore": "Di Gregorio",
+      "NomeOriginale": "sono suddivisi per squadre di appartenenza. In questa pagina, grazie al lavoro della nostra redazione,",
+      "Squadra": "Venezia",
+      "Stato": "Diffidato",
+      "Dettaglio": "In diffida"
+    },
     "Deiola": {
       "Giocatore": "Deiola",
       "NomeOriginale": "Deiola",
@@ -124,7 +145,7 @@
       "NomeOriginale": "Addai",
       "Squadra": "Como",
       "Stato": "Infortunato",
-      "Dettaglio": "l'esterno offensivo ai box per un problema muscolare alla gamba che rimane da valutare. Assente domenica contro il Venezia."
+      "Dettaglio": "l'esterno offensivo ai box per un problema muscolare alla gamba che rimane da valutare. Assente domenica contro l'Inter."
     },
     "Rodriguez Je.": {
       "Giocatore": "Rodriguez Je.",
@@ -145,7 +166,7 @@
       "NomeOriginale": "Chalobah T.",
       "Squadra": "Como",
       "Stato": "Infortunato",
-      "Dettaglio": "il difensore il 18 ottobre a Firenze costretto al cambio per un guaio muscolare alla gamba, rientro da inizio novembre."
+      "Dettaglio": "il difensore il 18 ottobre a Firenze costretto al cambio per un guaio muscolare alla gamba. Punta a rientrare già domenica contro l'Inter, ma restano da valutare nei prossimi allenamenti le possibilità di convocazione per Milano."
     },
     "Kean": {
       "Giocatore": "Kean",
@@ -166,7 +187,7 @@
       "NomeOriginale": "Ranieri L.",
       "Squadra": "Fiorentina",
       "Stato": "Infortunato",
-      "Dettaglio": "il difensore alle prese con uno schiacciamento di un nervo al piede, forfait anche per lunedì contro il Sassuolo. Da valutare in vista della 11a di A."
+      "Dettaglio": "il difensore alle prese con uno schiacciamento di un nervo al piede, forfait anche lunedì scorso contro il Sassuolo. Da valutare il rientro tra i convocati già domenica contro la Juve al Franchi, altrimenti lo rivedremo dalla 12a di A."
     },
     "Parisi": {
       "Giocatore": "Parisi",
@@ -180,7 +201,14 @@
       "NomeOriginale": "Atta",
       "Squadra": "Fiorentina",
       "Stato": "Infortunato",
-      "Dettaglio": "il centrocampista non al meglio per un sovraccarico funzionale dell'addome, assente contro Atalanta, Inter, Genoa e Como. Da valutare nei prossimi allenamenti, si proverà a recuperarlo dalla prima metà di novembre."
+      "Dettaglio": "il centrocampista non al meglio per un sovraccarico funzionale dell'addome, assente contro Sassuolo, Atalanta, Inter, Genoa e Como. Da valutare nei prossimi allenamenti, difficile averlo a disposizione domenica contro la Juve; si proverà a recuperarlo a pieno dalla metà di novembre."
+    },
+    "Raimondo": {
+      "Giocatore": "Raimondo",
+      "NomeOriginale": "Raimondo",
+      "Squadra": "Frosinone",
+      "Stato": "Infortunato",
+      "Dettaglio": "l'attaccante KO l'1 novembre contro il Toro vittima di una lesione multilegamentosa contusivo-distorsiva della caviglia sinistra. Iniziate le cure del caso, proverà a tornare già da metà dicembre in campo."
     },
     "Grillitsch": {
       "Giocatore": "Grillitsch",
@@ -201,14 +229,14 @@
       "NomeOriginale": "Venturino",
       "Squadra": "Genoa",
       "Stato": "Infortunato",
-      "Dettaglio": "il calciatore operato al tendine rotuleo e ora in fase di recupero. Di certo assente nel prossimo turno di campionato, rientro da metà novembre."
+      "Dettaglio": "il calciatore operato al tendine rotuleo e ora in fase di recupero. Di certo assente nel prossimo turno di campionato, rientro da fine novembre."
     },
     "Havel": {
       "Giocatore": "Havel",
       "NomeOriginale": "Havel",
       "Squadra": "Genoa",
       "Stato": "Infortunato",
-      "Dettaglio": "L'attaccante ha deciso di operarsi alla caviglia e dovrebbe tornare arruolabile dall'inizio di novembre."
+      "Dettaglio": "L'attaccante ha deciso di operarsi alla caviglia e dovrebbe tornare arruolabile dalla metà di novembre."
     },
     "Ostigard": {
       "Giocatore": "Ostigard",
@@ -217,26 +245,12 @@
       "Stato": "Diffidato",
       "Dettaglio": "In diffida"
     },
-    "Pavard": {
-      "Giocatore": "Pavard",
-      "NomeOriginale": "Pavard",
+    "Stones": {
+      "Giocatore": "Stones",
+      "NomeOriginale": "Stones",
       "Squadra": "Inter",
       "Stato": "Infortunato",
-      "Dettaglio": "il difensore out per un risentimento agli adduttori della coscia destra, recuperabile dall'inizio di novembre."
-    },
-    "Jones C.": {
-      "Giocatore": "Jones C.",
-      "NomeOriginale": "Jones C.",
-      "Squadra": "Inter",
-      "Stato": "Infortunato",
-      "Dettaglio": "Il centrocampista fermato da un risentimento miofasciale agli adduttori della coscia destra, rientro dall'inizio di novembre."
-    },
-    "Martinez L.": {
-      "Giocatore": "Martinez L.",
-      "NomeOriginale": "Martinez L.",
-      "Squadra": "Inter",
-      "Stato": "Infortunato",
-      "Dettaglio": "L'argentino sottoposto il 15 ottobre a controlli medici che hanno evidenziato un risentimento muscolare ai flessori della coscia sinistra. Recuperabile dalla metà di novembre."
+      "Dettaglio": "il difensore alle prese con un risentimento ai flessori della coscia sinistra. Possibile rientro dall'inizio di novembre, ma da valutare la convocazione già domenica contro il Como."
     },
     "Luis Henrique": {
       "Giocatore": "Luis Henrique",
@@ -245,19 +259,12 @@
       "Stato": "Infortunato",
       "Dettaglio": "l'esterno nerazzurro sottoposto il 23 ottobre a esami medici che hanno evidenziato un risentimento all'adduttore lungo della coscia sinistra. Ipotesi di recupero da metà novembre."
     },
-    "Provedel": {
-      "Giocatore": "Provedel",
-      "NomeOriginale": "Provedel",
+    "Martinez L.": {
+      "Giocatore": "Martinez L.",
+      "NomeOriginale": "Martinez L.",
       "Squadra": "Inter",
       "Stato": "Infortunato",
-      "Dettaglio": "Il portiere fermato sabato dall'influenza, out nel derby contro il Milan. Da valutare in vista della 11a giornata di campionato."
-    },
-    "Stones": {
-      "Giocatore": "Stones",
-      "NomeOriginale": "Stones",
-      "Squadra": "Inter",
-      "Stato": "Infortunato",
-      "Dettaglio": "il difensore alle prese con un risentimento ai flessori della coscia sinistra, rientro dall'inizio di novembre."
+      "Dettaglio": "L'argentino sottoposto il 15 ottobre a controlli medici che hanno evidenziato un risentimento muscolare ai flessori della coscia sinistra. Recuperabile dalla metà di novembre."
     },
     "Celik": {
       "Giocatore": "Celik",
@@ -308,54 +315,40 @@
       "Stato": "Infortunato",
       "Dettaglio": "l'argentino ai box per una lesione di basso grado del soleo destro, recuperabile da metà novembre."
     },
-    "Rovella": {
-      "Giocatore": "Rovella",
-      "NomeOriginale": "Rovella",
-      "Squadra": "Lazio",
-      "Stato": "Infortunato",
-      "Dettaglio": "il regista dei biancocelesti KO il 30 agosto contro il Genoa vittima di una lesione muscolare al polpaccio, recuperabile da inizio novembre."
-    },
     "Gudmundsson A.": {
       "Giocatore": "Gudmundsson A.",
       "NomeOriginale": "Gudmundsson A.",
       "Squadra": "Lazio",
       "Stato": "Infortunato",
-      "Dettaglio": "L'islandese in Nazionale il 26 settembre vittima di un problema alla spalla destra dopo una caduta fortuita in partita. Condizioni da monitorare, si confida di riaverlo a disposizione dalla metà di novembre."
-    },
-    "Marusic": {
-      "Giocatore": "Marusic",
-      "NomeOriginale": "Marusic",
-      "Squadra": "Lazio",
-      "Stato": "Infortunato",
-      "Dettaglio": "il terzino dei biancocelesti KO il 24 agosto a Bologna vittima di una lesione muscolare alla coscia. Recuperabile da inizio novembre."
+      "Dettaglio": "L'islandese in Nazionale il 26 settembre vittima di un problema alla spalla destra dopo una caduta fortuita in partita. Condizioni da monitorare, si confida di riaverlo a disposizione dalla seconda metà di novembre."
     },
     "Coulibaly L.": {
       "Giocatore": "Coulibaly L.",
       "NomeOriginale": "Coulibaly L.",
       "Squadra": "Lecce",
       "Stato": "Infortunato",
-      "Dettaglio": "il centrocampista costretto al cambio il 18 ottobre a Udine per una lesione muscolare al bicipite femorale della coscia destra, recuperabile dall'inizio di novembre."
+      "Dettaglio": "il centrocampista costretto al cambio il 18 ottobre a Udine per una lesione muscolare al bicipite femorale della coscia destra, recuperabile dall'inizio di novembre ma da valutare la convocazione già sabato a Torino contro i granata."
     },
     "Berisha M.": {
       "Giocatore": "Berisha M.",
       "NomeOriginale": "Berisha M.",
       "Squadra": "Lecce",
       "Stato": "Infortunato",
-      "Dettaglio": "Il centrocampista ha lamentato un sovraccarico muscolare alla gamba e non ha preso parte alle sfide contro Monza e Milan, out anche domenica contro il Bologna. Recuperabile da inizio novembre."
+      "Dettaglio": "Il centrocampista ha lamentato un sovraccarico muscolare alla gamba e non ha preso parte alle ultime sfide di campionato. Recuperabile da metà novembre."
     },
     "Pierotti": {
       "Giocatore": "Pierotti",
       "NomeOriginale": "Pierotti",
       "Squadra": "Lecce",
       "Stato": "Infortunato",
-      "Dettaglio": "l'ala offensiva dei salentini ferma ai box per la frattura composta del malleolo mediale della caviglia destra rimediata nella seconda metà di ottobre. Si prospetta un lungo stop, ipotizziamo un rientro in campo da gennaio."
+      "Dettaglio": "l'ala offensiva dei salentini ferma ai box per la frattura composta del malleolo mediale della caviglia destra rimediata nella seconda metà di ottobre, poi operato a inizio novembre. Lungo stop, ipotizziamo un rientro in campo da gennaio."
     },
     "Geubbels": {
       "Giocatore": "Geubbels",
       "NomeOriginale": "Geubbels",
       "Squadra": "Lecce",
       "Stato": "Infortunato",
-      "Dettaglio": "L'attaccante si è fermato il 29 ottobre a Frosinone nella fase di riscaldamento prematch a causa di una lesione muscolare di basso grado all'adduttore della coscia destra. Recuperabile dalla metà di novembre."
+      "Dettaglio": "L'attaccante si è fermato il 29 ottobre a Frosinone nella fase di riscaldamento prematch a causa di una lesione muscolare di basso grado all'adduttore della coscia destra. Recuperabile dalla metà di novembre, ma proverà a forzare per sabato a Torino. Da valutare."
     },
     "Ilic": {
       "Giocatore": "Ilic",
@@ -364,19 +357,12 @@
       "Stato": "Infortunato",
       "Dettaglio": "il regista dei salentini KO l'11 ottobre in casa contro il Bologna vittima di una lesione miotendinea del retto femorale sinistro con lesione parziale del tendine, rientro da aprile."
     },
-    "Gaspar K.": {
-      "Giocatore": "Gaspar K.",
-      "NomeOriginale": "Gaspar K.",
+    "Monteiro J.": {
+      "Giocatore": "Monteiro J.",
+      "NomeOriginale": "Monteiro J.",
       "Squadra": "Lecce",
-      "Stato": "Squalificato",
-      "Dettaglio": "Squalificato per il prossimo turno"
-    },
-    "Di Lorenzo": {
-      "Giocatore": "Di Lorenzo",
-      "NomeOriginale": "sono suddivisi per squadre di appartenenza. In questa pagina, grazie al lavoro della nostra redazione,",
-      "Squadra": "Venezia",
-      "Stato": "Diffidato",
-      "Dettaglio": "In diffida"
+      "Stato": "Infortunato",
+      "Dettaglio": "l'ala offensiva dei salentini KO l'1 novembre contro il Bologna vittima di una lesione di primo grado al polpaccio sinistro. Recuperabile dall'inizio di dicembre."
     },
     "Terracciano": {
       "Giocatore": "Terracciano",
@@ -439,7 +425,7 @@
       "NomeOriginale": "Folorunsho",
       "Squadra": "Monza",
       "Stato": "Infortunato",
-      "Dettaglio": "Il centrocampista alle prese con noie muscolari al polpaccio, forfait sabato a Bologna. Da valutare in vista della 11a giornata."
+      "Dettaglio": "Il centrocampista alle prese con noie muscolari al polpaccio, forfait sabato scorso a Bologna. Da valutare in vista di domenica contro l'Atalanta nella 11a giornata."
     },
     "Ziolkowski": {
       "Giocatore": "Ziolkowski",
@@ -448,33 +434,19 @@
       "Stato": "Infortunato",
       "Dettaglio": "Il difensore condizionato da una fastidiosa fascite plantare, recuperabile dalla metà di novembre."
     },
-    "Hojlund": {
-      "Giocatore": "Hojlund",
-      "NomeOriginale": "Hojlund",
+    "Buongiorno": {
+      "Giocatore": "Buongiorno",
+      "NomeOriginale": "Buongiorno",
       "Squadra": "Napoli",
       "Stato": "Infortunato",
-      "Dettaglio": "l'attaccante in tribuna e non disponibile contro la Juventus domenica sera per una sindrome influenzale. Da valutare in vista della 11a giornata di campionato."
+      "Dettaglio": "il difensore operato nella seconda metà di luglio al menisco del ginocchio destro. Sta recuperando lentamente, ipotizziamo possa tornare arruolabile da fine dicembre."
     },
-    "Neres": {
-      "Giocatore": "Neres",
-      "NomeOriginale": "Neres",
+    "Olivera": {
+      "Giocatore": "Olivera",
+      "NomeOriginale": "Olivera",
       "Squadra": "Napoli",
       "Stato": "Infortunato",
-      "Dettaglio": "L'ala offensiva azzurra ai box per una lesione di basso grado al muscolo semimembranoso della coscia destra, tentativo di rientro tra i convocati dalla prima metà di novembre."
-    },
-    "Favasuli": {
-      "Giocatore": "Favasuli",
-      "NomeOriginale": "Favasuli",
-      "Squadra": "Napoli",
-      "Stato": "Infortunato",
-      "Dettaglio": "Il cursore di fascia degli azzurri ai box da inizio ottobre per una lesione muscolare di secondo grado del retto femorale della coscia destra. Recuperabile dalla metà di novembre."
-    },
-    "Badiashile": {
-      "Giocatore": "Badiashile",
-      "NomeOriginale": "Badiashile",
-      "Squadra": "Napoli",
-      "Stato": "Infortunato",
-      "Dettaglio": "il difensore KO il 24 ottobre contro la Roma per una lesione distrattiva di medio grado del retto femorale destro, recuperabile dalla fine di novembre."
+      "Dettaglio": "il difensore uruguaiano KO l'1 novembre contro la Juve per un guaio muscolare alla gamba che andrà valutato. Forfait nel prossimo turno contro la Lazio."
     },
     "Spinazzola": {
       "Giocatore": "Spinazzola",
@@ -490,20 +462,6 @@
       "Stato": "Infortunato",
       "Dettaglio": "lo slovacco il 28 ottobre vittima a Monza di una lesione della sindesmosi tibio-peroneale senza instabilità, associata a lesione di basso grado del LPAA della caviglia sinistra. Recuperabile dalla metà di dicembre."
     },
-    "Buongiorno": {
-      "Giocatore": "Buongiorno",
-      "NomeOriginale": "Buongiorno",
-      "Squadra": "Napoli",
-      "Stato": "Infortunato",
-      "Dettaglio": "il difensore operato nella seconda metà di luglio al menisco del ginocchio destro. Sta recuperando lentamente, ipotizziamo possa tornare arruolabile da fine dicembre."
-    },
-    "Milinkovic-Savic V.": {
-      "Giocatore": "Milinkovic-Savic V.",
-      "NomeOriginale": "Milinkovic-Savic V.",
-      "Squadra": "Napoli",
-      "Stato": "Infortunato",
-      "Dettaglio": "Il portiere out contro la Juventus per un affaticamento muscolare alla gamba. Condizioni da valutare."
-    },
     "Santos A.": {
       "Giocatore": "Santos A.",
       "NomeOriginale": "Santos A.",
@@ -511,12 +469,40 @@
       "Stato": "Infortunato",
       "Dettaglio": "l'ala offensiva azzurra KO il 18 ottobre a Venezia, vittima di una lesione distrattiva di medio grado del bicipite femorale sinistro. Recuperabile dall'inizio di dicembre."
     },
+    "Neres": {
+      "Giocatore": "Neres",
+      "NomeOriginale": "Neres",
+      "Squadra": "Napoli",
+      "Stato": "Infortunato",
+      "Dettaglio": "L'ala offensiva azzurra ai box per una lesione di basso grado al muscolo semimembranoso della coscia destra, rientro tra i convocati dalla metà di novembre."
+    },
+    "Favasuli": {
+      "Giocatore": "Favasuli",
+      "NomeOriginale": "Favasuli",
+      "Squadra": "Napoli",
+      "Stato": "Infortunato",
+      "Dettaglio": "Il cursore di fascia degli azzurri ai box da inizio ottobre per una lesione muscolare di secondo grado del retto femorale della coscia destra. Recuperabile dalla metà di novembre."
+    },
+    "Badiashile": {
+      "Giocatore": "Badiashile",
+      "NomeOriginale": "Badiashile",
+      "Squadra": "Napoli",
+      "Stato": "Infortunato",
+      "Dettaglio": "il difensore KO il 24 ottobre contro la Roma per una lesione distrattiva di medio grado del retto femorale destro, recuperabile dalla fine di novembre."
+    },
+    "Marianucci": {
+      "Giocatore": "Marianucci",
+      "NomeOriginale": "Marianucci",
+      "Squadra": "Napoli",
+      "Stato": "Squalificato",
+      "Dettaglio": "Squalificato per il prossimo turno"
+    },
     "Bernabè": {
       "Giocatore": "Bernabè",
       "NomeOriginale": "Bernabè",
       "Squadra": "Parma",
       "Stato": "Infortunato",
-      "Dettaglio": "Il centrocampista KO nella rifinitura di domenica vittima di un risentimento muscolare alla gamba sinistra che andrà valutato. Assente lunedì contro l'Atalanta."
+      "Dettaglio": "Il centrocampista KO nella rifinitura di domenica scorsa vittima di un risentimento muscolare alla gamba sinistra che andrà valutato. Assente poi contro l'Atalanta, a rischio la sua presenza anche per domenica contro il Bologna."
     },
     "Svilar": {
       "Giocatore": "Svilar",
@@ -530,14 +516,14 @@
       "NomeOriginale": "Konè M.",
       "Squadra": "Roma",
       "Stato": "Infortunato",
-      "Dettaglio": "Il centrocampista frenato il 14 ottobre in Champions League contro il Real Madrid da una lesione di primo grado al bicipite femorale destro, tentativo di rientro tra i convocati in campionato dalla prima metà di novembre."
+      "Dettaglio": "Il centrocampista frenato il 14 ottobre in Champions League contro il Real Madrid da una lesione di primo grado al bicipite femorale destro, tentativo di rientro tra i convocati in campionato dalla prima metà di novembre ma da valutare in settimana a Trigoria in vista di sabato sera contro il Sassuolo."
     },
     "Dybala": {
       "Giocatore": "Dybala",
       "NomeOriginale": "Dybala",
       "Squadra": "Roma",
       "Stato": "Infortunato",
-      "Dettaglio": "l'argentino in recupero da un fastidio al polpaccio, out dunque anche per sabato a Udine. Appare recuperabile da inizio novembre per l'11a giornata di campionato."
+      "Dettaglio": "l'argentino in recupero da un fastidio al polpaccio, proverà a recuperare per sabato sera contro il Sassuolo. Da valutare nei prossimi allenamenti a Trigoria, in particolare da mercoledì post impegno in Champions League."
     },
     "Pellegrini Lo.": {
       "Giocatore": "Pellegrini Lo.",
@@ -560,6 +546,13 @@
       "Stato": "Infortunato",
       "Dettaglio": "il centrocampista canadese vittima a giugno nella gara dei Mondiali di una rottura di tibia e perone. Operato, punta a tornare in campo da dicembre."
     },
+    "Volpato": {
+      "Giocatore": "Volpato",
+      "NomeOriginale": "Volpato",
+      "Squadra": "Sassuolo",
+      "Stato": "Infortunato",
+      "Dettaglio": "l'ala offensiva dei neroverdi out dal match del 2 novembre contro la Fiorentina per un problema muscolare alla gamba. Tempi di recupero da valutare, assente anche nel prossimo turno di campionato."
+    },
     "Leysen F.": {
       "Giocatore": "Leysen F.",
       "NomeOriginale": "Leysen F.",
@@ -567,26 +560,19 @@
       "Stato": "Infortunato",
       "Dettaglio": "il difensore KO l'11 ottobre contro il Milan vittima di una lesione al crociato anteriore del ginocchio sinistro. Lungo stop, ipotesi rientro in campo da aprile."
     },
-    "Thorstvedt": {
-      "Giocatore": "Thorstvedt",
-      "NomeOriginale": "Thorstvedt",
-      "Squadra": "Sassuolo",
-      "Stato": "Squalificato",
-      "Dettaglio": "Squalificato per il prossimo turno"
-    },
     "Cacciamani": {
       "Giocatore": "Cacciamani",
       "NomeOriginale": "Cacciamani",
       "Squadra": "Torino",
       "Stato": "Infortunato",
-      "Dettaglio": "l'esterno dei granata non al meglio per una sub-lussazione alla spalla sinistra rimediata nel turno precedente e forfait per domenica a Frosinone. Da valutare in vista della 11a giornata di campionato."
+      "Dettaglio": "l'esterno dei granata non al meglio per una sub-lussazione alla spalla sinistra rimediata nel turno precedente e forfait domenica scorsa a Frosinone. Da valutare nei prossimi allenamenti in vista di sabato contro il Lecce nella 11a giornata di campionato."
     },
-    "Rodriguez R.": {
-      "Giocatore": "Rodriguez R.",
-      "NomeOriginale": "Rodriguez R.",
+    "Fortini": {
+      "Giocatore": "Fortini",
+      "NomeOriginale": "Fortini",
       "Squadra": "Torino",
       "Stato": "Infortunato",
-      "Dettaglio": "Il difensore svizzero ai box per una lesione tendinea di basso grado ai muscoli flessori della coscia sinistra, rientro possibile dalla prima metà di novembre."
+      "Dettaglio": "Il cursore di fascia dei granata rientrato in anticipo dagli impegni con l'U21 azzurra a inizio ottobre a causa di un affaticamento muscolare all'adduttore. Da valutare nei prossimi allenamenti le possibilità di convocazione per sabato contro il Lecce."
     },
     "Mandragora": {
       "Giocatore": "Mandragora",
@@ -595,19 +581,12 @@
       "Stato": "Infortunato",
       "Dettaglio": "il centrocampista granata fermato il 23 ottobre contro il Monza da un problema muscolare al flessore sinistro. Rientro dalla metà di novembre."
     },
-    "Fortini": {
-      "Giocatore": "Fortini",
-      "NomeOriginale": "Fortini",
+    "Rodriguez R.": {
+      "Giocatore": "Rodriguez R.",
+      "NomeOriginale": "Rodriguez R.",
       "Squadra": "Torino",
       "Stato": "Infortunato",
-      "Dettaglio": "Il cursore di fascia dei granata rientrato in anticipo dagli impegni con l'U21 azzurra a inizio ottobre a causa di un affaticamento muscolare all'adduttore. Da valutare nei prossimi allenamenti le possibilità di convocazione per domenica a Frosinone."
-    },
-    "Solet": {
-      "Giocatore": "Solet",
-      "NomeOriginale": "Solet",
-      "Squadra": "Udinese",
-      "Stato": "Infortunato",
-      "Dettaglio": "Il difensore non al meglio per un problema muscolare al pettineo sinistro, recuperabile dalla prima metà di novembre."
+      "Dettaglio": "Il difensore svizzero ai box per una lesione tendinea di basso grado ai muscoli flessori della coscia sinistra, rientro possibile dalla metà di novembre."
     },
     "Zanoli": {
       "Giocatore": "Zanoli",
@@ -644,19 +623,12 @@
       "Stato": "Diffidato",
       "Dettaglio": "In diffida"
     },
-    "Correia T.": {
-      "Giocatore": "Correia T.",
-      "NomeOriginale": "Correia T.",
+    "Sverko": {
+      "Giocatore": "Sverko",
+      "NomeOriginale": "Sverko",
       "Squadra": "Venezia",
       "Stato": "Infortunato",
-      "Dettaglio": "il cursore di fascia dei veneti KO il 12 ottobre a Bergamo vittima di un risentimento muscolare al flessore della gamba sinistra, sarà out anche domenica a Como. Da valutare in vista dell'11a giornata."
-    },
-    "Adorante": {
-      "Giocatore": "Adorante",
-      "NomeOriginale": "Adorante",
-      "Squadra": "Venezia",
-      "Stato": "Infortunato",
-      "Dettaglio": "l'attaccante a fine luglio ha deciso di operarsi per un problema alla schiena, che lo costringerà a stare ai box per buona parte del girone d'andata del campionato. Tentativo di rientro dall'inizio di novembre."
+      "Dettaglio": "il difensore operato in estate per il perdurare di un problema all'anca e recuperabile dalla metà di novembre."
     },
     "Franjic": {
       "Giocatore": "Franjic",
@@ -665,12 +637,19 @@
       "Stato": "Infortunato",
       "Dettaglio": "il difensore costretto al cambio a Milano contro i rossoneri a fine agosto per un guaio alla spalla che ha richiesto l'intervento chirurgico. Lungo stop e rientro dalla metà di dicembre."
     },
-    "Sverko": {
-      "Giocatore": "Sverko",
-      "NomeOriginale": "Sverko",
+    "Correia T.": {
+      "Giocatore": "Correia T.",
+      "NomeOriginale": "Correia T.",
       "Squadra": "Venezia",
       "Stato": "Infortunato",
-      "Dettaglio": "il difensore operato in estate per il perdurare di un problema all'anca e recuperabile dalla metà di novembre."
+      "Dettaglio": "il cursore di fascia dei veneti KO il 12 ottobre a Bergamo vittima di un risentimento muscolare al flessore della gamba sinistra, sarà out anche venerdì contro l'Udinese. Da valutare in vista della 12a giornata."
+    },
+    "Adorante": {
+      "Giocatore": "Adorante",
+      "NomeOriginale": "Adorante",
+      "Squadra": "Venezia",
+      "Stato": "Infortunato",
+      "Dettaglio": "l'attaccante a fine luglio ha deciso di operarsi per un problema alla schiena, che lo costringerà a stare ai box per buona parte del girone d'andata del campionato. Tentativo di rientro dalla metà di novembre."
     },
     "Indisponibili della Serie A": {
       "Giocatore": "Indisponibili della Serie A",
@@ -854,142 +833,9 @@
       "Stato": "Diffidato",
       "Dettaglio": "In diffida"
     },
-    "10": {
-      "Giocatore": "10",
-      "NomeOriginale": "10",
-      "Squadra": "Venezia",
-      "Stato": "Diffidato",
-      "Dettaglio": "In diffida"
-    },
-    "Bol": {
-      "Giocatore": "Bol",
-      "NomeOriginale": "Bol",
-      "Squadra": "Venezia",
-      "Stato": "Diffidato",
-      "Dettaglio": "In diffida"
-    },
-    "Mon": {
-      "Giocatore": "Mon",
-      "NomeOriginale": "Mon",
-      "Squadra": "Venezia",
-      "Stato": "Diffidato",
-      "Dettaglio": "In diffida"
-    },
-    "2": {
-      "Giocatore": "2",
-      "NomeOriginale": "2",
-      "Squadra": "Venezia",
-      "Stato": "Diffidato",
-      "Dettaglio": "In diffida"
-    },
-    "-": {
-      "Giocatore": "-",
-      "NomeOriginale": "-",
-      "Squadra": "Venezia",
-      "Stato": "Diffidato",
-      "Dettaglio": "In diffida"
-    },
-    "1": {
-      "Giocatore": "1",
-      "NomeOriginale": "1",
-      "Squadra": "Venezia",
-      "Stato": "Diffidato",
-      "Dettaglio": "In diffida"
-    },
-    "31/10": {
-      "Giocatore": "31/10",
-      "NomeOriginale": "31/10",
-      "Squadra": "Venezia",
-      "Stato": "Diffidato",
-      "Dettaglio": "In diffida"
-    },
-    "15:00": {
-      "Giocatore": "15:00",
-      "NomeOriginale": "15:00",
-      "Squadra": "Venezia",
-      "Stato": "Diffidato",
-      "Dettaglio": "In diffida"
-    },
-    "Renato Dall'Ara": {
-      "Giocatore": "Renato Dall'Ara",
-      "NomeOriginale": "Renato Dall'Ara",
-      "Squadra": "Venezia",
-      "Stato": "Diffidato",
-      "Dettaglio": "In diffida"
-    },
-    "Udi": {
-      "Giocatore": "Udi",
-      "NomeOriginale": "Udi",
-      "Squadra": "Venezia",
-      "Stato": "Diffidato",
-      "Dettaglio": "In diffida"
-    },
-    "Rom": {
-      "Giocatore": "Rom",
-      "NomeOriginale": "Rom",
-      "Squadra": "Venezia",
-      "Stato": "Diffidato",
-      "Dettaglio": "In diffida"
-    },
-    "5": {
-      "Giocatore": "5",
-      "NomeOriginale": "5",
-      "Squadra": "Venezia",
-      "Stato": "Diffidato",
-      "Dettaglio": "In diffida"
-    },
-    "18:00": {
-      "Giocatore": "18:00",
-      "NomeOriginale": "18:00",
-      "Squadra": "Venezia",
-      "Stato": "Diffidato",
-      "Dettaglio": "In diffida"
-    },
-    "Bluenergy Stadium": {
-      "Giocatore": "Bluenergy Stadium",
-      "NomeOriginale": "Bluenergy Stadium",
-      "Squadra": "Venezia",
-      "Stato": "Diffidato",
-      "Dettaglio": "In diffida"
-    },
-    "Mil": {
-      "Giocatore": "Mil",
-      "NomeOriginale": "Mil",
-      "Squadra": "Venezia",
-      "Stato": "Diffidato",
-      "Dettaglio": "In diffida"
-    },
-    "Int": {
-      "Giocatore": "Int",
-      "NomeOriginale": "Int",
-      "Squadra": "Venezia",
-      "Stato": "Diffidato",
-      "Dettaglio": "In diffida"
-    },
-    "3": {
-      "Giocatore": "3",
-      "NomeOriginale": "3",
-      "Squadra": "Venezia",
-      "Stato": "Diffidato",
-      "Dettaglio": "In diffida"
-    },
-    "20:45": {
-      "Giocatore": "20:45",
-      "NomeOriginale": "20:45",
-      "Squadra": "Venezia",
-      "Stato": "Diffidato",
-      "Dettaglio": "In diffida"
-    },
-    "Giuseppe Meazza": {
-      "Giocatore": "Giuseppe Meazza",
-      "NomeOriginale": "Giuseppe Meazza",
-      "Squadra": "Venezia",
-      "Stato": "Diffidato",
-      "Dettaglio": "In diffida"
-    },
-    "Com": {
-      "Giocatore": "Com",
-      "NomeOriginale": "Com",
+    "11": {
+      "Giocatore": "11",
+      "NomeOriginale": "11",
       "Squadra": "Venezia",
       "Stato": "Diffidato",
       "Dettaglio": "In diffida"
@@ -1001,14 +847,119 @@
       "Stato": "Diffidato",
       "Dettaglio": "In diffida"
     },
+    "Udi": {
+      "Giocatore": "Udi",
+      "NomeOriginale": "Udi",
+      "Squadra": "Venezia",
+      "Stato": "Diffidato",
+      "Dettaglio": "In diffida"
+    },
     "0": {
       "Giocatore": "0",
       "NomeOriginale": "0",
       "Squadra": "Venezia",
       "Stato": "Diffidato",
       "Dettaglio": "In diffida"
+    },
+    "-": {
+      "Giocatore": "-",
+      "NomeOriginale": "-",
+      "Squadra": "Venezia",
+      "Stato": "Diffidato",
+      "Dettaglio": "In diffida"
+    },
+    "06/11": {
+      "Giocatore": "06/11",
+      "NomeOriginale": "06/11",
+      "Squadra": "Venezia",
+      "Stato": "Diffidato",
+      "Dettaglio": "In diffida"
+    },
+    "20:45": {
+      "Giocatore": "20:45",
+      "NomeOriginale": "20:45",
+      "Squadra": "Venezia",
+      "Stato": "Diffidato",
+      "Dettaglio": "In diffida"
+    },
+    "Pier Luigi Penzo": {
+      "Giocatore": "Pier Luigi Penzo",
+      "NomeOriginale": "Pier Luigi Penzo",
+      "Squadra": "Venezia",
+      "Stato": "Diffidato",
+      "Dettaglio": "In diffida"
+    },
+    "Cag": {
+      "Giocatore": "Cag",
+      "NomeOriginale": "Cag",
+      "Squadra": "Venezia",
+      "Stato": "Diffidato",
+      "Dettaglio": "In diffida"
+    },
+    "Fro": {
+      "Giocatore": "Fro",
+      "NomeOriginale": "Fro",
+      "Squadra": "Venezia",
+      "Stato": "Diffidato",
+      "Dettaglio": "In diffida"
+    },
+    "07/11": {
+      "Giocatore": "07/11",
+      "NomeOriginale": "07/11",
+      "Squadra": "Venezia",
+      "Stato": "Diffidato",
+      "Dettaglio": "In diffida"
+    },
+    "15:00": {
+      "Giocatore": "15:00",
+      "NomeOriginale": "15:00",
+      "Squadra": "Venezia",
+      "Stato": "Diffidato",
+      "Dettaglio": "In diffida"
+    },
+    "Sardegna Arena": {
+      "Giocatore": "Sardegna Arena",
+      "NomeOriginale": "Sardegna Arena",
+      "Squadra": "Venezia",
+      "Stato": "Diffidato",
+      "Dettaglio": "In diffida"
+    },
+    "Tor": {
+      "Giocatore": "Tor",
+      "NomeOriginale": "Tor",
+      "Squadra": "Venezia",
+      "Stato": "Diffidato",
+      "Dettaglio": "In diffida"
+    },
+    "Lec": {
+      "Giocatore": "Lec",
+      "NomeOriginale": "Lec",
+      "Squadra": "Venezia",
+      "Stato": "Diffidato",
+      "Dettaglio": "In diffida"
+    },
+    "Olimpico": {
+      "Giocatore": "Olimpico",
+      "NomeOriginale": "Olimpico",
+      "Squadra": "Venezia",
+      "Stato": "Diffidato",
+      "Dettaglio": "In diffida"
+    },
+    "Par": {
+      "Giocatore": "Par",
+      "NomeOriginale": "Par",
+      "Squadra": "Venezia",
+      "Stato": "Diffidato",
+      "Dettaglio": "In diffida"
+    },
+    "Bol": {
+      "Giocatore": "Bol",
+      "NomeOriginale": "Bol",
+      "Squadra": "Venezia",
+      "Stato": "Diffidato",
+      "Dettaglio": "In diffida"
     }
   },
   "manual_overrides": {},
-  "last_updated": "2026-11-02 17:46:39"
+  "last_updated": "2026-11-03 12:06:30"
 }

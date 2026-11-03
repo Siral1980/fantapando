@@ -1076,13 +1076,202 @@ def load_league_rosters(league_id=None):
     return {}
 
 
-def sync_all_league_rosters(df_master=None):
+def find_latest_roster_export_file(league_id=None):
+    """
+    Scans the local Downloads folder (and data/uploads) for recent Fantacalcio.it roster exports
+    matching the active or specified league.
+    Prefers:
+    1. Files matching league name/tokens (e.g. 'piombo', 'fuso', 'fantarino')
+    2. .xlsx over .csv if timestamps are close (within 120s)
+    3. Files with 'roster', 'rosters', or 'calciatori' in filename
+    Returns dict: {
+        'found': bool,
+        'path': str,
+        'filename': str,
+        'mtime': float,
+        'datetime_str': str,
+        'size_bytes': int,
+        'is_newer': bool,
+        'last_imported_mtime': float
+    }
+    """
+    import glob
+    import os
+    import re
+    import datetime
+
+    lid = league_id or get_active_league_id()
+    reg = get_available_leagues()
+    lname = reg.get(lid, {}).get('name', lid)
+
+    search_dirs = []
+    dl_dir = os.path.expanduser('~/Downloads')
+    if os.path.exists(dl_dir):
+        search_dirs.append(dl_dir)
+    uploads_dir = os.path.join(DATA_DIR, "uploads")
+    if os.path.exists(uploads_dir):
+        search_dirs.append(uploads_dir)
+
+    stop_words = {'fc', 'ac', 'as', 'ss', 'di', 'de', 'del', 'della', 'la', 'il', 'le', 'un', 'una', 'fanta', 'lega', 'league'}
+    raw_tokens = re.split(r'[\s_\-]+', f"{lid} {lname}".lower())
+    specific_tokens = [t for t in raw_tokens if len(t) >= 3 and t not in stop_words]
+    if not specific_tokens:
+        specific_tokens = [t for t in raw_tokens if len(t) >= 3]
+
+    generic_tokens = ['roster', 'calciatori', 'mantra', 'rose']
+
+    candidates = []
+    for sdir in search_dirs:
+        for ext in ['*.xlsx', '*.xls', '*.csv']:
+            for fpath in glob.glob(os.path.join(sdir, ext)):
+                fname = os.path.basename(fpath).lower()
+                try:
+                    mtime = os.path.getmtime(fpath)
+                    size = os.path.getsize(fpath)
+                except Exception:
+                    continue
+
+                if size < 500:
+                    continue
+
+                has_specific = any(t in fname for t in specific_tokens)
+                has_generic = any(t in fname for t in generic_tokens)
+
+                if has_specific:
+                    is_xlsx = fpath.lower().endswith(('.xlsx', '.xls'))
+                    priority = 1 if is_xlsx else 2
+                    candidates.append({
+                        'priority': priority,
+                        'mtime': mtime,
+                        'path': fpath,
+                        'filename': os.path.basename(fpath),
+                        'size': size
+                    })
+                elif has_generic and not specific_tokens:
+                    candidates.append({
+                        'priority': 3,
+                        'mtime': mtime,
+                        'path': fpath,
+                        'filename': os.path.basename(fpath),
+                        'size': size
+                    })
+
+    if not candidates:
+        return {'found': False}
+
+    candidates.sort(key=lambda c: (c['priority'], -c['mtime']))
+    top = candidates[0]
+
+    paths = get_league_paths(lid)
+    meta = get_league_metadata(lid)
+    last_imported_mtime = float(meta.get('last_imported_mtime', 0.0) or 0.0)
+    if last_imported_mtime <= 0 and os.path.exists(paths['rosters']):
+        try:
+            last_imported_mtime = os.path.getmtime(paths['rosters'])
+        except Exception:
+            last_imported_mtime = 0.0
+
+    is_newer = (top['mtime'] - last_imported_mtime) > 10.0
+
+    dt_str = datetime.datetime.fromtimestamp(top['mtime']).strftime('%d/%m/%Y %H:%M:%S')
+    return {
+        'found': True,
+        'path': top['path'],
+        'filename': top['filename'],
+        'mtime': top['mtime'],
+        'datetime_str': dt_str,
+        'size_bytes': top['size'],
+        'is_newer': is_newer,
+        'last_imported_mtime': last_imported_mtime
+    }
+
+
+def auto_sync_league_rosters_from_downloads(league_id=None, df_master=None, force=False):
+    """
+    Checks if a newer Fantacalcio.it roster export file exists in Downloads for the active league.
+    If found (or if force=True), parses it, updates league_rosters.json, user_roster.json,
+    saves latest_roster_export.xlsx, and records provenance in league_metadata.json.
+    Returns: (imported: bool, message: str, filename: str or None)
+    """
+    import shutil
+    import pandas as pd
+
+    lid = league_id or get_active_league_id()
+    cand = find_latest_roster_export_file(lid)
+    if not cand.get('found'):
+        return False, "Nessun file export rilevato nella cartella Downloads.", None
+
+    if not force and not cand.get('is_newer'):
+        return False, f"Nessun nuovo export rilevato (l'ultimo file '{cand['filename']}' è già stato importato).", None
+
+    fpath = cand['path']
+    try:
+        if df_master is None:
+            master_csv = os.path.join(DATA_DIR, "players_master.csv")
+            if os.path.exists(master_csv):
+                df_master = pd.read_csv(master_csv)
+
+        parsed_data = parse_official_league_excel(fpath, df_master)
+        if not parsed_data or len(parsed_data) == 0:
+            return False, f"Impossibile estrarre squadre dal file '{cand['filename']}'.", None
+
+        # Save to active league
+        save_league_rosters(parsed_data, lid)
+
+        # Save a persistent archive copy of the source file
+        paths = get_league_paths(lid)
+        archive_name = "latest_roster_export" + os.path.splitext(fpath)[1]
+        archive_path = os.path.join(os.path.dirname(paths['rosters']), archive_name)
+        try:
+            shutil.copy2(fpath, archive_path)
+            if archive_name.endswith('.xlsx'):
+                shutil.copy2(fpath, os.path.join(DATA_DIR, "lista_calciatori_mantra_lega_attuale.xlsx"))
+        except Exception:
+            pass
+
+        # Update metadata
+        save_league_metadata(
+            source=f"Auto-Sync da {cand['filename']}",
+            filename=cand['filename'],
+            league_id=lid,
+            extra={
+                'last_imported_file': cand['filename'],
+                'last_imported_mtime': cand['mtime'],
+                'last_imported_datetime': cand['datetime_str'],
+                'teams_count': len(parsed_data),
+                'players_count': sum(len(p) for p in parsed_data.values())
+            }
+        )
+
+        # Clear loan cache so loans are recalculated cleanly
+        clear_loan_cache()
+
+        # Re-sync user roster for the active team
+        active_t = get_active_my_team(lid)
+        if active_t in parsed_data:
+            sync_user_roster_from_league(parsed_data, active_t, league_id=lid)
+
+        tot_teams = len(parsed_data)
+        tot_players = sum(len(p) for p in parsed_data.values())
+        msg = f"Rilevato ed importato nuovo export '{cand['filename']}' ({tot_teams} squadre, {tot_players} calciatori)!"
+        print(f"[LeagueManager] {msg}")
+        return True, msg, cand['filename']
+
+    except Exception as e:
+        err = f"Errore durante l'importazione automatica di '{cand['filename']}': {e}"
+        print(f"[LeagueManager] {err}")
+        return False, err, None
+
+
+def sync_all_league_rosters(df_master=None, force_roster_reimport=False):
     """
     Synchronizes all league rosters with the latest df_master data:
-    1. If a saved league source file (lista_calciatori_mantra_lega_attuale.xlsx) is available, re-parses it.
+    1. Checks if a newer Fantacalcio.it export file is available in Downloads for active league.
+       If detected (or forced), re-parses it, updates league_rosters.json, applies loans, and archives.
     2. Updates every player across all teams in league_rosters.json (for all leagues) with the latest
        stats, presenze, MV, FM, goals, assists, Understat metrics, and sufficiency from df_master.
     3. Re-synchronizes user_roster.json for the active team.
+    Returns: (success: bool, message: str, roster_imported: bool)
     """
     import pandas as pd
     if df_master is None:
@@ -1090,10 +1279,18 @@ def sync_all_league_rosters(df_master=None):
         if os.path.exists(master_csv):
             df_master = pd.read_csv(master_csv)
         else:
-            return False, "players_master.csv non trovato"
+            return False, "players_master.csv non trovato", False
 
     if df_master.empty:
-        return False, "df_master vuoto"
+        return False, "df_master vuoto", False
+
+    # Step 1: Check and auto-import updated roster file from Downloads for active league
+    active_lid = get_active_league_id()
+    roster_imported, roster_msg, new_fname = auto_sync_league_rosters_from_downloads(
+        league_id=active_lid,
+        df_master=df_master,
+        force=force_roster_reimport
+    )
 
     # Build fast lookup maps from df_master
     master_by_cod = {}
@@ -1188,7 +1385,12 @@ def sync_all_league_rosters(df_master=None):
     except Exception as e:
         print(f"[LeagueManager] Error syncing active user roster: {e}")
 
-    return True, f"Rose aggiornate con successo ({updated_count} file sincronizzati)"
+    if roster_imported:
+        summary_msg = f"Rose aggiornate con successo dall'export '{new_fname}'. Sincronizzati tutti i dati ufficiali."
+    else:
+        summary_msg = f"Statistiche e voti ufficiali sincronizzati con successo ({updated_count} leghe aggiornate)."
+
+    return True, summary_msg, roster_imported
 
 
 def get_active_my_team(league_id=None):
@@ -1321,7 +1523,7 @@ def set_active_my_team(team_name, persist_disk=False, league_id=None):
     return team_name
 
 
-def save_league_metadata(source="File Excel Fantacalcio.it", filename=None, league_id=None):
+def save_league_metadata(source="File Excel Fantacalcio.it", filename=None, league_id=None, extra=None):
     """Stores provenance timestamp and source of the current rosters in active league and root."""
     paths = get_league_paths(league_id)
     meta = {
@@ -1329,6 +1531,8 @@ def save_league_metadata(source="File Excel Fantacalcio.it", filename=None, leag
         'source': source,
         'filename': filename or "Rose_Lega_Ufficiale"
     }
+    if extra and isinstance(extra, dict):
+        meta.update(extra)
     try:
         with open(paths['metadata'], 'w', encoding='utf-8') as f:
             json.dump(meta, f, indent=2, ensure_ascii=False)

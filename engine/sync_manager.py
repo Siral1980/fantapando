@@ -31,6 +31,8 @@ def get_sync_state() -> dict:
     status = "never_run"
     details = ""
     source = "none"
+    roster_imported = False
+    roster_details = ""
 
     if os.path.exists(SYNC_STATE_FILE):
         try:
@@ -41,6 +43,8 @@ def get_sync_state() -> dict:
                 status = data.get("status", "success")
                 details = data.get("details", "")
                 source = data.get("source", "unknown")
+                roster_imported = bool(data.get("roster_imported", False))
+                roster_details = data.get("roster_details", "")
         except Exception as e:
             print(f"[SyncManager] Error reading sync state file: {e}")
 
@@ -68,6 +72,8 @@ def get_sync_state() -> dict:
         "status": status,
         "details": details,
         "source": source,
+        "roster_imported": roster_imported,
+        "roster_details": roster_details,
         "interval_hours": AUTO_SYNC_INTERVAL_HOURS,
         "interval_seconds": AUTO_SYNC_INTERVAL_SECONDS,
         "elapsed_seconds": elapsed_seconds,
@@ -78,7 +84,7 @@ def get_sync_state() -> dict:
     }
 
 
-def save_sync_state(status: str = "success", details: str = "", source: str = "auto"):
+def save_sync_state(status: str = "success", details: str = "", source: str = "auto", roster_imported: bool = False, roster_details: str = ""):
     """
     Persists the updated sync state to sync_state.json.
     """
@@ -92,6 +98,8 @@ def save_sync_state(status: str = "success", details: str = "", source: str = "a
         "status": status,
         "details": details,
         "source": source,
+        "roster_imported": roster_imported,
+        "roster_details": roster_details,
         "interval_hours": AUTO_SYNC_INTERVAL_HOURS
     }
     
@@ -146,13 +154,14 @@ def format_last_sync_display(sync_state: dict) -> str:
     return dt_str[:16]
 
 
-def run_full_sync_pipeline(force_live_scrape: bool = True, source: str = "auto") -> tuple[bool, str]:
+def run_full_sync_pipeline(force_live_scrape: bool = True, source: str = "auto", force_roster_reimport: bool = False) -> tuple[bool, str]:
     """
     Executes the entire end-to-end sync pipeline:
     1. Refreshes live lineups and injuries concurrently (Fantacalcio.it + Gazzetta + Sky).
     2. Scrapes official Fantacalcio.it stats, Understat xG/xA, missing matchday votes, and GK metrics.
-    3. Writes players_master.csv.
-    4. Updates sync_state.json.
+    3. Synchronizes all league rosters with df_master and auto-detects/imports new exports from Downloads.
+    4. Writes players_master.csv.
+    5. Updates sync_state.json.
     
     Returns (success: bool, message: str).
     """
@@ -173,15 +182,26 @@ def run_full_sync_pipeline(force_live_scrape: bool = True, source: str = "auto")
         
         # Step 3: Synchronize all league rosters and user squads with master data
         print("[SyncManager] Step 3/3: Synchronizing all league rosters and squads with master data...")
+        roster_imported = False
+        roster_summary = ""
         try:
             from engine.league_manager import sync_all_league_rosters
-            sync_all_league_rosters(df_master)
+            res_sync = sync_all_league_rosters(df_master, force_roster_reimport=force_roster_reimport)
+            if isinstance(res_sync, tuple):
+                if len(res_sync) >= 3:
+                    _, roster_summary, roster_imported = res_sync
+                elif len(res_sync) == 2:
+                    _, roster_summary = res_sync
         except Exception as e_roster:
             print(f"[SyncManager] Notice synchronizing rosters: {e_roster}")
         
         count = len(df_master) if df_master is not None else 0
-        details = f"Sincronizzati {count} calciatori e tutte le rose di lega con statistiche ufficiali, metriche Understat e voti reali."
-        save_sync_state(status="success", details=details, source=source)
+        if roster_imported:
+            details = f"{roster_summary} ({count} calciatori Serie A sincronizzati)."
+        else:
+            details = f"Sincronizzati {count} calciatori e tutte le rose di lega con statistiche ufficiali, metriche Understat e voti reali."
+        
+        save_sync_state(status="success", details=details, source=source, roster_imported=roster_imported, roster_details=roster_summary)
         print(f"[SyncManager] Sync completed successfully! ({details})")
         return True, details
 
