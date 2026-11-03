@@ -42,7 +42,12 @@ from engine.optimizer import (
 from engine.trade_evaluator import evaluate_trade
 import importlib
 import engine.trade_finder
-importlib.reload(engine.trade_finder)
+import engine.league_manager
+try:
+    importlib.reload(engine.trade_finder)
+    importlib.reload(engine.league_manager)
+except Exception:
+    pass
 from engine.trade_finder import (
     analyze_squad_weaknesses, find_win_win_trades, find_trades_for_target_players,
     RECOMMENDED_QUOTAS, RECOMMENDED_QUOTAS_CLASSIC,
@@ -62,9 +67,13 @@ from engine.league_manager import (
     create_new_league, delete_league, get_league_type, set_league_type,
     purge_team_and_league_session_state,
     find_latest_roster_export_file, auto_sync_league_rosters_from_downloads,
-    get_unconfirmed_zero_cost_loans,
     clear_loan_cache
 )
+try:
+    from engine.league_manager import get_unconfirmed_zero_cost_loans
+except Exception:
+    def get_unconfirmed_zero_cost_loans(league_data=None, league_id=None):
+        return []
 from engine.understat_loader import sync_understat_metrics, get_understat_teams_metrics
 from engine.injuries_manager import (
     fetch_live_injuries_from_fantacalcio, load_injuries_data,
