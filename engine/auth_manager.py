@@ -73,14 +73,43 @@ def _verify_auth_token(token: str, users_dict: dict):
 
 def is_running_on_localhost() -> bool:
     """
-    Detects if the app is running locally on the developer's Windows workstation
-    versus on Streamlit Community Cloud / Linux container.
+    Detects if the app is running locally on a user's workstation (any PC / OS)
+    versus on Streamlit Community Cloud / container.
     """
     if os.path.exists('/mount/src') or os.environ.get('STREAMLIT_SHARING_MODE') or os.environ.get('IS_CLOUD'):
         return False
-    if os.name == 'nt' and os.path.exists(r"C:\Users\gdeluca"):
-        return True
-    return False
+    return True
+
+
+def _detect_git_remote():
+    """Detects available git remote ('fantapando', 'origin', or first available)."""
+    try:
+        res = subprocess.run(["git", "remote"], cwd=ROOT_DIR, capture_output=True, text=True, check=False)
+        if res.returncode == 0:
+            remotes = [r.strip() for r in res.stdout.splitlines() if r.strip()]
+            if "fantapando" in remotes:
+                return "fantapando"
+            elif "origin" in remotes:
+                return "origin"
+            elif remotes:
+                return remotes[0]
+    except Exception:
+        pass
+    return "origin"
+
+
+def get_local_network_ip() -> str:
+    """Returns the local IP address on LAN (e.g. 192.168.1.X) so other PCs/devices on the same Wi-Fi can connect."""
+    try:
+        import socket
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.settimeout(0.5)
+        s.connect(('8.8.8.8', 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        return 'localhost'
 
 
 def _read_json_safe(path: str):
@@ -170,33 +199,38 @@ def _push_file_via_github_api(rel_path: str, content_bytes: bytes, commit_msg: s
 
 def sync_users_and_leagues_to_github(background: bool = True):
     """
-    Automatically commits and pushes data/users_db.json and data/leagues/ to GitHub (master & dev)
-    so that saved users and leagues persist across restarts on both Localhost and Streamlit Cloud.
+    Automatically commits and pushes all data/ (users, leagues, loans, rosters) to GitHub
+    so that saved data persists across restarts on both Localhost and Streamlit Cloud.
     """
     def _worker():
         try:
             if is_running_on_localhost():
+                remote_name = _detect_git_remote()
+                b_res = subprocess.run(["git", "branch", "--show-current"], cwd=ROOT_DIR, capture_output=True, text=True, check=False)
+                curr_branch = b_res.stdout.strip() if b_res.returncode == 0 and b_res.stdout.strip() else "master"
+
                 subprocess.run(
-                    ["git", "add", "data/users_db.json", "data/leagues/"],
+                    ["git", "add", "data/"],
                     cwd=ROOT_DIR, check=False, capture_output=True
                 )
                 status_res = subprocess.run(
-                    ["git", "status", "--porcelain", "data/users_db.json", "data/leagues/"],
+                    ["git", "status", "--porcelain", "data/"],
                     cwd=ROOT_DIR, check=False, capture_output=True, text=True
                 )
                 if status_res.stdout.strip():
                     subprocess.run(
-                        ["git", "commit", "-m", "Auto-persist users_db and leagues"],
+                        ["git", "commit", "-m", "Auto-persist app data (users, leagues, loans)"],
                         cwd=ROOT_DIR, check=False, capture_output=True
                     )
                 subprocess.run(
-                    ["git", "push", "fantapando", "HEAD:master"],
+                    ["git", "push", remote_name, f"HEAD:{curr_branch}"],
                     cwd=ROOT_DIR, check=False, capture_output=True
                 )
-                subprocess.run(
-                    ["git", "push", "fantapando", "HEAD:dev"],
-                    cwd=ROOT_DIR, check=False, capture_output=True
-                )
+                if curr_branch != "master":
+                    subprocess.run(
+                        ["git", "push", remote_name, "HEAD:master"],
+                        cwd=ROOT_DIR, check=False, capture_output=True
+                    )
             else:
                 if os.path.exists(USERS_DB_FILE):
                     with open(USERS_DB_FILE, "rb") as f:
@@ -212,6 +246,36 @@ def sync_users_and_leagues_to_github(background: bool = True):
     else:
         _worker()
         return True, "Sincronizzazione completata!"
+
+
+def pull_latest_from_github() -> tuple[bool, str]:
+    """
+    Pulls the latest changes from GitHub into the local repository so another PC gets fresh data.
+    """
+    if not is_running_on_localhost():
+        return False, "Sincronizzazione git disponibile solo su installazioni locali."
+    try:
+        remote_name = _detect_git_remote()
+        b_res = subprocess.run(["git", "branch", "--show-current"], cwd=ROOT_DIR, capture_output=True, text=True, check=False)
+        curr_branch = b_res.stdout.strip() if b_res.returncode == 0 and b_res.stdout.strip() else "master"
+
+        # Stash untracked/uncommitted data if needed
+        subprocess.run(["git", "stash", "push", "-m", "auto_stash_before_pull", "--", "data/"], cwd=ROOT_DIR, capture_output=True, check=False)
+
+        # Pull
+        res = subprocess.run(["git", "pull", remote_name, curr_branch], cwd=ROOT_DIR, capture_output=True, text=True, check=False)
+
+        # Pop stash if any
+        subprocess.run(["git", "stash", "pop"], cwd=ROOT_DIR, capture_output=True, check=False)
+
+        if res.returncode == 0:
+            out_msg = res.stdout.strip() or "Aggiornato all'ultima versione."
+            return True, f"Sincronizzazione completata ({remote_name}/{curr_branch}): {out_msg}"
+        else:
+            err_msg = res.stderr.strip() or res.stdout.strip()
+            return False, f"Errore durante git pull: {err_msg}"
+    except Exception as e:
+        return False, f"Errore durante la sincronizzazione: {e}"
 
 
 def load_users_db() -> dict:

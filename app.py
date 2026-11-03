@@ -87,7 +87,8 @@ def render_html(raw_html: str, *args, **kwargs):
 from engine.auth_manager import (
     get_current_user, is_current_user_admin, render_login_screen,
     load_users_db, save_users_db, create_or_update_user, delete_user_account,
-    is_running_on_localhost, sync_users_and_leagues_to_github
+    is_running_on_localhost, sync_users_and_leagues_to_github,
+    pull_latest_from_github, get_local_network_ip
 )
 
 # Page configuration
@@ -144,7 +145,8 @@ elif st.session_state['_last_code_version'] != current_code_version:
     from engine.auth_manager import (
         get_current_user, is_current_user_admin, render_login_screen,
         load_users_db, save_users_db, create_or_update_user, delete_user_account,
-        is_running_on_localhost, sync_users_and_leagues_to_github
+        is_running_on_localhost, sync_users_and_leagues_to_github,
+        pull_latest_from_github, get_local_network_ip
     )
     from engine.roster_manager import get_roster_dataframe
     from engine.league_manager import get_out_of_serie_a_summary, get_team_roster_df
@@ -336,6 +338,10 @@ with u_col1:
         f"<span style='color:#38bdf8; font-size:0.72rem;'>{u_role_badge} · {u_env_badge}</span></div>",
         unsafe_allow_html=True
     )
+if is_running_on_localhost():
+    lan_ip_sb = get_local_network_ip()
+    if lan_ip_sb and lan_ip_sb != 'localhost':
+        st.sidebar.caption(f" Accesso Wi-Fi: `http://{lan_ip_sb}:8501`")
 with u_col2:
     if st.button(" Esci / Test", key="sb_btn_logout_switch", width='stretch', help="Esci o accedi con un altro account per testare la vista di un amico"):
         st.session_state.pop('auth_username', None)
@@ -3755,9 +3761,26 @@ with tab_impostazioni:
                     st.error(f"File JSON non valido: {ex_bk}")
 
             if is_running_on_localhost():
-                if st.button(" Forza Push Utenti & Leghe sul Cloud", key="admin_btn_sync_cloud", width='stretch'):
-                    with st.spinner("Sincronizzazione con GitHub (Streamlit Cloud) in corso..."):
-                        sync_users_and_leagues_to_github(background=False)
-                        st.success(" Utenti e leghe pubblicati su Streamlit Cloud (`master` e `dev`)!")
+                st.markdown("---")
+                st.markdown("** Sincronizzazione Multi-PC & GitHub Cloud**")
+                lan_ip_admin = get_local_network_ip()
+                st.info(f" **Accesso Rete Locale (Wi-Fi):** Puoi collegarti a questa istanza da un altro PC, Mac, tablet o smartphone sulla stessa rete Wi-Fi digitando nel browser: `http://{lan_ip_admin}:8501`")
+
+                col_sync1, col_sync2 = st.columns(2)
+                with col_sync1:
+                    if st.button("🟢 Scarica Ultimi Dati da GitHub (Pull)", key="admin_btn_pull_cloud", width='stretch', help="Scarica le ultime modifiche a rose, leghe e impostazioni salvate da un altro PC"):
+                        with st.spinner("Scaricamento aggiornamenti da GitHub in corso..."):
+                            ok_p, msg_p = pull_latest_from_github()
+                            if ok_p:
+                                st.cache_data.clear()
+                                st.success(msg_p)
+                                st.rerun()
+                            else:
+                                st.error(msg_p)
+                with col_sync2:
+                    if st.button("🟠 Invia Dati su GitHub Cloud (Push)", key="admin_btn_sync_cloud", width='stretch', help="Carica rose, leghe, prestiti e utenti su GitHub per renderli disponibili sugli altri PC o su Streamlit Cloud"):
+                        with st.spinner("Sincronizzazione dati con GitHub in corso..."):
+                            sync_users_and_leagues_to_github(background=False)
+                            st.success(" Tutti i dati (rose, leghe, prestiti, utenti) pubblicati su GitHub!")
 
         # Calcolo automatico della giornata in base a data odierna e calendario ufficiale Serie A

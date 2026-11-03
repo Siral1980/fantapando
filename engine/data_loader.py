@@ -184,7 +184,10 @@ def load_official_stats_excel(file_path_or_buffer=None):
     
     if isinstance(path, str) and not os.path.exists(path):
         # Look in Downloads or Data
-        candidates = glob.glob("C:/Users/gdeluca/Downloads/Statistiche_Fantacalcio*.xlsx")
+        user_dl = os.path.join(os.path.expanduser("~"), "Downloads")
+        candidates = glob.glob(os.path.join(user_dl, "Statistiche_Fantacalcio*.xlsx"))
+        if not candidates:
+            candidates = glob.glob(os.path.join(DATA_DIR, "Statistiche_Fantacalcio*.xlsx"))
         if candidates:
             path = candidates[0]
             
