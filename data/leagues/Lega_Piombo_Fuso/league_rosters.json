@@ -1452,9 +1452,7 @@
       "GS": 13,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Prestito_OUT": true,
-      "Controparte": "Tonny Rio Malen by Pedony"
+      "ESP": 0
     },
     {
       "Cod": 6662,
@@ -1494,9 +1492,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Prestito_OUT": true,
-      "Controparte": "Tonny Rio Malen by Pedony"
+      "ESP": 0
     },
     {
       "Cod": 7611,
@@ -1548,7 +1544,7 @@
       "RuoloClassic": "P",
       "RuoloMantra": "Por",
       "Costo": 0,
-      "InPrestito": true,
+      "InPrestito": false,
       "FuoriSerieA": false,
       "Presenze": 0,
       "MV_Stagione": 0.0,
@@ -1559,6 +1555,7 @@
       "AMM": 0,
       "ESP": 0,
       "Prestito_OUT": false,
+      "Prestito_Da_Confermare": true,
       "Controparte": "Tonny Rio Malen by Pedony"
     },
     {
@@ -1711,9 +1708,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Prestito_OUT": true,
-      "Controparte": "Tonny Rio Malen by Pedony"
+      "ESP": 0
     },
     {
       "Cod": 5675,
@@ -2038,9 +2033,7 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 1,
-      "ESP": 0,
-      "Prestito_OUT": true,
-      "Controparte": "MAULUX FC"
+      "ESP": 0
     },
     {
       "Cod": 4436,
@@ -2154,9 +2147,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Prestito_OUT": true,
-      "Controparte": "Lestofanti FC"
+      "ESP": 0
     },
     {
       "Cod": 2155,
@@ -2747,9 +2738,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Prestito_OUT": true,
-      "Controparte": "Tonny Rio Malen by Pedony"
+      "ESP": 0
     },
     {
       "Cod": 5823,
@@ -2894,7 +2883,7 @@
       "RuoloClassic": "A",
       "RuoloMantra": "Pc",
       "Costo": 0,
-      "InPrestito": true,
+      "InPrestito": false,
       "FuoriSerieA": false,
       "Presenze": 6,
       "MV_Stagione": 6.33,
@@ -2905,6 +2894,7 @@
       "AMM": 0,
       "ESP": 0,
       "Prestito_OUT": false,
+      "Prestito_Da_Confermare": true,
       "Controparte": "BORTETA FC"
     }
   ],
@@ -3707,9 +3697,7 @@
       "GS": 5,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Prestito_OUT": true,
-      "Controparte": "Tonny Rio Malen by Pedony"
+      "ESP": 0
     },
     {
       "Cod": 6462,
@@ -4027,7 +4015,7 @@
       "RuoloClassic": "D",
       "RuoloMantra": "Dc",
       "Costo": 0,
-      "InPrestito": true,
+      "InPrestito": false,
       "FuoriSerieA": false,
       "Presenze": 5,
       "MV_Stagione": 5.4,
@@ -4038,6 +4026,7 @@
       "AMM": 1,
       "ESP": 0,
       "Prestito_OUT": false,
+      "Prestito_Da_Confermare": true,
       "Controparte": "Tonny Rio Malen by Pedony"
     },
     {
@@ -4287,9 +4276,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Prestito_OUT": true,
-      "Controparte": "La Joya"
+      "ESP": 0
     },
     {
       "Cod": 7409,
@@ -4318,7 +4305,7 @@
       "RuoloClassic": "C",
       "RuoloMantra": "T",
       "Costo": 0,
-      "InPrestito": true,
+      "InPrestito": false,
       "FuoriSerieA": false,
       "Presenze": 6,
       "MV_Stagione": 5.5,
@@ -4329,6 +4316,7 @@
       "AMM": 1,
       "ESP": 0,
       "Prestito_OUT": false,
+      "Prestito_Da_Confermare": true,
       "Controparte": "BORTETA FC"
     },
     {
@@ -7218,7 +7206,7 @@
       "RuoloClassic": "C",
       "RuoloMantra": "M;C",
       "Costo": 0,
-      "InPrestito": true,
+      "InPrestito": false,
       "FuoriSerieA": false,
       "Presenze": 4,
       "MV_Stagione": 6.38,
@@ -7229,6 +7217,7 @@
       "AMM": 0,
       "ESP": 0,
       "Prestito_OUT": false,
+      "Prestito_Da_Confermare": true,
       "Controparte": "Tonny Rio Malen by Pedony"
     },
     {
@@ -7315,7 +7304,7 @@
       "RuoloClassic": "C",
       "RuoloMantra": "T",
       "Costo": 0,
-      "InPrestito": true,
+      "InPrestito": false,
       "FuoriSerieA": false,
       "Presenze": 5,
       "MV_Stagione": 5.6,
@@ -7326,6 +7315,7 @@
       "AMM": 1,
       "ESP": 0,
       "Prestito_OUT": false,
+      "Prestito_Da_Confermare": true,
       "Controparte": "MAULUX FC"
     },
     {
@@ -7501,9 +7491,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Prestito_OUT": true,
-      "Controparte": "BORTETA FC"
+      "ESP": 0
     },
     {
       "Cod": 158,
@@ -7532,7 +7520,7 @@
       "RuoloClassic": "P",
       "RuoloMantra": "Por",
       "Costo": 0,
-      "InPrestito": true,
+      "InPrestito": false,
       "FuoriSerieA": false,
       "Presenze": 5,
       "MV_Stagione": 5.9,
@@ -7543,6 +7531,7 @@
       "AMM": 0,
       "ESP": 0,
       "Prestito_OUT": false,
+      "Prestito_Da_Confermare": true,
       "Controparte": "MAULUX FC"
     },
     {
@@ -7553,7 +7542,7 @@
       "RuoloClassic": "P",
       "RuoloMantra": "Por",
       "Costo": 0,
-      "InPrestito": true,
+      "InPrestito": false,
       "FuoriSerieA": false,
       "Presenze": 0,
       "MV_Stagione": 0.0,
@@ -7564,6 +7553,7 @@
       "AMM": 0,
       "ESP": 0,
       "Prestito_OUT": false,
+      "Prestito_Da_Confermare": true,
       "Controparte": "BORTETA FC"
     },
     {
@@ -7574,7 +7564,7 @@
       "RuoloClassic": "P",
       "RuoloMantra": "Por",
       "Costo": 0,
-      "InPrestito": true,
+      "InPrestito": false,
       "FuoriSerieA": false,
       "Presenze": 7,
       "MV_Stagione": 5.86,
@@ -7585,6 +7575,7 @@
       "AMM": 0,
       "ESP": 0,
       "Prestito_OUT": false,
+      "Prestito_Da_Confermare": true,
       "Controparte": "BORTETA FC"
     },
     {
@@ -7711,7 +7702,7 @@
       "RuoloClassic": "D",
       "RuoloMantra": "Ds;E",
       "Costo": 0,
-      "InPrestito": true,
+      "InPrestito": false,
       "FuoriSerieA": false,
       "Presenze": 7,
       "MV_Stagione": 6.07,
@@ -7722,6 +7713,7 @@
       "AMM": 1,
       "ESP": 0,
       "Prestito_OUT": false,
+      "Prestito_Da_Confermare": true,
       "Controparte": "BORTETA FC"
     },
     {
@@ -7741,9 +7733,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Prestito_OUT": true,
-      "Controparte": "MAULUX FC"
+      "ESP": 0
     },
     {
       "Cod": 4210,
@@ -7934,8 +7924,7 @@
       "ASS": 0,
       "AMM": 0,
       "ESP": 0,
-      "Prestito_OUT": true,
-      "Controparte": "La Joya"
+      "Prestito_OUT": false
     },
     {
       "Cod": 333,
@@ -8059,7 +8048,7 @@
       "RuoloClassic": "C",
       "RuoloMantra": "T",
       "Costo": 0,
-      "InPrestito": true,
+      "InPrestito": false,
       "FuoriSerieA": false,
       "Presenze": 2,
       "MV_Stagione": 6.5,
@@ -8070,6 +8059,7 @@
       "AMM": 0,
       "ESP": 0,
       "Prestito_OUT": false,
+      "Prestito_Da_Confermare": true,
       "Controparte": "Lestofanti FC"
     },
     {
