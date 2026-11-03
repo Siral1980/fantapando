@@ -17,13 +17,7 @@
       "GS": 11,
       "ASS": 1,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 97.4,
-      "Pct_Parate": 67.1,
-      "xG_Tot": 0.04,
-      "xA_Tot": 0.08,
-      "Goals_Prevented": 4.12,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7611,
@@ -43,13 +37,8 @@
       "ASS": 0,
       "AMM": 0,
       "ESP": 0,
-      "Pct_Sufficienza": 50.0,
-      "Pct_Parate": 70.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0,
-      "Prestito_OUT": true
+      "Prestito_OUT": true,
+      "Controparte": "BORTETA FC"
     },
     {
       "Cod": 7463,
@@ -68,13 +57,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 50.0,
-      "Pct_Parate": 70.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 4,
@@ -93,13 +76,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 62.2,
-      "Pct_Parate": 70.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6662,
@@ -119,12 +96,8 @@
       "ASS": 0,
       "AMM": 0,
       "ESP": 0,
-      "Pct_Sufficienza": 59.1,
-      "Pct_Parate": 55.8,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.48,
-      "Errors_Leading_To_Goal": 0
+      "Prestito_OUT": false,
+      "Controparte": "BORTETA FC"
     },
     {
       "Cod": 7220,
@@ -143,13 +116,7 @@
       "GS": 0,
       "ASS": 3,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 70.6,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.25,
-      "xA_Tot": 1.02,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 4657,
@@ -168,13 +135,7 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 49.6,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.08,
-      "xA_Tot": 0.9,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5739,
@@ -193,13 +154,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 2,
-      "ESP": 0,
-      "Pct_Sufficienza": 68.2,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.83,
-      "xA_Tot": 0.07,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5675,
@@ -219,13 +174,8 @@
       "ASS": 0,
       "AMM": 1,
       "ESP": 0,
-      "Pct_Sufficienza": 51.8,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.12,
-      "xA_Tot": 0.1,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0,
-      "Prestito_OUT": true
+      "Prestito_OUT": true,
+      "Controparte": "BORTETA FC"
     },
     {
       "Cod": 7564,
@@ -244,13 +194,7 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 77.1,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.08,
-      "xA_Tot": 0.1,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 4925,
@@ -269,13 +213,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 34.4,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.54,
-      "xA_Tot": 0.76,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 4409,
@@ -294,13 +232,7 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 72.4,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.38,
-      "xA_Tot": 0.15,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6956,
@@ -319,13 +251,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 59.5,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.09,
-      "xA_Tot": 0.15,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6925,
@@ -344,13 +270,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 43.8,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.1,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7146,
@@ -369,13 +289,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 34.5,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 4856,
@@ -394,13 +308,7 @@
       "GS": 0,
       "ASS": 2,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 80.4,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.8,
-      "xA_Tot": 2.01,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5680,
@@ -419,13 +327,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 40.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.1,
-      "xA_Tot": 0.14,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 827,
@@ -444,13 +346,26 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 65.7,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.57,
-      "xA_Tot": 0.11,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
+    },
+    {
+      "Cod": 4459,
+      "Giocatore": "Rovella",
+      "NomeGrezzo": "Rovella",
+      "Squadra": "Lazio",
+      "RuoloClassic": "C",
+      "RuoloMantra": "M;C",
+      "Costo": 19,
+      "InPrestito": false,
+      "FuoriSerieA": false,
+      "Presenze": 2,
+      "MV_Stagione": 6.25,
+      "FM_Stagione": 6.25,
+      "GF": 0,
+      "GS": 0,
+      "ASS": 0,
+      "AMM": 0,
+      "ESP": 0
     },
     {
       "Cod": 5946,
@@ -469,13 +384,7 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 41.7,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.1,
-      "xA_Tot": 0.28,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 4260,
@@ -494,13 +403,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 68.2,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.2,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6170,
@@ -519,13 +422,7 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 46.3,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.21,
-      "xA_Tot": 0.12,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7248,
@@ -544,13 +441,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 50.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.06,
-      "xA_Tot": 0.12,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5562,
@@ -569,13 +460,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 67.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7579,
@@ -594,13 +479,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 58.3,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.28,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6677,
@@ -619,13 +498,7 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 76.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.74,
-      "xA_Tot": 0.84,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7481,
@@ -644,13 +517,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 20.8,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.06,
-      "xA_Tot": 0.14,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6903,
@@ -669,13 +536,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 78.6,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.27,
-      "xA_Tot": 0.16,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7625,
@@ -694,13 +555,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 30.6,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7551,
@@ -719,13 +574,7 @@
       "GS": 0,
       "ASS": 3,
       "AMM": 2,
-      "ESP": 0,
-      "Pct_Sufficienza": 86.3,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.87,
-      "xA_Tot": 2.3,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6884,
@@ -744,13 +593,7 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 58.7,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.58,
-      "xA_Tot": 0.6,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7618,
@@ -769,13 +612,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 55.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.65,
-      "xA_Tot": 0.05,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 536,
@@ -794,13 +631,7 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 56.1,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.54,
-      "xA_Tot": 2.6,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6434,
@@ -819,13 +650,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 10.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.13,
-      "xA_Tot": 0.24,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7561,
@@ -844,13 +669,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 54.2,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.92,
-      "xA_Tot": 0.45,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7071,
@@ -869,38 +688,26 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 80.9,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 3.05,
-      "xA_Tot": 0.69,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
-      "Cod": 7374,
-      "Giocatore": "Mendy P.",
-      "NomeGrezzo": "Mendy P.",
-      "Squadra": "Cagliari",
+      "Cod": 6229,
+      "Giocatore": "Tourè E.",
+      "NomeGrezzo": "Tourè E.",
+      "Squadra": "Parma",
       "RuoloClassic": "A",
       "RuoloMantra": "Pc",
-      "Costo": 7,
+      "Costo": 43,
       "InPrestito": false,
       "FuoriSerieA": false,
       "Presenze": 7,
-      "MV_Stagione": 6.29,
-      "FM_Stagione": 6.86,
-      "GF": 1,
+      "MV_Stagione": 5.71,
+      "FM_Stagione": 5.86,
+      "GF": 0,
       "GS": 0,
       "ASS": 1,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 63.2,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 2.56,
-      "xA_Tot": 1.34,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6243,
@@ -919,13 +726,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 62.5,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.09,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     }
   ],
   "LE DA NANZ": [
@@ -946,13 +747,7 @@
       "GS": 7,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 92.6,
-      "Pct_Parate": 77.9,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 2.3,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6813,
@@ -971,13 +766,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 50.0,
-      "Pct_Parate": 70.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 2815,
@@ -996,13 +785,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 72.6,
-      "Pct_Parate": 70.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7014,
@@ -1021,13 +804,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 60.8,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.1,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6867,
@@ -1046,13 +823,7 @@
       "GS": 0,
       "ASS": 2,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 57.6,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.18,
-      "xA_Tot": 0.36,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6766,
@@ -1071,13 +842,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 34.3,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.12,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6039,
@@ -1096,13 +861,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 72.4,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.09,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5994,
@@ -1121,13 +880,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 41.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.03,
-      "xA_Tot": 1.02,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 4664,
@@ -1146,13 +899,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 34.3,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.51,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6642,
@@ -1171,13 +918,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 74.5,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.66,
-      "xA_Tot": 0.04,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5010,
@@ -1196,13 +937,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 69.1,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.05,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 2724,
@@ -1221,13 +956,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 64.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6632,
@@ -1246,13 +975,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 2,
-      "ESP": 0,
-      "Pct_Sufficienza": 30.6,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.34,
-      "xA_Tot": 0.05,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 4263,
@@ -1271,13 +994,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 22.7,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.6,
-      "xA_Tot": 0.45,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7235,
@@ -1296,13 +1013,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 3,
-      "ESP": 0,
-      "Pct_Sufficienza": 45.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.53,
-      "xA_Tot": 0.37,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 254,
@@ -1321,13 +1032,7 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 75.9,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.31,
-      "xA_Tot": 2.53,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7181,
@@ -1346,13 +1051,7 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 89.4,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.31,
-      "xA_Tot": 2.22,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6680,
@@ -1371,13 +1070,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 2,
-      "ESP": 0,
-      "Pct_Sufficienza": 48.6,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.47,
-      "xA_Tot": 0.13,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7464,
@@ -1396,13 +1089,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 45.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.16,
-      "xA_Tot": 0.28,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5298,
@@ -1421,13 +1108,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 94.2,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.95,
-      "xA_Tot": 0.35,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7535,
@@ -1446,13 +1127,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 75.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.46,
-      "xA_Tot": 1.56,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6246,
@@ -1471,13 +1146,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 2,
-      "ESP": 0,
-      "Pct_Sufficienza": 68.2,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.13,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 4777,
@@ -1496,13 +1165,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 48.7,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.66,
-      "xA_Tot": 0.31,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6717,
@@ -1521,13 +1184,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 66.4,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7624,
@@ -1546,13 +1203,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 76.7,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.87,
-      "xA_Tot": 0.89,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5687,
@@ -1571,13 +1222,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 28.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.55,
-      "xA_Tot": 1.47,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 2857,
@@ -1596,13 +1241,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 86.7,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.03,
-      "xA_Tot": 0.06,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7536,
@@ -1621,13 +1260,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 70.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7127,
@@ -1646,13 +1279,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 73.2,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.23,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6815,
@@ -1671,13 +1298,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 56.7,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.33,
-      "xA_Tot": 1.57,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7017,
@@ -1696,13 +1317,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 69.5,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 6.18,
-      "xA_Tot": 0.43,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 4923,
@@ -1721,13 +1336,7 @@
       "GS": 0,
       "ASS": 2,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 65.8,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.95,
-      "xA_Tot": 1.5,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7347,
@@ -1746,13 +1355,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 47.4,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.76,
-      "xA_Tot": 0.88,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7612,
@@ -1771,13 +1374,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 37.4,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.29,
-      "xA_Tot": 0.07,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7600,
@@ -1796,13 +1393,7 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 66.2,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.93,
-      "xA_Tot": 1.14,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 4387,
@@ -1821,13 +1412,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 50.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     }
   ],
   "BORTETA FC": [
@@ -1848,13 +1433,7 @@
       "GS": 9,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 77.3,
-      "Pct_Parate": 69.4,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": -0.12,
-      "Errors_Leading_To_Goal": 1
+      "ESP": 0
     },
     {
       "Cod": 7332,
@@ -1874,12 +1453,8 @@
       "ASS": 0,
       "AMM": 0,
       "ESP": 0,
-      "Pct_Sufficienza": 70.3,
-      "Pct_Parate": 54.7,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.08,
-      "Goals_Prevented": -2.85,
-      "Errors_Leading_To_Goal": 1
+      "Prestito_OUT": true,
+      "Controparte": "Tonny Rio Malen by Pedony"
     },
     {
       "Cod": 6662,
@@ -1899,13 +1474,8 @@
       "ASS": 0,
       "AMM": 0,
       "ESP": 0,
-      "Pct_Sufficienza": 59.1,
-      "Pct_Parate": 55.8,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.48,
-      "Errors_Leading_To_Goal": 0,
-      "Prestito_OUT": true
+      "Prestito_OUT": true,
+      "Controparte": "Bluelock"
     },
     {
       "Cod": 6569,
@@ -1925,12 +1495,8 @@
       "ASS": 0,
       "AMM": 0,
       "ESP": 0,
-      "Pct_Sufficienza": 50.0,
-      "Pct_Parate": 70.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "Prestito_OUT": true,
+      "Controparte": "Tonny Rio Malen by Pedony"
     },
     {
       "Cod": 7611,
@@ -1950,862 +1516,8 @@
       "ASS": 0,
       "AMM": 0,
       "ESP": 0,
-      "Pct_Sufficienza": 50.0,
-      "Pct_Parate": 70.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
-    },
-    {
-      "Cod": 5885,
-      "Giocatore": "Dodò",
-      "NomeGrezzo": "Dodò",
-      "Squadra": "Fiorentina",
-      "RuoloClassic": "D",
-      "RuoloMantra": "Dd;E",
-      "Costo": 30,
-      "InPrestito": false,
-      "FuoriSerieA": false,
-      "Presenze": 2,
-      "MV_Stagione": 5.5,
-      "FM_Stagione": 5.5,
-      "GF": 0,
-      "GS": 0,
-      "ASS": 0,
-      "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 8.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.01,
-      "xA_Tot": 0.04,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
-    },
-    {
-      "Cod": 6727,
-      "Giocatore": "Couto",
-      "NomeGrezzo": "Couto",
-      "Squadra": "Como",
-      "RuoloClassic": "D",
-      "RuoloMantra": "Dd;E",
-      "Costo": 27,
-      "InPrestito": false,
-      "FuoriSerieA": false,
-      "Presenze": 6,
-      "MV_Stagione": 5.92,
-      "FM_Stagione": 6.0,
-      "GF": 0,
-      "GS": 0,
-      "ASS": 1,
-      "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 69.1,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.36,
-      "xA_Tot": 1.77,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
-    },
-    {
-      "Cod": 6814,
-      "Giocatore": "Norton-Cuffy",
-      "NomeGrezzo": "Norton-Cuffy *",
-      "Squadra": "Genoa",
-      "RuoloClassic": "D",
-      "RuoloMantra": "Dd;E",
-      "Costo": 22,
-      "InPrestito": false,
-      "FuoriSerieA": true,
-      "Presenze": 2,
-      "MV_Stagione": 5.75,
-      "FM_Stagione": 5.75,
-      "GF": 0,
-      "GS": 0,
-      "ASS": 0,
-      "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 37.4,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.04,
-      "xA_Tot": 0.13,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
-    },
-    {
-      "Cod": 7255,
-      "Giocatore": "Britschgi",
-      "NomeGrezzo": "Britschgi",
-      "Squadra": "Parma",
-      "RuoloClassic": "D",
-      "RuoloMantra": "Dd;Ds;E",
-      "Costo": 12,
-      "InPrestito": false,
-      "FuoriSerieA": false,
-      "Presenze": 4,
-      "MV_Stagione": 5.75,
-      "FM_Stagione": 5.62,
-      "GF": 0,
-      "GS": 0,
-      "ASS": 0,
-      "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 54.1,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.01,
-      "xA_Tot": 0.16,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
-    },
-    {
-      "Cod": 4374,
-      "Giocatore": "Walukiewicz",
-      "NomeGrezzo": "Walukiewicz",
-      "Squadra": "Sassuolo",
-      "RuoloClassic": "D",
-      "RuoloMantra": "Dd;Dc",
-      "Costo": 12,
-      "InPrestito": false,
-      "FuoriSerieA": false,
-      "Presenze": 0,
-      "MV_Stagione": 0.0,
-      "FM_Stagione": 0.0,
-      "GF": 0,
-      "GS": 0,
-      "ASS": 0,
-      "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 47.8,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
-    },
-    {
-      "Cod": 7410,
-      "Giocatore": "Viery",
-      "NomeGrezzo": "Viery",
-      "Squadra": "Fiorentina",
-      "RuoloClassic": "D",
-      "RuoloMantra": "Ds;Dc",
-      "Costo": 21,
-      "InPrestito": false,
-      "FuoriSerieA": false,
-      "Presenze": 6,
-      "MV_Stagione": 5.42,
-      "FM_Stagione": 5.33,
-      "GF": 0,
-      "GS": 0,
-      "ASS": 0,
-      "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 20.9,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.03,
-      "xA_Tot": 0.07,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
-    },
-    {
-      "Cod": 4502,
-      "Giocatore": "Gallo",
-      "NomeGrezzo": "Gallo",
-      "Squadra": "Lecce",
-      "RuoloClassic": "D",
-      "RuoloMantra": "Ds;E",
-      "Costo": 13,
-      "InPrestito": false,
-      "FuoriSerieA": false,
-      "Presenze": 6,
-      "MV_Stagione": 5.92,
-      "FM_Stagione": 6.08,
-      "GF": 0,
-      "GS": 0,
-      "ASS": 1,
-      "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 44.1,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.02,
-      "xA_Tot": 1.21,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
-    },
-    {
-      "Cod": 5555,
-      "Giocatore": "Kamara H.",
-      "NomeGrezzo": "Kamara H.",
-      "Squadra": "Udinese",
-      "RuoloClassic": "D",
-      "RuoloMantra": "Ds;E",
-      "Costo": 12,
-      "InPrestito": false,
-      "FuoriSerieA": false,
-      "Presenze": 7,
-      "MV_Stagione": 6.07,
-      "FM_Stagione": 6.86,
-      "GF": 2,
-      "GS": 0,
-      "ASS": 0,
-      "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 51.4,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.86,
-      "xA_Tot": 0.32,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
-    },
-    {
-      "Cod": 5675,
-      "Giocatore": "Theate",
-      "NomeGrezzo": "Theate",
-      "Squadra": "Bologna",
-      "RuoloClassic": "D",
-      "RuoloMantra": "Ds;Dc",
-      "Costo": 0,
-      "InPrestito": true,
-      "FuoriSerieA": false,
-      "Presenze": 4,
-      "MV_Stagione": 5.88,
-      "FM_Stagione": 5.75,
-      "GF": 0,
-      "GS": 0,
-      "ASS": 0,
-      "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 51.8,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.12,
-      "xA_Tot": 0.1,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
-    },
-    {
-      "Cod": 4159,
-      "Giocatore": "Akanji",
-      "NomeGrezzo": "Akanji",
-      "Squadra": "Inter",
-      "RuoloClassic": "D",
-      "RuoloMantra": "Dc",
-      "Costo": 55,
-      "InPrestito": false,
-      "FuoriSerieA": false,
-      "Presenze": 6,
-      "MV_Stagione": 5.83,
-      "FM_Stagione": 5.83,
-      "GF": 0,
-      "GS": 0,
-      "ASS": 1,
-      "AMM": 2,
-      "ESP": 0,
-      "Pct_Sufficienza": 58.8,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.24,
-      "xA_Tot": 1.5,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
-    },
-    {
-      "Cod": 4317,
-      "Giocatore": "N'Dicka",
-      "NomeGrezzo": "N'Dicka",
-      "Squadra": "Roma",
-      "RuoloClassic": "D",
-      "RuoloMantra": "Dc",
-      "Costo": 44,
-      "InPrestito": false,
-      "FuoriSerieA": false,
-      "Presenze": 5,
-      "MV_Stagione": 5.9,
-      "FM_Stagione": 5.8,
-      "GF": 0,
-      "GS": 0,
-      "ASS": 0,
-      "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 53.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.6,
-      "xA_Tot": 0.07,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
-    },
-    {
-      "Cod": 460,
-      "Giocatore": "Romagnoli",
-      "NomeGrezzo": "Romagnoli *",
-      "Squadra": "Lazio",
-      "RuoloClassic": "D",
-      "RuoloMantra": "Dc",
-      "Costo": 24,
-      "InPrestito": false,
-      "FuoriSerieA": true,
-      "Presenze": 0,
-      "MV_Stagione": 0.0,
-      "FM_Stagione": 0.0,
-      "GF": 0,
-      "GS": 0,
-      "ASS": 0,
-      "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 44.9,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
-    },
-    {
-      "Cod": 7068,
-      "Giocatore": "Vitik",
-      "NomeGrezzo": "Vitik",
-      "Squadra": "Bologna",
-      "RuoloClassic": "D",
-      "RuoloMantra": "Dc",
-      "Costo": 11,
-      "InPrestito": false,
-      "FuoriSerieA": false,
-      "Presenze": 0,
-      "MV_Stagione": 0.0,
-      "FM_Stagione": 0.0,
-      "GF": 0,
-      "GS": 0,
-      "ASS": 0,
-      "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 72.3,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.05,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
-    },
-    {
-      "Cod": 5792,
-      "Giocatore": "Ederson D.S.",
-      "NomeGrezzo": "Ederson D.S.",
-      "Squadra": "Atalanta",
-      "RuoloClassic": "C",
-      "RuoloMantra": "M;C",
-      "Costo": 48,
-      "InPrestito": false,
-      "FuoriSerieA": false,
-      "Presenze": 7,
-      "MV_Stagione": 5.79,
-      "FM_Stagione": 6.14,
-      "GF": 1,
-      "GS": 0,
-      "ASS": 0,
-      "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 33.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.7,
-      "xA_Tot": 0.26,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
-    },
-    {
-      "Cod": 4459,
-      "Giocatore": "Rovella",
-      "NomeGrezzo": "Rovella",
-      "Squadra": "Lazio",
-      "RuoloClassic": "C",
-      "RuoloMantra": "M;C",
-      "Costo": 19,
-      "InPrestito": false,
-      "FuoriSerieA": false,
-      "Presenze": 2,
-      "MV_Stagione": 6.25,
-      "FM_Stagione": 6.25,
-      "GF": 0,
-      "GS": 0,
-      "ASS": 0,
-      "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 82.6,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.04,
-      "xA_Tot": 0.04,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
-    },
-    {
-      "Cod": 2741,
-      "Giocatore": "Pessina",
-      "NomeGrezzo": "Pessina",
-      "Squadra": "Monza",
-      "RuoloClassic": "C",
-      "RuoloMantra": "M;C",
-      "Costo": 16,
-      "InPrestito": false,
-      "FuoriSerieA": false,
-      "Presenze": 0,
-      "MV_Stagione": 0.0,
-      "FM_Stagione": 0.0,
-      "GF": 0,
-      "GS": 0,
-      "ASS": 0,
-      "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 56.6,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
-    },
-    {
-      "Cod": 6917,
-      "Giocatore": "Masini",
-      "NomeGrezzo": "Masini",
-      "Squadra": "Frosinone",
-      "RuoloClassic": "C",
-      "RuoloMantra": "M;C",
-      "Costo": 6,
-      "InPrestito": false,
-      "FuoriSerieA": false,
-      "Presenze": 7,
-      "MV_Stagione": 6.29,
-      "FM_Stagione": 6.43,
-      "GF": 0,
-      "GS": 0,
-      "ASS": 1,
-      "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 76.8,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.12,
-      "xA_Tot": 0.89,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
-    },
-    {
-      "Cod": 7165,
-      "Giocatore": "Liteta",
-      "NomeGrezzo": "Liteta",
-      "Squadra": "Cagliari",
-      "RuoloClassic": "C",
-      "RuoloMantra": "M;C",
-      "Costo": 1,
-      "InPrestito": false,
-      "FuoriSerieA": false,
-      "Presenze": 0,
-      "MV_Stagione": 0.0,
-      "FM_Stagione": 0.0,
-      "GF": 0,
-      "GS": 0,
-      "ASS": 0,
-      "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 75.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.01,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
-    },
-    {
-      "Cod": 6212,
-      "Giocatore": "Zarraga",
-      "NomeGrezzo": "Zarraga",
-      "Squadra": "Udinese",
-      "RuoloClassic": "C",
-      "RuoloMantra": "M;C",
-      "Costo": 1,
-      "InPrestito": false,
-      "FuoriSerieA": false,
-      "Presenze": 4,
-      "MV_Stagione": 5.75,
-      "FM_Stagione": 5.75,
-      "GF": 0,
-      "GS": 0,
-      "ASS": 0,
-      "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 41.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.02,
-      "xA_Tot": 0.08,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
-    },
-    {
-      "Cod": 4220,
-      "Giocatore": "Zambo Anguissa",
-      "NomeGrezzo": "Zambo Anguissa",
-      "Squadra": "Napoli",
-      "RuoloClassic": "C",
-      "RuoloMantra": "C",
-      "Costo": 54,
-      "InPrestito": false,
-      "FuoriSerieA": false,
-      "Presenze": 3,
-      "MV_Stagione": 5.33,
-      "FM_Stagione": 5.33,
-      "GF": 0,
-      "GS": 0,
-      "ASS": 0,
-      "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 24.5,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.42,
-      "xA_Tot": 0.08,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
-    },
-    {
-      "Cod": 6294,
-      "Giocatore": "Ndour",
-      "NomeGrezzo": "Ndour",
-      "Squadra": "Fiorentina",
-      "RuoloClassic": "C",
-      "RuoloMantra": "C",
-      "Costo": 25,
-      "InPrestito": false,
-      "FuoriSerieA": false,
-      "Presenze": 7,
-      "MV_Stagione": 5.64,
-      "FM_Stagione": 5.71,
-      "GF": 0,
-      "GS": 0,
-      "ASS": 1,
-      "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 30.3,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.55,
-      "xA_Tot": 0.59,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
-    },
-    {
-      "Cod": 6015,
-      "Giocatore": "Berisha M.",
-      "NomeGrezzo": "Berisha M.",
-      "Squadra": "Lecce",
-      "RuoloClassic": "C",
-      "RuoloMantra": "C;T",
-      "Costo": 16,
-      "InPrestito": false,
-      "FuoriSerieA": false,
-      "Presenze": 0,
-      "MV_Stagione": 0.0,
-      "FM_Stagione": 0.0,
-      "GF": 0,
-      "GS": 0,
-      "ASS": 0,
-      "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 60.2,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.03,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
-    },
-    {
-      "Cod": 6875,
-      "Giocatore": "Paz N.",
-      "NomeGrezzo": "Paz N.",
-      "Squadra": "Como",
-      "RuoloClassic": "C",
-      "RuoloMantra": "T;A",
-      "Costo": 250,
-      "InPrestito": false,
-      "FuoriSerieA": false,
-      "Presenze": 7,
-      "MV_Stagione": 6.36,
-      "FM_Stagione": 7.43,
-      "GF": 2,
-      "GS": 0,
-      "ASS": 2,
-      "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 86.4,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 3.3,
-      "xA_Tot": 1.85,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
-    },
-    {
-      "Cod": 2766,
-      "Giocatore": "Zaniolo",
-      "NomeGrezzo": "Zaniolo",
-      "Squadra": "Udinese",
-      "RuoloClassic": "C",
-      "RuoloMantra": "T;A",
-      "Costo": 100,
-      "InPrestito": false,
-      "FuoriSerieA": false,
-      "Presenze": 2,
-      "MV_Stagione": 6.0,
-      "FM_Stagione": 5.75,
-      "GF": 0,
-      "GS": 0,
-      "ASS": 0,
-      "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 56.2,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.4,
-      "xA_Tot": 0.88,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
-    },
-    {
-      "Cod": 7556,
-      "Giocatore": "Mora",
-      "NomeGrezzo": "Mora",
-      "Squadra": "Roma",
-      "RuoloClassic": "C",
-      "RuoloMantra": "T",
-      "Costo": 99,
-      "InPrestito": false,
-      "FuoriSerieA": false,
-      "Presenze": 5,
-      "MV_Stagione": 6.3,
-      "FM_Stagione": 6.9,
-      "GF": 1,
-      "GS": 0,
-      "ASS": 0,
-      "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 93.1,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.59,
-      "xA_Tot": 2.2,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
-    },
-    {
-      "Cod": 6783,
-      "Giocatore": "Unai Gomez",
-      "NomeGrezzo": "Unai Gomez",
-      "Squadra": "Udinese",
-      "RuoloClassic": "C",
-      "RuoloMantra": "T",
-      "Costo": 20,
-      "InPrestito": false,
-      "FuoriSerieA": false,
-      "Presenze": 6,
-      "MV_Stagione": 5.5,
-      "FM_Stagione": 5.67,
-      "GF": 0,
-      "GS": 0,
-      "ASS": 1,
-      "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 30.9,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.08,
-      "xA_Tot": 0.63,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
-    },
-    {
-      "Cod": 4436,
-      "Giocatore": "Cambiaghi",
-      "NomeGrezzo": "Cambiaghi",
-      "Squadra": "Bologna",
-      "RuoloClassic": "C",
-      "RuoloMantra": "W;A",
-      "Costo": 25,
-      "InPrestito": false,
-      "FuoriSerieA": false,
-      "Presenze": 7,
-      "MV_Stagione": 6.07,
-      "FM_Stagione": 6.29,
-      "GF": 0,
-      "GS": 0,
-      "ASS": 2,
-      "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 74.5,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.88,
-      "xA_Tot": 1.09,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
-    },
-    {
-      "Cod": 5734,
-      "Giocatore": "Soulè",
-      "NomeGrezzo": "Soulè",
-      "Squadra": "Roma",
-      "RuoloClassic": "A",
-      "RuoloMantra": "A",
-      "Costo": 53,
-      "InPrestito": false,
-      "FuoriSerieA": false,
-      "Presenze": 7,
-      "MV_Stagione": 6.5,
-      "FM_Stagione": 7.36,
-      "GF": 2,
-      "GS": 0,
-      "ASS": 1,
-      "AMM": 2,
-      "ESP": 0,
-      "Pct_Sufficienza": 96.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 2.81,
-      "xA_Tot": 1.23,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
-    },
-    {
-      "Cod": 7620,
-      "Giocatore": "Zeballos",
-      "NomeGrezzo": "Zeballos",
-      "Squadra": "Monza",
-      "RuoloClassic": "A",
-      "RuoloMantra": "A",
-      "Costo": 25,
-      "InPrestito": false,
-      "FuoriSerieA": false,
-      "Presenze": 2,
-      "MV_Stagione": 6.0,
-      "FM_Stagione": 7.5,
-      "GF": 1,
-      "GS": 0,
-      "ASS": 0,
-      "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 50.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.14,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
-    },
-    {
-      "Cod": 7484,
-      "Giocatore": "Adams A.",
-      "NomeGrezzo": "Adams A.",
-      "Squadra": "Venezia",
-      "RuoloClassic": "A",
-      "RuoloMantra": "Pc",
-      "Costo": 48,
-      "InPrestito": false,
-      "FuoriSerieA": false,
-      "Presenze": 7,
-      "MV_Stagione": 5.79,
-      "FM_Stagione": 6.64,
-      "GF": 2,
-      "GS": 0,
-      "ASS": 0,
-      "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 30.5,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 2.87,
-      "xA_Tot": 1.58,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
-    },
-    {
-      "Cod": 7547,
-      "Giocatore": "Kevin Carlos",
-      "NomeGrezzo": "Kevin Carlos",
-      "Squadra": "Cagliari",
-      "RuoloClassic": "A",
-      "RuoloMantra": "Pc",
-      "Costo": 44,
-      "InPrestito": false,
-      "FuoriSerieA": false,
-      "Presenze": 3,
-      "MV_Stagione": 5.5,
-      "FM_Stagione": 5.33,
-      "GF": 0,
-      "GS": 0,
-      "ASS": 0,
-      "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 17.5,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.79,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
-    },
-    {
-      "Cod": 6229,
-      "Giocatore": "Tourè E.",
-      "NomeGrezzo": "Tourè E.",
-      "Squadra": "Parma",
-      "RuoloClassic": "A",
-      "RuoloMantra": "Pc",
-      "Costo": 43,
-      "InPrestito": false,
-      "FuoriSerieA": false,
-      "Presenze": 7,
-      "MV_Stagione": 5.71,
-      "FM_Stagione": 5.86,
-      "GF": 0,
-      "GS": 0,
-      "ASS": 1,
-      "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 37.8,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.87,
-      "xA_Tot": 0.08,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
-    },
-    {
-      "Cod": 7554,
-      "Giocatore": "Romero D.",
-      "NomeGrezzo": "Romero D.",
-      "Squadra": "Parma",
-      "RuoloClassic": "A",
-      "RuoloMantra": "Pc",
-      "Costo": 38,
-      "InPrestito": false,
-      "FuoriSerieA": false,
-      "Presenze": 6,
-      "MV_Stagione": 6.33,
-      "FM_Stagione": 7.33,
-      "GF": 2,
-      "GS": 0,
-      "ASS": 0,
-      "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 75.5,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.72,
-      "xA_Tot": 0.2,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
-    },
-    {
-      "Cod": 2155,
-      "Giocatore": "Cutrone",
-      "NomeGrezzo": "Cutrone",
-      "Squadra": "Monza",
-      "RuoloClassic": "A",
-      "RuoloMantra": "Pc",
-      "Costo": 30,
-      "InPrestito": false,
-      "FuoriSerieA": false,
-      "Presenze": 4,
-      "MV_Stagione": 5.88,
-      "FM_Stagione": 5.88,
-      "GF": 0,
-      "GS": 0,
-      "ASS": 0,
-      "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 61.8,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.9,
-      "xA_Tot": 0.38,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "Prestito_OUT": false,
+      "Controparte": "Bluelock"
     },
     {
       "Cod": 2521,
@@ -2825,13 +1537,664 @@
       "ASS": 0,
       "AMM": 1,
       "ESP": 0,
-      "Pct_Sufficienza": 49.7,
-      "Pct_Parate": 50.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.29,
-      "Goals_Prevented": -3.74,
-      "Errors_Leading_To_Goal": 1,
-      "Prestito_OUT": false
+      "Prestito_OUT": false,
+      "Controparte": "Tonny Rio Malen by Pedony"
+    },
+    {
+      "Cod": 6403,
+      "Giocatore": "Christensen O.",
+      "NomeGrezzo": "Christensen O.",
+      "Squadra": "Fiorentina",
+      "RuoloClassic": "P",
+      "RuoloMantra": "Por",
+      "Costo": 0,
+      "InPrestito": true,
+      "FuoriSerieA": false,
+      "Presenze": 0,
+      "MV_Stagione": 0.0,
+      "FM_Stagione": 0.0,
+      "GF": 0,
+      "GS": 0,
+      "ASS": 0,
+      "AMM": 0,
+      "ESP": 0,
+      "Prestito_OUT": false,
+      "Controparte": "Tonny Rio Malen by Pedony"
+    },
+    {
+      "Cod": 5885,
+      "Giocatore": "Dodò",
+      "NomeGrezzo": "Dodò",
+      "Squadra": "Fiorentina",
+      "RuoloClassic": "D",
+      "RuoloMantra": "Dd;E",
+      "Costo": 30,
+      "InPrestito": false,
+      "FuoriSerieA": false,
+      "Presenze": 2,
+      "MV_Stagione": 5.5,
+      "FM_Stagione": 5.5,
+      "GF": 0,
+      "GS": 0,
+      "ASS": 0,
+      "AMM": 0,
+      "ESP": 0
+    },
+    {
+      "Cod": 6727,
+      "Giocatore": "Couto",
+      "NomeGrezzo": "Couto",
+      "Squadra": "Como",
+      "RuoloClassic": "D",
+      "RuoloMantra": "Dd;E",
+      "Costo": 27,
+      "InPrestito": false,
+      "FuoriSerieA": false,
+      "Presenze": 6,
+      "MV_Stagione": 5.92,
+      "FM_Stagione": 6.0,
+      "GF": 0,
+      "GS": 0,
+      "ASS": 1,
+      "AMM": 1,
+      "ESP": 0
+    },
+    {
+      "Cod": 6814,
+      "Giocatore": "Norton-Cuffy",
+      "NomeGrezzo": "Norton-Cuffy *",
+      "Squadra": "Genoa",
+      "RuoloClassic": "D",
+      "RuoloMantra": "Dd;E",
+      "Costo": 22,
+      "InPrestito": false,
+      "FuoriSerieA": true,
+      "Presenze": 2,
+      "MV_Stagione": 5.75,
+      "FM_Stagione": 5.75,
+      "GF": 0,
+      "GS": 0,
+      "ASS": 0,
+      "AMM": 0,
+      "ESP": 0
+    },
+    {
+      "Cod": 7255,
+      "Giocatore": "Britschgi",
+      "NomeGrezzo": "Britschgi",
+      "Squadra": "Parma",
+      "RuoloClassic": "D",
+      "RuoloMantra": "Dd;Ds;E",
+      "Costo": 12,
+      "InPrestito": false,
+      "FuoriSerieA": false,
+      "Presenze": 4,
+      "MV_Stagione": 5.75,
+      "FM_Stagione": 5.62,
+      "GF": 0,
+      "GS": 0,
+      "ASS": 0,
+      "AMM": 1,
+      "ESP": 0
+    },
+    {
+      "Cod": 4374,
+      "Giocatore": "Walukiewicz",
+      "NomeGrezzo": "Walukiewicz",
+      "Squadra": "Sassuolo",
+      "RuoloClassic": "D",
+      "RuoloMantra": "Dd;Dc",
+      "Costo": 12,
+      "InPrestito": false,
+      "FuoriSerieA": false,
+      "Presenze": 0,
+      "MV_Stagione": 0.0,
+      "FM_Stagione": 0.0,
+      "GF": 0,
+      "GS": 0,
+      "ASS": 0,
+      "AMM": 0,
+      "ESP": 0
+    },
+    {
+      "Cod": 7410,
+      "Giocatore": "Viery",
+      "NomeGrezzo": "Viery",
+      "Squadra": "Fiorentina",
+      "RuoloClassic": "D",
+      "RuoloMantra": "Ds;Dc",
+      "Costo": 21,
+      "InPrestito": false,
+      "FuoriSerieA": false,
+      "Presenze": 6,
+      "MV_Stagione": 5.42,
+      "FM_Stagione": 5.33,
+      "GF": 0,
+      "GS": 0,
+      "ASS": 0,
+      "AMM": 1,
+      "ESP": 0
+    },
+    {
+      "Cod": 4502,
+      "Giocatore": "Gallo",
+      "NomeGrezzo": "Gallo",
+      "Squadra": "Lecce",
+      "RuoloClassic": "D",
+      "RuoloMantra": "Ds;E",
+      "Costo": 13,
+      "InPrestito": false,
+      "FuoriSerieA": false,
+      "Presenze": 6,
+      "MV_Stagione": 5.92,
+      "FM_Stagione": 6.08,
+      "GF": 0,
+      "GS": 0,
+      "ASS": 1,
+      "AMM": 0,
+      "ESP": 0
+    },
+    {
+      "Cod": 5555,
+      "Giocatore": "Kamara H.",
+      "NomeGrezzo": "Kamara H.",
+      "Squadra": "Udinese",
+      "RuoloClassic": "D",
+      "RuoloMantra": "Ds;E",
+      "Costo": 12,
+      "InPrestito": false,
+      "FuoriSerieA": false,
+      "Presenze": 7,
+      "MV_Stagione": 6.07,
+      "FM_Stagione": 6.86,
+      "GF": 2,
+      "GS": 0,
+      "ASS": 0,
+      "AMM": 1,
+      "ESP": 0,
+      "Prestito_OUT": true,
+      "Controparte": "Tonny Rio Malen by Pedony"
+    },
+    {
+      "Cod": 5675,
+      "Giocatore": "Theate",
+      "NomeGrezzo": "Theate",
+      "Squadra": "Bologna",
+      "RuoloClassic": "D",
+      "RuoloMantra": "Ds;Dc",
+      "Costo": 0,
+      "InPrestito": true,
+      "FuoriSerieA": false,
+      "Presenze": 4,
+      "MV_Stagione": 5.88,
+      "FM_Stagione": 5.75,
+      "GF": 0,
+      "GS": 0,
+      "ASS": 0,
+      "AMM": 1,
+      "ESP": 0,
+      "Prestito_OUT": false,
+      "Controparte": "Bluelock"
+    },
+    {
+      "Cod": 4159,
+      "Giocatore": "Akanji",
+      "NomeGrezzo": "Akanji",
+      "Squadra": "Inter",
+      "RuoloClassic": "D",
+      "RuoloMantra": "Dc",
+      "Costo": 55,
+      "InPrestito": false,
+      "FuoriSerieA": false,
+      "Presenze": 6,
+      "MV_Stagione": 5.83,
+      "FM_Stagione": 5.83,
+      "GF": 0,
+      "GS": 0,
+      "ASS": 1,
+      "AMM": 2,
+      "ESP": 0
+    },
+    {
+      "Cod": 4317,
+      "Giocatore": "N'Dicka",
+      "NomeGrezzo": "N'Dicka",
+      "Squadra": "Roma",
+      "RuoloClassic": "D",
+      "RuoloMantra": "Dc",
+      "Costo": 44,
+      "InPrestito": false,
+      "FuoriSerieA": false,
+      "Presenze": 5,
+      "MV_Stagione": 5.9,
+      "FM_Stagione": 5.8,
+      "GF": 0,
+      "GS": 0,
+      "ASS": 0,
+      "AMM": 1,
+      "ESP": 0
+    },
+    {
+      "Cod": 460,
+      "Giocatore": "Romagnoli",
+      "NomeGrezzo": "Romagnoli *",
+      "Squadra": "Lazio",
+      "RuoloClassic": "D",
+      "RuoloMantra": "Dc",
+      "Costo": 24,
+      "InPrestito": false,
+      "FuoriSerieA": true,
+      "Presenze": 0,
+      "MV_Stagione": 0.0,
+      "FM_Stagione": 0.0,
+      "GF": 0,
+      "GS": 0,
+      "ASS": 0,
+      "AMM": 0,
+      "ESP": 0
+    },
+    {
+      "Cod": 7068,
+      "Giocatore": "Vitik",
+      "NomeGrezzo": "Vitik",
+      "Squadra": "Bologna",
+      "RuoloClassic": "D",
+      "RuoloMantra": "Dc",
+      "Costo": 11,
+      "InPrestito": false,
+      "FuoriSerieA": false,
+      "Presenze": 0,
+      "MV_Stagione": 0.0,
+      "FM_Stagione": 0.0,
+      "GF": 0,
+      "GS": 0,
+      "ASS": 0,
+      "AMM": 0,
+      "ESP": 0
+    },
+    {
+      "Cod": 5792,
+      "Giocatore": "Ederson D.S.",
+      "NomeGrezzo": "Ederson D.S.",
+      "Squadra": "Atalanta",
+      "RuoloClassic": "C",
+      "RuoloMantra": "M;C",
+      "Costo": 48,
+      "InPrestito": false,
+      "FuoriSerieA": false,
+      "Presenze": 7,
+      "MV_Stagione": 5.79,
+      "FM_Stagione": 6.14,
+      "GF": 1,
+      "GS": 0,
+      "ASS": 0,
+      "AMM": 1,
+      "ESP": 0
+    },
+    {
+      "Cod": 2741,
+      "Giocatore": "Pessina",
+      "NomeGrezzo": "Pessina",
+      "Squadra": "Monza",
+      "RuoloClassic": "C",
+      "RuoloMantra": "M;C",
+      "Costo": 16,
+      "InPrestito": false,
+      "FuoriSerieA": false,
+      "Presenze": 0,
+      "MV_Stagione": 0.0,
+      "FM_Stagione": 0.0,
+      "GF": 0,
+      "GS": 0,
+      "ASS": 0,
+      "AMM": 0,
+      "ESP": 0
+    },
+    {
+      "Cod": 6917,
+      "Giocatore": "Masini",
+      "NomeGrezzo": "Masini",
+      "Squadra": "Frosinone",
+      "RuoloClassic": "C",
+      "RuoloMantra": "M;C",
+      "Costo": 6,
+      "InPrestito": false,
+      "FuoriSerieA": false,
+      "Presenze": 7,
+      "MV_Stagione": 6.29,
+      "FM_Stagione": 6.43,
+      "GF": 0,
+      "GS": 0,
+      "ASS": 1,
+      "AMM": 0,
+      "ESP": 0
+    },
+    {
+      "Cod": 7165,
+      "Giocatore": "Liteta",
+      "NomeGrezzo": "Liteta",
+      "Squadra": "Cagliari",
+      "RuoloClassic": "C",
+      "RuoloMantra": "M;C",
+      "Costo": 1,
+      "InPrestito": false,
+      "FuoriSerieA": false,
+      "Presenze": 0,
+      "MV_Stagione": 0.0,
+      "FM_Stagione": 0.0,
+      "GF": 0,
+      "GS": 0,
+      "ASS": 0,
+      "AMM": 0,
+      "ESP": 0
+    },
+    {
+      "Cod": 6212,
+      "Giocatore": "Zarraga",
+      "NomeGrezzo": "Zarraga",
+      "Squadra": "Udinese",
+      "RuoloClassic": "C",
+      "RuoloMantra": "M;C",
+      "Costo": 1,
+      "InPrestito": false,
+      "FuoriSerieA": false,
+      "Presenze": 4,
+      "MV_Stagione": 5.75,
+      "FM_Stagione": 5.75,
+      "GF": 0,
+      "GS": 0,
+      "ASS": 0,
+      "AMM": 0,
+      "ESP": 0
+    },
+    {
+      "Cod": 4220,
+      "Giocatore": "Zambo Anguissa",
+      "NomeGrezzo": "Zambo Anguissa",
+      "Squadra": "Napoli",
+      "RuoloClassic": "C",
+      "RuoloMantra": "C",
+      "Costo": 54,
+      "InPrestito": false,
+      "FuoriSerieA": false,
+      "Presenze": 3,
+      "MV_Stagione": 5.33,
+      "FM_Stagione": 5.33,
+      "GF": 0,
+      "GS": 0,
+      "ASS": 0,
+      "AMM": 0,
+      "ESP": 0
+    },
+    {
+      "Cod": 6294,
+      "Giocatore": "Ndour",
+      "NomeGrezzo": "Ndour",
+      "Squadra": "Fiorentina",
+      "RuoloClassic": "C",
+      "RuoloMantra": "C",
+      "Costo": 25,
+      "InPrestito": false,
+      "FuoriSerieA": false,
+      "Presenze": 7,
+      "MV_Stagione": 5.64,
+      "FM_Stagione": 5.71,
+      "GF": 0,
+      "GS": 0,
+      "ASS": 1,
+      "AMM": 1,
+      "ESP": 0
+    },
+    {
+      "Cod": 6015,
+      "Giocatore": "Berisha M.",
+      "NomeGrezzo": "Berisha M.",
+      "Squadra": "Lecce",
+      "RuoloClassic": "C",
+      "RuoloMantra": "C;T",
+      "Costo": 16,
+      "InPrestito": false,
+      "FuoriSerieA": false,
+      "Presenze": 0,
+      "MV_Stagione": 0.0,
+      "FM_Stagione": 0.0,
+      "GF": 0,
+      "GS": 0,
+      "ASS": 0,
+      "AMM": 0,
+      "ESP": 0
+    },
+    {
+      "Cod": 6875,
+      "Giocatore": "Paz N.",
+      "NomeGrezzo": "Paz N.",
+      "Squadra": "Como",
+      "RuoloClassic": "C",
+      "RuoloMantra": "T;A",
+      "Costo": 250,
+      "InPrestito": false,
+      "FuoriSerieA": false,
+      "Presenze": 7,
+      "MV_Stagione": 6.36,
+      "FM_Stagione": 7.43,
+      "GF": 2,
+      "GS": 0,
+      "ASS": 2,
+      "AMM": 1,
+      "ESP": 0
+    },
+    {
+      "Cod": 2766,
+      "Giocatore": "Zaniolo",
+      "NomeGrezzo": "Zaniolo",
+      "Squadra": "Udinese",
+      "RuoloClassic": "C",
+      "RuoloMantra": "T;A",
+      "Costo": 100,
+      "InPrestito": false,
+      "FuoriSerieA": false,
+      "Presenze": 2,
+      "MV_Stagione": 6.0,
+      "FM_Stagione": 5.75,
+      "GF": 0,
+      "GS": 0,
+      "ASS": 0,
+      "AMM": 1,
+      "ESP": 0
+    },
+    {
+      "Cod": 7556,
+      "Giocatore": "Mora",
+      "NomeGrezzo": "Mora",
+      "Squadra": "Roma",
+      "RuoloClassic": "C",
+      "RuoloMantra": "T",
+      "Costo": 99,
+      "InPrestito": false,
+      "FuoriSerieA": false,
+      "Presenze": 5,
+      "MV_Stagione": 6.3,
+      "FM_Stagione": 6.9,
+      "GF": 1,
+      "GS": 0,
+      "ASS": 0,
+      "AMM": 0,
+      "ESP": 0
+    },
+    {
+      "Cod": 6783,
+      "Giocatore": "Unai Gomez",
+      "NomeGrezzo": "Unai Gomez",
+      "Squadra": "Udinese",
+      "RuoloClassic": "C",
+      "RuoloMantra": "T",
+      "Costo": 20,
+      "InPrestito": false,
+      "FuoriSerieA": false,
+      "Presenze": 6,
+      "MV_Stagione": 5.5,
+      "FM_Stagione": 5.67,
+      "GF": 0,
+      "GS": 0,
+      "ASS": 1,
+      "AMM": 1,
+      "ESP": 0,
+      "Prestito_OUT": true,
+      "Controparte": "MAULUX FC"
+    },
+    {
+      "Cod": 4436,
+      "Giocatore": "Cambiaghi",
+      "NomeGrezzo": "Cambiaghi",
+      "Squadra": "Bologna",
+      "RuoloClassic": "C",
+      "RuoloMantra": "W;A",
+      "Costo": 25,
+      "InPrestito": false,
+      "FuoriSerieA": false,
+      "Presenze": 7,
+      "MV_Stagione": 6.07,
+      "FM_Stagione": 6.29,
+      "GF": 0,
+      "GS": 0,
+      "ASS": 2,
+      "AMM": 1,
+      "ESP": 0
+    },
+    {
+      "Cod": 5734,
+      "Giocatore": "Soulè",
+      "NomeGrezzo": "Soulè",
+      "Squadra": "Roma",
+      "RuoloClassic": "A",
+      "RuoloMantra": "A",
+      "Costo": 53,
+      "InPrestito": false,
+      "FuoriSerieA": false,
+      "Presenze": 7,
+      "MV_Stagione": 6.5,
+      "FM_Stagione": 7.36,
+      "GF": 2,
+      "GS": 0,
+      "ASS": 1,
+      "AMM": 2,
+      "ESP": 0
+    },
+    {
+      "Cod": 7620,
+      "Giocatore": "Zeballos",
+      "NomeGrezzo": "Zeballos",
+      "Squadra": "Monza",
+      "RuoloClassic": "A",
+      "RuoloMantra": "A",
+      "Costo": 25,
+      "InPrestito": false,
+      "FuoriSerieA": false,
+      "Presenze": 2,
+      "MV_Stagione": 6.0,
+      "FM_Stagione": 7.5,
+      "GF": 1,
+      "GS": 0,
+      "ASS": 0,
+      "AMM": 0,
+      "ESP": 0
+    },
+    {
+      "Cod": 7484,
+      "Giocatore": "Adams A.",
+      "NomeGrezzo": "Adams A.",
+      "Squadra": "Venezia",
+      "RuoloClassic": "A",
+      "RuoloMantra": "Pc",
+      "Costo": 48,
+      "InPrestito": false,
+      "FuoriSerieA": false,
+      "Presenze": 7,
+      "MV_Stagione": 5.79,
+      "FM_Stagione": 6.64,
+      "GF": 2,
+      "GS": 0,
+      "ASS": 0,
+      "AMM": 0,
+      "ESP": 0
+    },
+    {
+      "Cod": 7547,
+      "Giocatore": "Kevin Carlos",
+      "NomeGrezzo": "Kevin Carlos",
+      "Squadra": "Cagliari",
+      "RuoloClassic": "A",
+      "RuoloMantra": "Pc",
+      "Costo": 44,
+      "InPrestito": false,
+      "FuoriSerieA": false,
+      "Presenze": 3,
+      "MV_Stagione": 5.5,
+      "FM_Stagione": 5.33,
+      "GF": 0,
+      "GS": 0,
+      "ASS": 0,
+      "AMM": 1,
+      "ESP": 0
+    },
+    {
+      "Cod": 7554,
+      "Giocatore": "Romero D.",
+      "NomeGrezzo": "Romero D.",
+      "Squadra": "Parma",
+      "RuoloClassic": "A",
+      "RuoloMantra": "Pc",
+      "Costo": 38,
+      "InPrestito": false,
+      "FuoriSerieA": false,
+      "Presenze": 6,
+      "MV_Stagione": 6.33,
+      "FM_Stagione": 7.33,
+      "GF": 2,
+      "GS": 0,
+      "ASS": 0,
+      "AMM": 0,
+      "ESP": 0,
+      "Prestito_OUT": true,
+      "Controparte": "Lestofanti FC"
+    },
+    {
+      "Cod": 2155,
+      "Giocatore": "Cutrone",
+      "NomeGrezzo": "Cutrone",
+      "Squadra": "Monza",
+      "RuoloClassic": "A",
+      "RuoloMantra": "Pc",
+      "Costo": 30,
+      "InPrestito": false,
+      "FuoriSerieA": false,
+      "Presenze": 4,
+      "MV_Stagione": 5.88,
+      "FM_Stagione": 5.88,
+      "GF": 0,
+      "GS": 0,
+      "ASS": 0,
+      "AMM": 0,
+      "ESP": 0
+    },
+    {
+      "Cod": 7374,
+      "Giocatore": "Mendy P.",
+      "NomeGrezzo": "Mendy P.",
+      "Squadra": "Cagliari",
+      "RuoloClassic": "A",
+      "RuoloMantra": "Pc",
+      "Costo": 7,
+      "InPrestito": false,
+      "FuoriSerieA": false,
+      "Presenze": 7,
+      "MV_Stagione": 6.29,
+      "FM_Stagione": 6.86,
+      "GF": 1,
+      "GS": 0,
+      "ASS": 1,
+      "AMM": 0,
+      "ESP": 0
     }
   ],
   "Lestofanti FC": [
@@ -2852,13 +2215,7 @@
       "GS": 6,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 90.1,
-      "Pct_Parate": 73.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.12,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 2170,
@@ -2877,13 +2234,7 @@
       "GS": 1,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 93.3,
-      "Pct_Parate": 88.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 1.45,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 2845,
@@ -2902,13 +2253,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 50.0,
-      "Pct_Parate": 70.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6986,
@@ -2927,13 +2272,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 45.1,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.1,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7563,
@@ -2952,13 +2291,7 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 97.1,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.58,
-      "xA_Tot": 0.44,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6990,
@@ -2977,13 +2310,7 @@
       "GS": 0,
       "ASS": 3,
       "AMM": 3,
-      "ESP": 0,
-      "Pct_Sufficienza": 40.9,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 1.64,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6601,
@@ -3002,13 +2329,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 70.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5840,
@@ -3027,13 +2348,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 48.9,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.87,
-      "xA_Tot": 0.28,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5695,
@@ -3052,13 +2367,7 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 27.6,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.57,
-      "xA_Tot": 1.11,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5022,
@@ -3077,13 +2386,7 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 3,
-      "ESP": 0,
-      "Pct_Sufficienza": 74.5,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.82,
-      "xA_Tot": 0.39,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5750,
@@ -3102,13 +2405,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 4,
-      "ESP": 0,
-      "Pct_Sufficienza": 61.2,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.45,
-      "xA_Tot": 0.08,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6217,
@@ -3127,13 +2424,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 66.2,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.55,
-      "xA_Tot": 0.28,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7253,
@@ -3152,13 +2443,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 0.8,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.5,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6202,
@@ -3177,13 +2462,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 58.3,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.12,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5603,
@@ -3202,13 +2481,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 40.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.59,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6638,
@@ -3227,13 +2500,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 47.5,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.48,
-      "xA_Tot": 0.18,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 4892,
@@ -3252,13 +2519,7 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 73.3,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.16,
-      "xA_Tot": 1.43,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6274,
@@ -3277,13 +2538,7 @@
       "GS": 0,
       "ASS": 3,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 87.3,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.27,
-      "xA_Tot": 2.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6151,
@@ -3302,13 +2557,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 74.5,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.69,
-      "xA_Tot": 0.97,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 4364,
@@ -3327,13 +2576,7 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 0,
-      "ESP": 1,
-      "Pct_Sufficienza": 47.6,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.58,
-      "xA_Tot": 0.24,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 1
     },
     {
       "Cod": 5791,
@@ -3352,13 +2595,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 61.2,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.17,
-      "xA_Tot": 0.16,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5507,
@@ -3377,13 +2614,7 @@
       "GS": 0,
       "ASS": 2,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 64.6,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.9,
-      "xA_Tot": 0.31,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7572,
@@ -3402,13 +2633,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 70.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 1870,
@@ -3427,13 +2652,7 @@
       "GS": 0,
       "ASS": 2,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 69.2,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.91,
-      "xA_Tot": 2.41,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7314,
@@ -3452,13 +2671,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 92.6,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.07,
-      "xA_Tot": 0.96,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6844,
@@ -3477,13 +2690,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 24.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.33,
-      "xA_Tot": 1.2,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7223,
@@ -3502,13 +2709,7 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 70.1,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.03,
-      "xA_Tot": 0.48,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7232,
@@ -3527,13 +2728,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 62.5,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6678,
@@ -3553,12 +2748,8 @@
       "ASS": 0,
       "AMM": 0,
       "ESP": 0,
-      "Pct_Sufficienza": 93.3,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.86,
-      "xA_Tot": 0.07,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "Prestito_OUT": true,
+      "Controparte": "Tonny Rio Malen by Pedony"
     },
     {
       "Cod": 5823,
@@ -3578,12 +2769,8 @@
       "ASS": 0,
       "AMM": 0,
       "ESP": 0,
-      "Pct_Sufficienza": 55.4,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.97,
-      "xA_Tot": 0.2,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "Prestito_OUT": false,
+      "Controparte": "MAULUX FC"
     },
     {
       "Cod": 2167,
@@ -3602,13 +2789,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 73.3,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.05,
-      "xA_Tot": 0.18,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5422,
@@ -3627,13 +2808,7 @@
       "GS": 0,
       "ASS": 2,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 78.2,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.39,
-      "xA_Tot": 0.99,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 4463,
@@ -3652,13 +2827,7 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 84.4,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.66,
-      "xA_Tot": 0.98,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6646,
@@ -3677,13 +2846,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 88.4,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 2.41,
-      "xA_Tot": 0.18,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5637,
@@ -3702,13 +2865,7 @@
       "GS": 0,
       "ASS": 2,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 55.9,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.66,
-      "xA_Tot": 1.65,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6435,
@@ -3727,13 +2884,28 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 1,
+      "ESP": 0
+    },
+    {
+      "Cod": 7554,
+      "Giocatore": "Romero D.",
+      "NomeGrezzo": "Romero D.",
+      "Squadra": "Parma",
+      "RuoloClassic": "A",
+      "RuoloMantra": "Pc",
+      "Costo": 0,
+      "InPrestito": true,
+      "FuoriSerieA": false,
+      "Presenze": 6,
+      "MV_Stagione": 6.33,
+      "FM_Stagione": 7.33,
+      "GF": 2,
+      "GS": 0,
+      "ASS": 0,
+      "AMM": 0,
       "ESP": 0,
-      "Pct_Sufficienza": 47.4,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 5.26,
-      "xA_Tot": 1.6,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "Prestito_OUT": false,
+      "Controparte": "BORTETA FC"
     }
   ],
   "Free Piallo": [
@@ -3754,13 +2926,7 @@
       "GS": 8,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 91.3,
-      "Pct_Parate": 73.9,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": -3.79,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7603,
@@ -3779,13 +2945,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 50.0,
-      "Pct_Parate": 70.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 1930,
@@ -3804,13 +2964,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 50.0,
-      "Pct_Parate": 70.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6664,
@@ -3829,13 +2983,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 2,
-      "ESP": 0,
-      "Pct_Sufficienza": 58.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5820,
@@ -3854,13 +3002,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 2,
-      "ESP": 0,
-      "Pct_Sufficienza": 58.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.04,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7621,
@@ -3879,13 +3021,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 46.5,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.02,
-      "xA_Tot": 0.24,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7476,
@@ -3904,13 +3040,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 46.5,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.05,
-      "xA_Tot": 0.09,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5862,
@@ -3929,13 +3059,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 61.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.08,
-      "xA_Tot": 2.39,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 4734,
@@ -3954,13 +3078,7 @@
       "GS": 0,
       "ASS": 2,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 84.4,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.16,
-      "xA_Tot": 2.52,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7483,
@@ -3979,13 +3097,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 48.3,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.36,
-      "xA_Tot": 0.12,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 2788,
@@ -4004,13 +3116,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 66.8,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.23,
-      "xA_Tot": 0.68,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6046,
@@ -4029,13 +3135,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 44.3,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 4952,
@@ -4054,13 +3154,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 56.7,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.24,
-      "xA_Tot": 0.25,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5831,
@@ -4079,13 +3173,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 85.2,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.49,
-      "xA_Tot": 0.03,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7202,
@@ -4104,13 +3192,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 62.5,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.45,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 4349,
@@ -4129,13 +3211,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 55.5,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5504,
@@ -4154,13 +3230,7 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 68.7,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.64,
-      "xA_Tot": 0.26,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6054,
@@ -4179,13 +3249,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 41.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.03,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7341,
@@ -4204,13 +3268,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 68.8,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.04,
-      "xA_Tot": 0.2,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6684,
@@ -4229,13 +3287,7 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 61.8,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.5,
-      "xA_Tot": 1.05,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5888,
@@ -4254,13 +3306,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 28.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5295,
@@ -4279,13 +3325,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 72.6,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.66,
-      "xA_Tot": 0.57,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6190,
@@ -4304,13 +3344,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 2,
-      "ESP": 0,
-      "Pct_Sufficienza": 77.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.27,
-      "xA_Tot": 0.54,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6206,
@@ -4329,13 +3363,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 26.7,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.22,
-      "xA_Tot": 0.23,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 4947,
@@ -4354,13 +3382,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 43.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.44,
-      "xA_Tot": 0.39,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6593,
@@ -4379,13 +3401,7 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 51.9,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.05,
-      "xA_Tot": 0.56,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7575,
@@ -4404,13 +3420,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 29.1,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.1,
-      "xA_Tot": 0.07,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6629,
@@ -4429,13 +3439,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 77.1,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.37,
-      "xA_Tot": 0.3,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6218,
@@ -4454,13 +3458,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 41.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.08,
-      "xA_Tot": 0.4,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7623,
@@ -4479,13 +3477,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 17.8,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.36,
-      "xA_Tot": 0.16,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 2832,
@@ -4504,13 +3496,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 60.6,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.11,
-      "xA_Tot": 0.12,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6827,
@@ -4529,13 +3515,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 57.2,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 2.42,
-      "xA_Tot": 1.27,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6549,
@@ -4554,13 +3534,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 37.8,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.18,
-      "xA_Tot": 0.93,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6207,
@@ -4579,13 +3553,7 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 76.7,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.41,
-      "xA_Tot": 0.34,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6640,
@@ -4604,13 +3572,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 62.5,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.06,
-      "xA_Tot": 0.02,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6506,
@@ -4629,13 +3591,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 84.5,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.37,
-      "xA_Tot": 0.23,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6752,
@@ -4654,13 +3610,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 36.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.98,
-      "xA_Tot": 0.51,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6052,
@@ -4679,13 +3629,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 67.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 3.26,
-      "xA_Tot": 1.87,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6675,
@@ -4704,13 +3648,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 35.8,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.03,
-      "xA_Tot": 0.39,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5336,
@@ -4729,13 +3667,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 48.6,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.82,
-      "xA_Tot": 0.08,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6215,
@@ -4754,13 +3686,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 32.1,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.29,
-      "xA_Tot": 1.02,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     }
   ],
   "MAULUX FC": [
@@ -4782,12 +3708,8 @@
       "ASS": 0,
       "AMM": 0,
       "ESP": 0,
-      "Pct_Sufficienza": 56.7,
-      "Pct_Parate": 75.4,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 2.04,
-      "Errors_Leading_To_Goal": 0
+      "Prestito_OUT": true,
+      "Controparte": "Tonny Rio Malen by Pedony"
     },
     {
       "Cod": 6462,
@@ -4806,13 +3728,7 @@
       "GS": 16,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 66.8,
-      "Pct_Parate": 50.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.86,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 4485,
@@ -4832,13 +3748,8 @@
       "ASS": 0,
       "AMM": 0,
       "ESP": 0,
-      "Pct_Sufficienza": 18.3,
-      "Pct_Parate": 50.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.04,
-      "Goals_Prevented": -1.57,
-      "Errors_Leading_To_Goal": 2,
-      "Prestito_OUT": true
+      "Prestito_OUT": true,
+      "Controparte": "AMIT Partizan Folagra"
     },
     {
       "Cod": 7411,
@@ -4857,13 +3768,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 62.5,
-      "Pct_Parate": 70.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 543,
@@ -4882,13 +3787,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 50.0,
-      "Pct_Parate": 70.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5481,
@@ -4907,13 +3806,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 78.6,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.02,
-      "xA_Tot": 0.14,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5520,
@@ -4932,13 +3825,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 45.1,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.09,
-      "xA_Tot": 0.1,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5641,
@@ -4957,13 +3844,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 77.9,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.24,
-      "xA_Tot": 0.02,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6531,
@@ -4982,13 +3863,7 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 55.1,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.57,
-      "xA_Tot": 1.3,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5838,
@@ -5007,13 +3882,7 @@
       "GS": 0,
       "ASS": 2,
       "AMM": 2,
-      "ESP": 0,
-      "Pct_Sufficienza": 64.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.52,
-      "xA_Tot": 1.73,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7212,
@@ -5032,13 +3901,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 2,
-      "ESP": 0,
-      "Pct_Sufficienza": 37.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.09,
-      "xA_Tot": 0.18,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 2640,
@@ -5057,13 +3920,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 67.3,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.02,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6320,
@@ -5082,13 +3939,7 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 87.6,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.97,
-      "xA_Tot": 0.15,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7526,
@@ -5107,13 +3958,7 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 45.5,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.02,
-      "xA_Tot": 0.02,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5498,
@@ -5132,13 +3977,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 56.2,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.38,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6809,
@@ -5157,13 +3996,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 38.4,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.05,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6659,
@@ -5183,12 +4016,29 @@
       "ASS": 0,
       "AMM": 2,
       "ESP": 1,
-      "Pct_Sufficienza": 20.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.55,
-      "xA_Tot": 0.28,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "Prestito_OUT": false,
+      "Controparte": "AMIT Partizan Folagra"
+    },
+    {
+      "Cod": 4137,
+      "Giocatore": "Diego Carlos",
+      "NomeGrezzo": "Diego Carlos",
+      "Squadra": "Parma",
+      "RuoloClassic": "D",
+      "RuoloMantra": "Dc",
+      "Costo": 0,
+      "InPrestito": true,
+      "FuoriSerieA": false,
+      "Presenze": 5,
+      "MV_Stagione": 5.4,
+      "FM_Stagione": 5.3,
+      "GF": 0,
+      "GS": 0,
+      "ASS": 0,
+      "AMM": 1,
+      "ESP": 0,
+      "Prestito_OUT": false,
+      "Controparte": "Tonny Rio Malen by Pedony"
     },
     {
       "Cod": 6372,
@@ -5207,13 +4057,7 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 86.9,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.04,
-      "xA_Tot": 0.73,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7069,
@@ -5232,13 +4076,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 68.8,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.05,
-      "xA_Tot": 0.09,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 2606,
@@ -5257,13 +4095,7 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 75.9,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.95,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 4870,
@@ -5282,38 +4114,7 @@
       "GS": 0,
       "ASS": 2,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 48.6,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.31,
-      "xA_Tot": 0.93,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
-    },
-    {
-      "Cod": 22,
-      "Giocatore": "De Roon",
-      "NomeGrezzo": "De Roon",
-      "Squadra": "Roma",
-      "RuoloClassic": "C",
-      "RuoloMantra": "M;C",
-      "Costo": 14,
-      "InPrestito": false,
-      "FuoriSerieA": false,
-      "Presenze": 3,
-      "MV_Stagione": 6.33,
-      "FM_Stagione": 6.17,
-      "GF": 0,
-      "GS": 0,
-      "ASS": 0,
-      "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 92.3,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.1,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5844,
@@ -5332,13 +4133,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 46.7,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 2.47,
-      "xA_Tot": 0.29,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 4911,
@@ -5357,13 +4152,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 42.4,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.46,
-      "xA_Tot": 1.36,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6252,
@@ -5382,13 +4171,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 2,
-      "ESP": 0,
-      "Pct_Sufficienza": 34.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.47,
-      "xA_Tot": 0.67,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7078,
@@ -5407,13 +4190,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 2,
-      "ESP": 0,
-      "Pct_Sufficienza": 64.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 3.08,
-      "xA_Tot": 1.26,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5800,
@@ -5432,13 +4209,26 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 51.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.39,
-      "xA_Tot": 0.93,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
+    },
+    {
+      "Cod": 7436,
+      "Giocatore": "Alajbegovic",
+      "NomeGrezzo": "Alajbegovic",
+      "Squadra": "Juventus",
+      "RuoloClassic": "C",
+      "RuoloMantra": "W;T",
+      "Costo": 56,
+      "InPrestito": false,
+      "FuoriSerieA": false,
+      "Presenze": 6,
+      "MV_Stagione": 6.0,
+      "FM_Stagione": 6.17,
+      "GF": 0,
+      "GS": 0,
+      "ASS": 1,
+      "AMM": 0,
+      "ESP": 0
     },
     {
       "Cod": 5823,
@@ -5458,13 +4248,8 @@
       "ASS": 0,
       "AMM": 0,
       "ESP": 0,
-      "Pct_Sufficienza": 55.4,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.97,
-      "xA_Tot": 0.2,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0,
-      "Prestito_OUT": true
+      "Prestito_OUT": true,
+      "Controparte": "Lestofanti FC"
     },
     {
       "Cod": 4896,
@@ -5483,13 +4268,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 72.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 3.17,
-      "xA_Tot": 1.16,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 2765,
@@ -5509,12 +4288,8 @@
       "ASS": 0,
       "AMM": 1,
       "ESP": 0,
-      "Pct_Sufficienza": 23.3,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.21,
-      "xA_Tot": 0.57,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "Prestito_OUT": true,
+      "Controparte": "La Joya"
     },
     {
       "Cod": 7409,
@@ -5533,38 +4308,47 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 34.3,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.48,
-      "xA_Tot": 0.01,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
-      "Cod": 5500,
-      "Giocatore": "Cancellieri",
-      "NomeGrezzo": "Cancellieri",
-      "Squadra": "Lazio",
+      "Cod": 6783,
+      "Giocatore": "Unai Gomez",
+      "NomeGrezzo": "Unai Gomez",
+      "Squadra": "Udinese",
       "RuoloClassic": "C",
-      "RuoloMantra": "W;A",
-      "Costo": 26,
+      "RuoloMantra": "T",
+      "Costo": 0,
+      "InPrestito": true,
+      "FuoriSerieA": false,
+      "Presenze": 6,
+      "MV_Stagione": 5.5,
+      "FM_Stagione": 5.67,
+      "GF": 0,
+      "GS": 0,
+      "ASS": 1,
+      "AMM": 1,
+      "ESP": 0,
+      "Prestito_OUT": false,
+      "Controparte": "BORTETA FC"
+    },
+    {
+      "Cod": 5761,
+      "Giocatore": "Zhegrova",
+      "NomeGrezzo": "Zhegrova",
+      "Squadra": "Juventus",
+      "RuoloClassic": "C",
+      "RuoloMantra": "W",
+      "Costo": 16,
       "InPrestito": false,
       "FuoriSerieA": false,
       "Presenze": 5,
-      "MV_Stagione": 6.2,
-      "FM_Stagione": 6.7,
-      "GF": 1,
+      "MV_Stagione": 6.3,
+      "FM_Stagione": 7.7,
+      "GF": 2,
       "GS": 0,
-      "ASS": 0,
-      "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 77.9,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.73,
-      "xA_Tot": 0.66,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ASS": 1,
+      "AMM": 0,
+      "ESP": 0
     },
     {
       "Cod": 6145,
@@ -5583,13 +4367,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 20.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.03,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7622,
@@ -5608,13 +4386,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 62.5,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5694,
@@ -5633,13 +4405,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 46.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.93,
-      "xA_Tot": 0.04,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6397,
@@ -5658,13 +4424,7 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 60.5,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 5.26,
-      "xA_Tot": 0.67,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6519,
@@ -5683,13 +4443,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 36.6,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.37,
-      "xA_Tot": 0.03,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     }
   ],
   "Next Braccetto U23": [
@@ -5710,13 +4464,7 @@
       "GS": 7,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 88.4,
-      "Pct_Parate": 79.6,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 7.48,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 4236,
@@ -5735,13 +4483,7 @@
       "GS": 14,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 33.1,
-      "Pct_Parate": 50.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.09,
-      "Goals_Prevented": 1.34,
-      "Errors_Leading_To_Goal": 1
+      "ESP": 0
     },
     {
       "Cod": 6415,
@@ -5760,13 +4502,7 @@
       "GS": 9,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 98.2,
-      "Pct_Parate": 74.5,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.11,
-      "Goals_Prevented": 8.29,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 2814,
@@ -5785,13 +4521,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 58.1,
-      "Pct_Parate": 70.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 4433,
@@ -5810,13 +4540,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 65.8,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.42,
-      "xA_Tot": 1.1,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6238,
@@ -5835,13 +4559,7 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 94.7,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.65,
-      "xA_Tot": 0.56,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7326,
@@ -5860,13 +4578,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 72.2,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.16,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 256,
@@ -5885,13 +4597,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 2,
-      "ESP": 0,
-      "Pct_Sufficienza": 48.7,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.06,
-      "xA_Tot": 0.36,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7219,
@@ -5910,13 +4616,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 25.6,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.09,
-      "xA_Tot": 0.46,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7485,
@@ -5935,13 +4635,7 @@
       "GS": 0,
       "ASS": 2,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 78.6,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.25,
-      "xA_Tot": 1.27,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6985,
@@ -5960,13 +4654,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 28.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7469,
@@ -5985,13 +4673,7 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 3,
-      "ESP": 0,
-      "Pct_Sufficienza": 85.2,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.53,
-      "xA_Tot": 0.58,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 4375,
@@ -6010,13 +4692,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 63.2,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.18,
-      "xA_Tot": 0.55,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5851,
@@ -6035,13 +4711,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 61.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.23,
-      "xA_Tot": 1.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 4378,
@@ -6060,13 +4730,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 2,
-      "ESP": 0,
-      "Pct_Sufficienza": 34.3,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.1,
-      "xA_Tot": 0.22,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5526,
@@ -6085,13 +4749,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 50.6,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.03,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7240,
@@ -6110,13 +4768,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 44.5,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.6,
-      "xA_Tot": 0.68,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6495,
@@ -6135,13 +4787,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 45.8,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.18,
-      "xA_Tot": 0.15,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7467,
@@ -6160,13 +4806,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 2,
-      "ESP": 0,
-      "Pct_Sufficienza": 77.5,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.2,
-      "xA_Tot": 0.16,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 4465,
@@ -6185,13 +4825,7 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 42.8,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.79,
-      "xA_Tot": 0.87,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5674,
@@ -6210,13 +4844,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 61.8,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.33,
-      "xA_Tot": 0.76,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7311,
@@ -6235,13 +4863,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 70.9,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.27,
-      "xA_Tot": 0.6,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7208,
@@ -6260,13 +4882,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 52.3,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.08,
-      "xA_Tot": 0.24,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5457,
@@ -6285,13 +4901,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 48.6,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.39,
-      "xA_Tot": 0.27,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 2848,
@@ -6310,13 +4920,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 89.2,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 2.99,
-      "xA_Tot": 1.11,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6666,
@@ -6335,13 +4939,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 49.8,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.83,
-      "xA_Tot": 0.5,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5685,
@@ -6360,13 +4958,7 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 73.9,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.19,
-      "xA_Tot": 0.45,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6994,
@@ -6385,13 +4977,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 3,
-      "ESP": 0,
-      "Pct_Sufficienza": 64.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.18,
-      "xA_Tot": 1.17,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 2517,
@@ -6410,13 +4996,7 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 79.7,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 3.46,
-      "xA_Tot": 2.25,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5735,
@@ -6435,13 +5015,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 97.4,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.25,
-      "xA_Tot": 0.91,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 4970,
@@ -6460,13 +5034,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 83.6,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.48,
-      "xA_Tot": 0.3,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 4179,
@@ -6485,13 +5053,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 66.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.47,
-      "xA_Tot": 0.32,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6904,
@@ -6510,13 +5072,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 56.3,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 4.28,
-      "xA_Tot": 1.74,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 2764,
@@ -6535,13 +5091,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 2,
-      "ESP": 0,
-      "Pct_Sufficienza": 84.1,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 5.35,
-      "xA_Tot": 0.99,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 2038,
@@ -6560,13 +5110,7 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 57.6,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.83,
-      "xA_Tot": 1.25,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 4359,
@@ -6585,13 +5129,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 51.3,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.76,
-      "xA_Tot": 0.14,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7449,
@@ -6610,13 +5148,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 52.2,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.36,
-      "xA_Tot": 0.11,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7523,
@@ -6635,13 +5167,7 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 99.7,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 4.23,
-      "xA_Tot": 1.39,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 2012,
@@ -6660,13 +5186,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 50.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     }
   ],
   "Aberdeen": [
@@ -6687,13 +5207,7 @@
       "GS": 3,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 93.0,
-      "Pct_Parate": 88.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 4.43,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7048,
@@ -6712,13 +5226,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 50.0,
-      "Pct_Parate": 70.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 610,
@@ -6737,13 +5245,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 89.2,
-      "Pct_Parate": 88.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 2.97,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 554,
@@ -6762,13 +5264,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 27.6,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.57,
-      "xA_Tot": 0.17,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 4177,
@@ -6787,13 +5283,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 51.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.04,
-      "xA_Tot": 0.13,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7238,
@@ -6812,13 +5302,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 2,
-      "ESP": 0,
-      "Pct_Sufficienza": 61.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.25,
-      "xA_Tot": 0.83,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5578,
@@ -6837,13 +5321,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 20.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.04,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7131,
@@ -6862,13 +5340,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 56.3,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.72,
-      "xA_Tot": 0.69,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6896,
@@ -6887,13 +5359,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 2.4,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.01,
-      "xA_Tot": 0.01,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7573,
@@ -6912,13 +5378,7 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 52.4,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.46,
-      "xA_Tot": 0.38,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6537,
@@ -6937,13 +5397,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 85.7,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.49,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5527,
@@ -6962,13 +5416,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 50.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.02,
-      "xA_Tot": 0.12,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 1852,
@@ -6987,13 +5435,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 50.6,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.19,
-      "xA_Tot": 0.41,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7294,
@@ -7012,13 +5454,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 14.2,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5620,
@@ -7037,13 +5473,7 @@
       "GS": 0,
       "ASS": 3,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 97.5,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.75,
-      "xA_Tot": 1.65,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 2120,
@@ -7062,13 +5492,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 70.8,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.21,
-      "xA_Tot": 0.76,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 2514,
@@ -7087,13 +5511,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 51.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.1,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 4751,
@@ -7112,13 +5530,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 72.9,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.17,
-      "xA_Tot": 1.34,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7012,
@@ -7137,13 +5549,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 2,
-      "ESP": 0,
-      "Pct_Sufficienza": 80.7,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.43,
-      "xA_Tot": 0.02,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6631,
@@ -7162,13 +5568,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 79.4,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.35,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5757,
@@ -7187,13 +5587,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 46.7,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.05,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5982,
@@ -7212,13 +5606,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 75.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5301,
@@ -7237,13 +5625,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 62.3,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.16,
-      "xA_Tot": 0.19,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7276,
@@ -7262,13 +5644,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 10.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5858,
@@ -7287,13 +5663,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 82.2,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.46,
-      "xA_Tot": 1.04,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7203,
@@ -7312,13 +5682,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 79.4,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.6,
-      "xA_Tot": 0.32,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5007,
@@ -7337,13 +5701,7 @@
       "GS": 0,
       "ASS": 2,
       "AMM": 2,
-      "ESP": 0,
-      "Pct_Sufficienza": 37.3,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.09,
-      "xA_Tot": 0.65,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6225,
@@ -7362,13 +5720,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 2,
-      "ESP": 0,
-      "Pct_Sufficienza": 40.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.06,
-      "xA_Tot": 0.08,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7528,
@@ -7387,13 +5739,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 34.3,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.06,
-      "xA_Tot": 0.01,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7473,
@@ -7412,13 +5758,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 68.7,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.16,
-      "xA_Tot": 0.02,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 801,
@@ -7437,13 +5777,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 8.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.06,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5119,
@@ -7462,13 +5796,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 57.4,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.79,
-      "xA_Tot": 0.56,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 1933,
@@ -7487,13 +5815,7 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 69.9,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.39,
-      "xA_Tot": 0.37,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6010,
@@ -7512,13 +5834,7 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 35.4,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.16,
-      "xA_Tot": 0.86,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 4199,
@@ -7537,13 +5853,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 48.7,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.56,
-      "xA_Tot": 1.19,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6889,
@@ -7562,13 +5872,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 63.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 2423,
@@ -7587,13 +5891,7 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 76.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.64,
-      "xA_Tot": 1.93,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 4479,
@@ -7612,13 +5910,7 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 0,
-      "ESP": 1,
-      "Pct_Sufficienza": 17.5,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.98,
-      "xA_Tot": 0.94,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 1
     },
     {
       "Cod": 184,
@@ -7637,13 +5929,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 94.7,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 2.01,
-      "xA_Tot": 1.94,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6592,
@@ -7662,13 +5948,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 58.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.14,
-      "xA_Tot": 0.15,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6060,
@@ -7687,13 +5967,7 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 90.4,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 2.08,
-      "xA_Tot": 2.27,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7162,
@@ -7712,13 +5986,7 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 50.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.02,
-      "xA_Tot": 0.88,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5951,
@@ -7737,13 +6005,7 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 26.2,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 2.72,
-      "xA_Tot": 0.65,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 2137,
@@ -7762,13 +6024,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 55.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.34,
-      "xA_Tot": 0.25,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7252,
@@ -7787,13 +6043,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 21.8,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.35,
-      "xA_Tot": 0.01,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 608,
@@ -7812,13 +6062,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 23.3,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7342,
@@ -7837,13 +6081,7 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 26.7,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.35,
-      "xA_Tot": 0.46,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7349,
@@ -7862,13 +6100,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 71.3,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     }
   ],
   "Mefistese": [
@@ -7889,13 +6121,7 @@
       "GS": 1,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 70.0,
-      "Pct_Parate": 76.2,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.5,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 133,
@@ -7914,13 +6140,7 @@
       "GS": 8,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 61.4,
-      "Pct_Parate": 59.5,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": -0.76,
-      "Errors_Leading_To_Goal": 2
+      "ESP": 0
     },
     {
       "Cod": 7533,
@@ -7939,13 +6159,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 50.0,
-      "Pct_Parate": 70.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7172,
@@ -7964,13 +6178,7 @@
       "GS": 2,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 28.0,
-      "Pct_Parate": 72.2,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.89,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6021,
@@ -7989,13 +6197,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 64.3,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.57,
-      "xA_Tot": 0.05,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 4994,
@@ -8014,13 +6216,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 27.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.2,
-      "xA_Tot": 1.03,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 4887,
@@ -8039,13 +6235,7 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 50.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.01,
-      "xA_Tot": 1.2,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5742,
@@ -8064,13 +6254,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 50.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6496,
@@ -8089,13 +6273,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 68.8,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.87,
-      "xA_Tot": 0.89,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5273,
@@ -8114,13 +6292,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 2,
-      "ESP": 0,
-      "Pct_Sufficienza": 38.7,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.43,
-      "xA_Tot": 0.14,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 4817,
@@ -8139,13 +6311,7 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 89.4,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7268,
@@ -8164,13 +6330,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 54.9,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.04,
-      "xA_Tot": 0.05,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5833,
@@ -8189,13 +6349,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 86.3,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.26,
-      "xA_Tot": 0.24,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 4807,
@@ -8214,13 +6368,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 2,
-      "ESP": 0,
-      "Pct_Sufficienza": 83.7,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.43,
-      "xA_Tot": 1.1,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 4401,
@@ -8239,13 +6387,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 37.4,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7580,
@@ -8264,13 +6406,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 58.2,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7529,
@@ -8289,13 +6425,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 78.6,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.15,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7260,
@@ -8314,13 +6444,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 44.7,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7599,
@@ -8339,13 +6463,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 94.4,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.98,
-      "xA_Tot": 1.88,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 4287,
@@ -8364,13 +6482,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 94.7,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.46,
-      "xA_Tot": 0.49,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 2528,
@@ -8389,13 +6501,7 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 76.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.09,
-      "xA_Tot": 1.03,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 2077,
@@ -8414,13 +6520,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 4.4,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.17,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7070,
@@ -8439,13 +6539,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 66.2,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.07,
-      "xA_Tot": 0.22,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 2529,
@@ -8464,13 +6558,7 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 66.3,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.86,
-      "xA_Tot": 0.4,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7036,
@@ -8489,13 +6577,7 @@
       "GS": 0,
       "ASS": 2,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 63.1,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.53,
-      "xA_Tot": 1.21,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5319,
@@ -8514,13 +6596,7 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 2,
-      "ESP": 0,
-      "Pct_Sufficienza": 32.2,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.16,
-      "xA_Tot": 0.2,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6618,
@@ -8539,13 +6615,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 59.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.6,
-      "xA_Tot": 0.45,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5878,
@@ -8564,13 +6634,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 47.1,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.14,
-      "xA_Tot": 0.76,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6967,
@@ -8589,13 +6653,7 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 2,
-      "ESP": 0,
-      "Pct_Sufficienza": 81.2,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.8,
-      "xA_Tot": 2.08,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6831,
@@ -8614,13 +6672,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 51.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.91,
-      "xA_Tot": 0.68,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7602,
@@ -8639,13 +6691,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 44.1,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.77,
-      "xA_Tot": 0.6,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 531,
@@ -8664,13 +6710,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 44.9,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.89,
-      "xA_Tot": 0.64,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6556,
@@ -8689,13 +6729,7 @@
       "GS": 0,
       "ASS": 2,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 79.3,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 2.39,
-      "xA_Tot": 0.21,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 4871,
@@ -8714,13 +6748,7 @@
       "GS": 0,
       "ASS": 2,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 82.1,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 5.7,
-      "xA_Tot": 1.74,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5436,
@@ -8739,13 +6767,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 2,
-      "ESP": 0,
-      "Pct_Sufficienza": 75.6,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 5.9,
-      "xA_Tot": 1.05,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6669,
@@ -8764,16 +6786,10 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 86.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 3.37,
-      "xA_Tot": 0.23,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     }
   ],
-  "Enel Energia": [
+  "La Joya": [
     {
       "Cod": 6482,
       "Giocatore": "Mandas",
@@ -8791,13 +6807,7 @@
       "GS": 4,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 96.9,
-      "Pct_Parate": 88.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 4.97,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 2134,
@@ -8816,13 +6826,7 @@
       "GS": 12,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 65.4,
-      "Pct_Parate": 59.2,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 5.43,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6248,
@@ -8841,13 +6845,7 @@
       "GS": 16,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 87.4,
-      "Pct_Parate": 50.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.23,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7337,
@@ -8866,13 +6864,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 50.0,
-      "Pct_Parate": 70.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7457,
@@ -8891,13 +6883,7 @@
       "GS": 4,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 37.4,
-      "Pct_Parate": 50.4,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": -1.18,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 4957,
@@ -8916,13 +6902,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 67.2,
-      "Pct_Parate": 70.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7274,
@@ -8941,13 +6921,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 75.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.53,
-      "xA_Tot": 0.08,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6821,
@@ -8966,13 +6940,7 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 68.2,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.95,
-      "xA_Tot": 2.21,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5877,
@@ -8991,13 +6959,7 @@
       "GS": 0,
       "ASS": 2,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 90.3,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.23,
-      "xA_Tot": 2.24,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7414,
@@ -9017,13 +6979,8 @@
       "ASS": 0,
       "AMM": 0,
       "ESP": 0,
-      "Pct_Sufficienza": 91.3,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.31,
-      "xA_Tot": 1.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0,
-      "Prestito_OUT": true
+      "Prestito_OUT": true,
+      "Controparte": "Tonny Rio Malen by Pedony"
     },
     {
       "Cod": 7329,
@@ -9042,13 +6999,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 75.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6869,
@@ -9067,13 +7018,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 87.4,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 2.4,
-      "xA_Tot": 0.83,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5365,
@@ -9092,13 +7037,7 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 34.3,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.23,
-      "xA_Tot": 0.15,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 4705,
@@ -9117,13 +7056,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 95.6,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.15,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6893,
@@ -9142,13 +7075,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 93.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.04,
-      "xA_Tot": 0.06,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5307,
@@ -9167,13 +7094,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 62.5,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 4998,
@@ -9192,13 +7113,7 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 88.8,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.15,
-      "xA_Tot": 1.42,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7060,
@@ -9217,13 +7132,7 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 72.4,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.13,
-      "xA_Tot": 0.45,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5589,
@@ -9242,13 +7151,26 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 2,
-      "ESP": 0,
-      "Pct_Sufficienza": 95.6,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.1,
-      "xA_Tot": 0.36,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
+    },
+    {
+      "Cod": 22,
+      "Giocatore": "De Roon",
+      "NomeGrezzo": "De Roon",
+      "Squadra": "Roma",
+      "RuoloClassic": "C",
+      "RuoloMantra": "M;C",
+      "Costo": 14,
+      "InPrestito": false,
+      "FuoriSerieA": false,
+      "Presenze": 3,
+      "MV_Stagione": 6.33,
+      "FM_Stagione": 6.17,
+      "GF": 0,
+      "GS": 0,
+      "ASS": 0,
+      "AMM": 1,
+      "ESP": 0
     },
     {
       "Cod": 6503,
@@ -9267,13 +7189,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 50.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.14,
-      "xA_Tot": 0.02,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7138,
@@ -9292,13 +7208,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 50.7,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.13,
-      "xA_Tot": 0.13,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7412,
@@ -9318,12 +7228,8 @@
       "ASS": 0,
       "AMM": 0,
       "ESP": 0,
-      "Pct_Sufficienza": 76.4,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.53,
-      "xA_Tot": 1.3,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "Prestito_OUT": false,
+      "Controparte": "Tonny Rio Malen by Pedony"
     },
     {
       "Cod": 5172,
@@ -9342,13 +7248,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 64.3,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.05,
-      "xA_Tot": 0.14,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 152,
@@ -9367,13 +7267,7 @@
       "GS": 0,
       "ASS": 2,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 80.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.55,
-      "xA_Tot": 1.79,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 530,
@@ -9392,13 +7286,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 70.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.09,
-      "xA_Tot": 0.18,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7126,
@@ -9417,38 +7305,28 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 2,
-      "ESP": 0,
-      "Pct_Sufficienza": 57.8,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.15,
-      "xA_Tot": 0.65,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
-      "Cod": 7436,
-      "Giocatore": "Alajbegovic",
-      "NomeGrezzo": "Alajbegovic",
-      "Squadra": "Juventus",
+      "Cod": 2765,
+      "Giocatore": "Odgaard",
+      "NomeGrezzo": "Odgaard",
+      "Squadra": "Bologna",
       "RuoloClassic": "C",
-      "RuoloMantra": "W;T",
-      "Costo": 56,
-      "InPrestito": false,
+      "RuoloMantra": "T",
+      "Costo": 0,
+      "InPrestito": true,
       "FuoriSerieA": false,
-      "Presenze": 6,
-      "MV_Stagione": 6.0,
-      "FM_Stagione": 6.17,
+      "Presenze": 5,
+      "MV_Stagione": 5.6,
+      "FM_Stagione": 5.5,
       "GF": 0,
       "GS": 0,
-      "ASS": 1,
-      "AMM": 0,
+      "ASS": 0,
+      "AMM": 1,
       "ESP": 0,
-      "Pct_Sufficienza": 70.8,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.4,
-      "xA_Tot": 1.2,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "Prestito_OUT": false,
+      "Controparte": "MAULUX FC"
     },
     {
       "Cod": 7129,
@@ -9467,38 +7345,26 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 59.8,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.87,
-      "xA_Tot": 0.31,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
-      "Cod": 5761,
-      "Giocatore": "Zhegrova",
-      "NomeGrezzo": "Zhegrova",
-      "Squadra": "Juventus",
+      "Cod": 5500,
+      "Giocatore": "Cancellieri",
+      "NomeGrezzo": "Cancellieri",
+      "Squadra": "Lazio",
       "RuoloClassic": "C",
-      "RuoloMantra": "W",
-      "Costo": 16,
+      "RuoloMantra": "W;A",
+      "Costo": 26,
       "InPrestito": false,
       "FuoriSerieA": false,
       "Presenze": 5,
-      "MV_Stagione": 6.3,
-      "FM_Stagione": 7.7,
-      "GF": 2,
+      "MV_Stagione": 6.2,
+      "FM_Stagione": 6.7,
+      "GF": 1,
       "GS": 0,
-      "ASS": 1,
-      "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 72.4,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.8,
-      "xA_Tot": 1.68,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ASS": 0,
+      "AMM": 1,
+      "ESP": 0
     },
     {
       "Cod": 5998,
@@ -9517,13 +7383,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 88.2,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.15,
-      "xA_Tot": 0.02,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 309,
@@ -9542,13 +7402,7 @@
       "GS": 0,
       "ASS": 4,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 99.3,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 2.3,
-      "xA_Tot": 4.29,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 4371,
@@ -9567,13 +7421,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 50.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.41,
-      "xA_Tot": 0.14,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6572,
@@ -9592,13 +7440,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 72.9,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 2.15,
-      "xA_Tot": 0.76,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7023,
@@ -9617,13 +7459,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 30.3,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.2,
-      "xA_Tot": 0.62,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     }
   ],
   "Tonny Rio Malen by Pedony": [
@@ -9645,13 +7481,8 @@
       "ASS": 0,
       "AMM": 1,
       "ESP": 0,
-      "Pct_Sufficienza": 49.7,
-      "Pct_Parate": 50.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.29,
-      "Goals_Prevented": -3.74,
-      "Errors_Leading_To_Goal": 1,
-      "Prestito_OUT": true
+      "Prestito_OUT": true,
+      "Controparte": "BORTETA FC"
     },
     {
       "Cod": 6403,
@@ -9671,12 +7502,8 @@
       "ASS": 0,
       "AMM": 0,
       "ESP": 0,
-      "Pct_Sufficienza": 50.0,
-      "Pct_Parate": 70.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "Prestito_OUT": true,
+      "Controparte": "BORTETA FC"
     },
     {
       "Cod": 158,
@@ -9695,13 +7522,70 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
+      "ESP": 0
+    },
+    {
+      "Cod": 6534,
+      "Giocatore": "Perri",
+      "NomeGrezzo": "Perri",
+      "Squadra": "Torino",
+      "RuoloClassic": "P",
+      "RuoloMantra": "Por",
+      "Costo": 0,
+      "InPrestito": true,
+      "FuoriSerieA": false,
+      "Presenze": 5,
+      "MV_Stagione": 5.9,
+      "FM_Stagione": 4.9,
+      "GF": 0,
+      "GS": 5,
+      "ASS": 0,
+      "AMM": 0,
       "ESP": 0,
-      "Pct_Sufficienza": 50.0,
-      "Pct_Parate": 70.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "Prestito_OUT": false,
+      "Controparte": "MAULUX FC"
+    },
+    {
+      "Cod": 6569,
+      "Giocatore": "Stolz",
+      "NomeGrezzo": "Stolz",
+      "Squadra": "Genoa",
+      "RuoloClassic": "P",
+      "RuoloMantra": "Por",
+      "Costo": 0,
+      "InPrestito": true,
+      "FuoriSerieA": false,
+      "Presenze": 0,
+      "MV_Stagione": 0.0,
+      "FM_Stagione": 0.0,
+      "GF": 0,
+      "GS": 0,
+      "ASS": 0,
+      "AMM": 0,
+      "ESP": 0,
+      "Prestito_OUT": false,
+      "Controparte": "BORTETA FC"
+    },
+    {
+      "Cod": 7332,
+      "Giocatore": "Bijlow",
+      "NomeGrezzo": "Bijlow",
+      "Squadra": "Genoa",
+      "RuoloClassic": "P",
+      "RuoloMantra": "Por",
+      "Costo": 0,
+      "InPrestito": true,
+      "FuoriSerieA": false,
+      "Presenze": 7,
+      "MV_Stagione": 5.86,
+      "FM_Stagione": 4.0,
+      "GF": 0,
+      "GS": 13,
+      "ASS": 0,
+      "AMM": 0,
+      "ESP": 0,
+      "Prestito_OUT": false,
+      "Controparte": "BORTETA FC"
     },
     {
       "Cod": 2816,
@@ -9720,13 +7604,7 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 65.4,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.03,
-      "xA_Tot": 0.83,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5678,
@@ -9745,13 +7623,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 83.1,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.16,
-      "xA_Tot": 0.03,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7175,
@@ -9770,13 +7642,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 30.6,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.12,
-      "xA_Tot": 0.26,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5701,
@@ -9795,13 +7661,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 35.7,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.19,
-      "xA_Tot": 0.74,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7537,
@@ -9820,13 +7680,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 70.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.08,
-      "xA_Tot": 0.27,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7414,
@@ -9846,12 +7700,29 @@
       "ASS": 0,
       "AMM": 0,
       "ESP": 0,
-      "Pct_Sufficienza": 91.3,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.31,
-      "xA_Tot": 1.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "Prestito_OUT": false,
+      "Controparte": "La Joya"
+    },
+    {
+      "Cod": 5555,
+      "Giocatore": "Kamara H.",
+      "NomeGrezzo": "Kamara H.",
+      "Squadra": "Udinese",
+      "RuoloClassic": "D",
+      "RuoloMantra": "Ds;E",
+      "Costo": 0,
+      "InPrestito": true,
+      "FuoriSerieA": false,
+      "Presenze": 7,
+      "MV_Stagione": 6.07,
+      "FM_Stagione": 6.86,
+      "GF": 2,
+      "GS": 0,
+      "ASS": 0,
+      "AMM": 1,
+      "ESP": 0,
+      "Prestito_OUT": false,
+      "Controparte": "BORTETA FC"
     },
     {
       "Cod": 4137,
@@ -9871,12 +7742,8 @@
       "ASS": 0,
       "AMM": 1,
       "ESP": 0,
-      "Pct_Sufficienza": 14.2,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.17,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "Prestito_OUT": true,
+      "Controparte": "MAULUX FC"
     },
     {
       "Cod": 4210,
@@ -9895,13 +7762,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 43.7,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.26,
-      "xA_Tot": 0.06,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6672,
@@ -9920,13 +7781,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 82.4,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.02,
-      "xA_Tot": 0.08,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6042,
@@ -9945,13 +7800,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 2,
-      "ESP": 0,
-      "Pct_Sufficienza": 67.3,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.11,
-      "xA_Tot": 0.11,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 4147,
@@ -9970,13 +7819,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 15.1,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.19,
-      "xA_Tot": 0.06,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6660,
@@ -9995,13 +7838,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 40.8,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.1,
-      "xA_Tot": 0.26,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6892,
@@ -10020,13 +7857,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 3,
-      "ESP": 0,
-      "Pct_Sufficienza": 44.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.13,
-      "xA_Tot": 0.1,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6977,
@@ -10045,13 +7876,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 48.6,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7472,
@@ -10070,13 +7895,7 @@
       "GS": 0,
       "ASS": 2,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 86.9,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 2.04,
-      "xA_Tot": 2.14,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7198,
@@ -10095,13 +7914,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 2,
-      "ESP": 0,
-      "Pct_Sufficienza": 50.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.42,
-      "xA_Tot": 0.24,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7412,
@@ -10121,13 +7934,8 @@
       "ASS": 0,
       "AMM": 0,
       "ESP": 0,
-      "Pct_Sufficienza": 76.4,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.53,
-      "xA_Tot": 1.3,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0,
-      "Prestito_OUT": true
+      "Prestito_OUT": true,
+      "Controparte": "La Joya"
     },
     {
       "Cod": 333,
@@ -10146,13 +7954,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 64.7,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5453,
@@ -10171,13 +7973,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 42.5,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.09,
-      "xA_Tot": 0.39,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 1850,
@@ -10196,13 +7992,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 25.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.93,
-      "xA_Tot": 0.17,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 2379,
@@ -10221,13 +8011,7 @@
       "GS": 0,
       "ASS": 3,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 88.8,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.76,
-      "xA_Tot": 1.1,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6908,
@@ -10246,13 +8030,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 28.4,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.18,
-      "xA_Tot": 0.31,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7318,
@@ -10271,13 +8049,28 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
+      "ESP": 0
+    },
+    {
+      "Cod": 6678,
+      "Giocatore": "Liberali",
+      "NomeGrezzo": "Liberali",
+      "Squadra": "Como",
+      "RuoloClassic": "C",
+      "RuoloMantra": "T",
+      "Costo": 0,
+      "InPrestito": true,
+      "FuoriSerieA": false,
+      "Presenze": 2,
+      "MV_Stagione": 6.5,
+      "FM_Stagione": 8.0,
+      "GF": 1,
+      "GS": 0,
+      "ASS": 0,
+      "AMM": 0,
       "ESP": 0,
-      "Pct_Sufficienza": 57.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.67,
-      "xA_Tot": 0.09,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "Prestito_OUT": false,
+      "Controparte": "Lestofanti FC"
     },
     {
       "Cod": 6833,
@@ -10296,13 +8089,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 71.7,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.57,
-      "xA_Tot": 0.09,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7351,
@@ -10321,13 +8108,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 83.1,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.43,
-      "xA_Tot": 0.26,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6530,
@@ -10346,13 +8127,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 84.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 2.09,
-      "xA_Tot": 0.78,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6398,
@@ -10371,13 +8146,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 74.5,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.65,
-      "xA_Tot": 0.61,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6895,
@@ -10396,13 +8165,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 69.3,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.12,
-      "xA_Tot": 0.06,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6164,
@@ -10421,13 +8184,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 32.1,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.61,
-      "xA_Tot": 0.1,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5882,
@@ -10446,13 +8203,7 @@
       "GS": 0,
       "ASS": 2,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 84.4,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.48,
-      "xA_Tot": 1.39,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7120,
@@ -10471,13 +8222,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 59.1,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.25,
-      "xA_Tot": 1.27,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5585,
@@ -10496,13 +8241,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 1,
-      "Pct_Sufficienza": 81.6,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 8.44,
-      "xA_Tot": 1.14,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 1
     },
     {
       "Cod": 2061,
@@ -10521,13 +8260,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 50.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 2.53,
-      "xA_Tot": 0.55,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7272,
@@ -10546,13 +8279,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 64.3,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.36,
-      "xA_Tot": 0.16,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     }
   ],
   "AMIT Partizan Folagra": [
@@ -10573,13 +8300,7 @@
       "GS": 6,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 77.3,
-      "Pct_Parate": 76.2,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 3.01,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7301,
@@ -10598,13 +8319,7 @@
       "GS": 4,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 95.6,
-      "Pct_Parate": 72.3,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 1.43,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 2809,
@@ -10623,13 +8338,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 50.0,
-      "Pct_Parate": 70.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 4485,
@@ -10649,12 +8358,8 @@
       "ASS": 0,
       "AMM": 0,
       "ESP": 0,
-      "Pct_Sufficienza": 18.3,
-      "Pct_Parate": 50.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.04,
-      "Goals_Prevented": -1.57,
-      "Errors_Leading_To_Goal": 2
+      "Prestito_OUT": false,
+      "Controparte": "MAULUX FC"
     },
     {
       "Cod": 4976,
@@ -10673,13 +8378,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 65.4,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.17,
-      "xA_Tot": 0.29,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 2188,
@@ -10698,13 +8397,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 62.5,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6485,
@@ -10723,13 +8416,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 27.6,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.27,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 4845,
@@ -10748,13 +8435,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 85.2,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.56,
-      "xA_Tot": 0.07,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5751,
@@ -10773,13 +8454,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 43.8,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.09,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5514,
@@ -10798,13 +8473,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 2,
-      "ESP": 1,
-      "Pct_Sufficienza": 46.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.21,
-      "xA_Tot": 0.06,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 1
     },
     {
       "Cod": 7478,
@@ -10823,13 +8492,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 37.4,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.44,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 2296,
@@ -10848,13 +8511,7 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 67.8,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.03,
-      "xA_Tot": 2.31,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6989,
@@ -10873,13 +8530,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 39.3,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.78,
-      "xA_Tot": 1.31,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7154,
@@ -10898,13 +8549,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 61.5,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.17,
-      "xA_Tot": 0.01,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6659,
@@ -10924,13 +8569,8 @@
       "ASS": 0,
       "AMM": 2,
       "ESP": 1,
-      "Pct_Sufficienza": 20.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.55,
-      "xA_Tot": 0.28,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0,
-      "Prestito_OUT": true
+      "Prestito_OUT": true,
+      "Controparte": "MAULUX FC"
     },
     {
       "Cod": 6020,
@@ -10949,13 +8589,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 2,
-      "ESP": 0,
-      "Pct_Sufficienza": 44.5,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.5,
-      "xA_Tot": 0.66,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 2194,
@@ -10974,13 +8608,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 88.4,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.01,
-      "xA_Tot": 1.2,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 779,
@@ -10999,13 +8627,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 93.1,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.57,
-      "xA_Tot": 0.05,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6898,
@@ -11024,13 +8646,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 48.2,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.07,
-      "xA_Tot": 0.33,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7456,
@@ -11049,13 +8665,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 62.5,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5559,
@@ -11074,13 +8684,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 84.9,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.6,
-      "xA_Tot": 1.27,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 4973,
@@ -11099,13 +8703,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 41.8,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.69,
-      "xA_Tot": 0.39,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5036,
@@ -11124,13 +8722,7 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 91.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.63,
-      "xA_Tot": 2.09,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 632,
@@ -11149,13 +8741,7 @@
       "GS": 0,
       "ASS": 3,
       "AMM": 3,
-      "ESP": 0,
-      "Pct_Sufficienza": 95.1,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 3.88,
-      "xA_Tot": 3.39,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7619,
@@ -11174,13 +8760,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 40.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.37,
-      "xA_Tot": 0.52,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6204,
@@ -11199,13 +8779,7 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 99.1,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 2.99,
-      "xA_Tot": 2.65,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7001,
@@ -11224,13 +8798,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 77.1,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.36,
-      "xA_Tot": 0.55,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5995,
@@ -11249,13 +8817,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 55.3,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 1.08,
-      "xA_Tot": 2.51,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5918,
@@ -11274,13 +8836,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 62.5,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 6822,
@@ -11299,13 +8855,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 43.5,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.0,
-      "xA_Tot": 0.0,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 2097,
@@ -11324,13 +8874,7 @@
       "GS": 0,
       "ASS": 1,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 64.3,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.61,
-      "xA_Tot": 0.38,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 5029,
@@ -11349,13 +8893,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 1.8,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 2.86,
-      "xA_Tot": 0.17,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7610,
@@ -11374,13 +8912,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 0,
-      "ESP": 0,
-      "Pct_Sufficienza": 75.0,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.51,
-      "xA_Tot": 0.04,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     },
     {
       "Cod": 7161,
@@ -11399,13 +8931,7 @@
       "GS": 0,
       "ASS": 0,
       "AMM": 1,
-      "ESP": 0,
-      "Pct_Sufficienza": 23.3,
-      "Pct_Parate": 0.0,
-      "xG_Tot": 0.9,
-      "xA_Tot": 0.34,
-      "Goals_Prevented": 0.0,
-      "Errors_Leading_To_Goal": 0
+      "ESP": 0
     }
   ]
 }

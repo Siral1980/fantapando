@@ -1153,7 +1153,13 @@ def find_latest_roster_export_file(league_id=None):
 
                 if has_specific:
                     is_xlsx = fpath.lower().endswith(('.xlsx', '.xls'))
-                    priority = 1 if is_xlsx else 2
+                    is_roster_matrix = any(k in fname for k in ['roster', 'rosters', 'rose'])
+                    if is_roster_matrix and is_xlsx:
+                        priority = 0  # True multi-column rosters export with cost 0 loans
+                    elif is_xlsx:
+                        priority = 1  # Other Excel files (e.g. lista_calciatori)
+                    else:
+                        priority = 2  # CSV files
                     candidates.append({
                         'priority': priority,
                         'mtime': mtime,
@@ -1162,8 +1168,11 @@ def find_latest_roster_export_file(league_id=None):
                         'size': size
                     })
                 elif has_generic and not specific_tokens:
+                    is_xlsx = fpath.lower().endswith(('.xlsx', '.xls'))
+                    is_roster_matrix = any(k in fname for k in ['roster', 'rosters', 'rose'])
+                    priority = 3 if (is_roster_matrix and is_xlsx) else 4
                     candidates.append({
-                        'priority': 3,
+                        'priority': priority,
                         'mtime': mtime,
                         'path': fpath,
                         'filename': os.path.basename(fpath),
@@ -1776,7 +1785,7 @@ def reconcile_rosters_with_loans(league_data, league_id=None, df_master=None):
                     b_p['Costo'] = fee
                     modified = True
 
-    # 3. Auto-discover duplicate appearances in raw files
+    # 3. Auto-discover duplicate appearances and cost 0 loans in raw files
     known_pairs = {(str(l.get('player_name', '')).strip(), str(l.get('borrower_team', '')).strip()) for l in loans_list}
     all_player_apps = {}
     for t, pls in league_data.items():
@@ -1793,8 +1802,25 @@ def reconcile_rosters_with_loans(league_data, league_id=None, df_master=None):
                 if t_cand != owner_entry[0]:
                     if (pn, t_cand) in term_set:
                         league_data[t_cand] = [p for p in league_data[t_cand] if not (p.get('Giocatore', '').strip() == pn and (p.get('Costo', 0) == 0 or p.get('InPrestito', False)))]
+                        if owner_entry[2].get('Prestito_OUT', False):
+                            owner_entry[2]['Prestito_OUT'] = False
                         modified = True
                         continue
+
+                    # Mark owner team entry as Prestito_OUT
+                    if not owner_entry[2].get('Prestito_OUT', False) or owner_entry[2].get('Controparte') != t_cand:
+                        owner_entry[2]['Prestito_OUT'] = True
+                        owner_entry[2]['InPrestito'] = False
+                        owner_entry[2]['Controparte'] = t_cand
+                        modified = True
+
+                    # Mark borrower team entry as InPrestito
+                    if not p_cand.get('InPrestito', False) or p_cand.get('Prestito_OUT', False) or p_cand.get('Controparte') != owner_entry[0]:
+                        p_cand['InPrestito'] = True
+                        p_cand['Prestito_OUT'] = False
+                        p_cand['Controparte'] = owner_entry[0]
+                        modified = True
+
                     if (pn, t_cand) not in known_pairs:
                         new_l = {
                             'player_name': pn,
@@ -1803,12 +1829,19 @@ def reconcile_rosters_with_loans(league_data, league_id=None, df_master=None):
                             'cost': owner_entry[1],
                             'loan_fee': cost_cand,
                             'status': 'active',
-                            'notes': 'Auto-rilevato da rose di lega',
+                            'notes': 'Auto-rilevato da rose (costo 0)',
                             'updated_at': datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                         }
                         loans_list.append(new_l)
                         known_pairs.add((pn, t_cand))
                         reg_modified = True
+        elif len(apps) == 1 and apps[0][1] == 0:
+            # Player appears in only one team at Cost 0 (e.g. loan where owner wasn't exported)
+            p_single = apps[0][2]
+            if not p_single.get('InPrestito', False):
+                p_single['InPrestito'] = True
+                p_single['Prestito_OUT'] = False
+                modified = True
 
     if reg_modified:
         registry['loans'] = loans_list
