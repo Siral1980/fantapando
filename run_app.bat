@@ -7,20 +7,22 @@ echo       FantaMantra AI Manager - Avvio Applicazione
 echo ========================================================
 echo.
 
-:: 1. Attivazione ambiente virtuale se presente
+:: 1. Attivazione ambiente virtuale se presente (locale o su disco locale se eseguito da Google Drive)
 if exist "venv\Scripts\activate.bat" (
     call venv\Scripts\activate.bat
+) else if exist "%LOCALAPPDATA%\FantaMantra\venv\Scripts\activate.bat" (
+    call "%LOCALAPPDATA%\FantaMantra\venv\Scripts\activate.bat"
 )
 
 :: 2. Verifica e download automatico aggiornamenti cloud (Cross-PC)
 where git >nul 2>&1
 if %ERRORLEVEL% EQU 0 (
-    echo [1/2] Sincronizzazione cloud con GitHub (verifica nuovi dati)...
+    echo [1/2] Controllo aggiornamenti da GitHub...
     git pull --quiet
     if %ERRORLEVEL% EQU 0 (
-        echo      -> Progetto e rose aggiornate all'ultima versione.
+        echo      - Progetto e rose allineati all'ultima versione.
     ) else (
-        echo      -> Avvio offline o git non connesso. Uso dati locali.
+        echo      - Avvio offline o git non connesso. Uso dati locali.
     )
 ) else (
     echo [1/2] Git non rilevato nel PATH, continuo in modalita locale.

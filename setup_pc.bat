@@ -15,20 +15,29 @@ if %ERRORLEVEL% NEQ 0 (
     exit /b 1
 )
 
-echo [1/3] Creazione ambiente virtuale locale (venv)...
-if not exist "venv" (
-    python -m venv venv
-    echo      -> Ambiente virtuale creato.
+:: Se ci troviamo su Google Drive (es. unità G:), posizioniamo venv su disco locale per non intasare il cloud
+set "VENV_DIR=venv"
+if /i "%~d0"=="G:" (
+    echo [INFO] Rilevata esecuzione da Google Drive (%~d0).
+    echo        L'ambiente virtuale verra salvato in locale (%LOCALAPPDATA%\FantaMantra\venv)
+    echo        per mantenere Google Drive ultra-veloce e leggero.
+    set "VENV_DIR=%LOCALAPPDATA%\FantaMantra\venv"
+)
+
+echo [1/3] Creazione ambiente virtuale locale...
+if not exist "%VENV_DIR%" (
+    python -m venv "%VENV_DIR%"
+    echo      - Ambiente virtuale creato in: "%VENV_DIR%"
 ) else (
-    echo      -> Ambiente virtuale gia presente.
+    echo      - Ambiente virtuale gia presente.
 )
 
 echo.
 echo [2/3] Installazione dipendenze da requirements.txt...
-call venv\Scripts\activate.bat
+call "%VENV_DIR%\Scripts\activate.bat"
 python -m pip install --upgrade pip --quiet
 pip install -r requirements.txt --quiet
-echo      -> Dipendenze installate con successo.
+echo      - Dipendenze installate con successo.
 
 echo.
 echo [3/3] Configurazione completata!
