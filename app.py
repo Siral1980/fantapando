@@ -1,10 +1,11 @@
-from engine.pitch_component import render_tactical_pitch
-import html
-import urllib.parse
 """
 FantaPandoAssistant - Applicazione di Gestione Rosa, Formazioni e Valutatore Scambi.
 Combina statistiche del fantacalcio e metriche reali dei calciatori (xG, xA, tiri, passaggi, duelli).
 """
+
+from engine.pitch_component import render_tactical_pitch
+import html
+import urllib.parse
 
 import os
 import sys
@@ -86,6 +87,7 @@ def render_html(raw_html: str, *args, **kwargs):
 
 from engine.auth_manager import (
     get_current_user, is_current_user_admin, render_login_screen,
+    authenticate_admin, unlock_admin_session, lock_admin_session, render_admin_unlock_panel,
     load_users_db, save_users_db, create_or_update_user, delete_user_account,
     is_running_on_localhost, sync_users_and_leagues_to_github,
     pull_latest_from_github, get_local_network_ip
@@ -102,11 +104,8 @@ st.set_page_config(
 # Custom CSS with Soccer Pitch Background, High-Contrast Palette & Larger Typography
 st.markdown(get_global_theme_css(), unsafe_allow_html=True)
 
-# Authentication Gate (Auto-login on Localhost, Login Screen on Cloud or after Logout)
+# Open Access Mode: Chiunque abbia il link entra liberamente in consultazione; Admin attivo su localhost o con password
 current_user = get_current_user()
-if not current_user:
-    render_login_screen()
-    st.stop()
 
 def get_codebase_version():
     """Computes a fingerprint based on the latest modification timestamp of all source code files."""
@@ -144,6 +143,7 @@ elif st.session_state['_last_code_version'] != current_code_version:
     from engine.fanta_calendar import get_matchday_from_date, SERIE_A_SCHEDULE
     from engine.auth_manager import (
         get_current_user, is_current_user_admin, render_login_screen,
+        authenticate_admin, unlock_admin_session, lock_admin_session, render_admin_unlock_panel,
         load_users_db, save_users_db, create_or_update_user, delete_user_account,
         is_running_on_localhost, sync_users_and_leagues_to_github,
         pull_latest_from_github, get_local_network_ip
@@ -236,7 +236,7 @@ CONFIG_FILE = os.path.join(APP_DIR, "data", "league_config.json")
 LEAGUE_FILE = os.path.join(APP_DIR, "data", "league_rosters.json")
 
 has_config = os.path.exists(CONFIG_FILE) and os.path.exists(LEAGUE_FILE)
-is_setup_mode = st.session_state.get('setup_mode', not has_config)
+is_setup_mode = st.session_state.get('setup_mode', not has_config) and is_current_user_admin()
 
 if is_setup_mode:
     st.markdown("""
@@ -313,7 +313,7 @@ if is_setup_mode:
                 
             st.markdown("<br>", unsafe_allow_html=True)
             if st.button(" Conferma e Accedi a FantaPandoAssistant", type="primary", width='stretch'):
-                set_active_my_team(selected_team)
+                set_active_my_team(selected_team, persist_disk=True)
                 sync_user_roster_from_league(parsed_league, selected_team)
                 st.session_state['setup_mode'] = False
                 st.success(f"Squadra '{selected_team}' impostata con successo! Avvio in corso...")
@@ -327,33 +327,46 @@ if is_setup_mode:
 st.sidebar.title(" FantaPandoAssistant")
 st.sidebar.caption("Statistical & Tactical Engine con D-Factor")
 
-# User Badge & Logout / Switch User
-u_role_badge = " Admin" if is_current_user_admin() else " Utente"
-u_env_badge = " Localhost" if is_running_on_localhost() else " Cloud"
-u_col1, u_col2 = st.sidebar.columns([1.65, 1.0])
-with u_col1:
-    st.markdown(
-        f"<div style='background:rgba(30,41,59,0.85); border:1px solid #334155; border-radius:7px; padding:5px 9px; font-size:0.80rem; color:#e2e8f0;'>"
-        f"<b>{current_user.get('display_name', current_user.get('username'))}</b><br>"
-        f"<span style='color:#38bdf8; font-size:0.72rem;'>{u_role_badge} · {u_env_badge}</span></div>",
+# Stato Accesso (Admin su Localhost / Sbloccato vs Consultazione Libera per Ospiti)
+u_env_badge = "Localhost" if is_running_on_localhost() else "Cloud"
+if is_current_user_admin():
+    u_col1, u_col2 = st.sidebar.columns([1.65, 1.0])
+    with u_col1:
+        st.markdown(
+            f"<div style='background:rgba(30,41,59,0.85); border:1px solid #22c55e; border-radius:7px; padding:5px 9px; font-size:0.80rem; color:#e2e8f0;'>"
+            f"<b>🟢 Amministratore</b><br>"
+            f"<span style='color:#4ade80; font-size:0.72rem;'>Controllo Completo · {u_env_badge}</span></div>",
+            unsafe_allow_html=True
+        )
+    with u_col2:
+        if st.button("Vista Ospite", key="sb_btn_logout_switch", width='stretch', help="Blocca il Pannello Admin e testa la vista di sola consultazione pubblica"):
+            lock_admin_session()
+            st.rerun()
+    if is_running_on_localhost():
+        lan_ip_sb = get_local_network_ip()
+        if lan_ip_sb and lan_ip_sb != 'localhost':
+            st.sidebar.caption(f" Accesso Wi-Fi: `http://{lan_ip_sb}:8501`")
+else:
+    st.sidebar.markdown(
+        f"<div style='background:rgba(30,41,59,0.85); border:1px solid #334155; border-radius:7px; padding:6px 10px; font-size:0.80rem; color:#e2e8f0; margin-bottom:6px;'>"
+        f"<b>🟢 Accesso Libero</b><br>"
+        f"<span style='color:#38bdf8; font-size:0.72rem;'>Consultazione & Simulazione · {u_env_badge}</span></div>",
         unsafe_allow_html=True
     )
-if is_running_on_localhost():
-    lan_ip_sb = get_local_network_ip()
-    if lan_ip_sb and lan_ip_sb != 'localhost':
-        st.sidebar.caption(f" Accesso Wi-Fi: `http://{lan_ip_sb}:8501`")
-with u_col2:
-    if st.button(" Esci / Test", key="sb_btn_logout_switch", width='stretch', help="Esci o accedi con un altro account per testare la vista di un amico"):
-        st.session_state.pop('auth_username', None)
-        st.session_state.pop('active_league_id', None)
-        st.session_state.pop('active_my_team', None)
-        st.session_state['force_login_screen'] = True
-        try:
-            if hasattr(st, 'query_params'):
-                st.query_params.pop('auth', None)
-        except Exception:
-            pass
-        st.rerun()
+    with st.sidebar.expander("Accesso Amministratore", expanded=False):
+        with st.form("sb_admin_unlock_form"):
+            sb_admin_pwd = st.text_input("Password Admin:", type="password", placeholder="Password")
+            if st.form_submit_button("🟢 Sblocca Admin", type="primary", width='stretch'):
+                ok_adm, adm_u, msg_adm = authenticate_admin(sb_admin_pwd)
+                if ok_adm:
+                    unlock_admin_session(adm_u)
+                    st.rerun()
+                else:
+                    st.error(f"🔴 {msg_adm}")
+        if is_running_on_localhost():
+            if st.button("🟢 Ripristina Admin Localhost", key="sb_restore_local_admin", width='stretch'):
+                unlock_admin_session()
+                st.rerun()
 
 # -------------------------------------------------------------
 # MULTI-LEAGUE SELECTOR & MANAGEMENT
@@ -362,18 +375,20 @@ leagues_dict = get_available_leagues()
 league_ids = list(leagues_dict.keys())
 
 if not league_ids:
-    st.warning(" Il tuo account non ha ancora leghe associate.")
-    if is_current_user_admin() or current_user.get('can_create_leagues', False):
-        st.info("Usa il modulo qui sotto per creare la tua prima lega!")
+    st.warning("🟡 Nessuna lega ancora configurata nel sistema.")
+    if is_current_user_admin():
+        st.info("Usa il modulo qui sotto per creare la prima lega!")
         with st.form("empty_user_new_league_form"):
             new_lg_name_e = st.text_input("Nome della nuova lega:", placeholder="es. Fanta Amici 2026")
             new_lg_mode_e = st.radio("Tipologia lega:", ["Mantra", "Classic"], horizontal=True)
-            if st.form_submit_button(" Crea Lega", type="primary"):
+            if st.form_submit_button("🟢 Crea Lega", type="primary"):
                 if new_lg_name_e.strip():
                     ok_e, _, msg_e = create_new_league(new_lg_name_e.strip(), league_type=new_lg_mode_e.lower())
                     if ok_e:
                         st.success(msg_e)
                         st.rerun()
+    else:
+        render_admin_unlock_panel(key_suffix="empty_leagues")
     st.stop()
 
 active_league = get_active_league_id()
@@ -392,26 +407,32 @@ selected_league_id = st.sidebar.selectbox(
     index=curr_league_idx,
     format_func=lambda x: f" {leagues_dict.get(x, {}).get('name', x)} ({'🟢 Classic' if leagues_dict.get(x, {}).get('type') == 'classic' else '🔴 Mantra'})",
     key="sb_active_league_select",
-    help="Seleziona la lega da visualizzare e gestire. Ogni utente vede esclusivamente le leghe abilitate per il suo profilo."
+    help="Seleziona la lega da consultare."
 )
 
 if selected_league_id != active_league:
     set_active_league_id(selected_league_id, persist_disk=is_current_user_admin())
     st.rerun()
 
-# 1-Click Toggle Mantra / Classic
-col_m1, col_m2 = st.sidebar.columns([1.3, 1.2])
-with col_m1:
+# Modalità Lega (Toggle rapido riservato all'Admin, badge informativo per Ospiti)
+if is_current_user_admin():
+    col_m1, col_m2 = st.sidebar.columns([1.3, 1.2])
+    with col_m1:
+        if is_classic:
+            st.markdown("<div style='background:rgba(34,197,94,0.15); border:1px solid #22c55e; border-radius:6px; padding:5px 8px; font-weight:700; color:#4ade80; text-align:center; font-size:0.83rem;'>🟢 Classic Mode</div>", unsafe_allow_html=True)
+        else:
+            st.markdown("<div style='background:rgba(239,68,68,0.15); border:1px solid #ef4444; border-radius:6px; padding:5px 8px; font-weight:700; color:#f87171; text-align:center; font-size:0.83rem;'>🔴 Mantra Mode</div>", unsafe_allow_html=True)
+    with col_m2:
+        target_mode = "mantra" if is_classic else "classic"
+        btn_label = "Passa a Mantra" if is_classic else "Passa a Classic"
+        if st.button(btn_label, key="sb_btn_toggle_mode", width='stretch', help=f"Cambia la modalità di gioco di {leagues_dict[active_league]['name']}"):
+            set_league_type(target_mode, persist_disk=True)
+            st.rerun()
+else:
     if is_classic:
-        st.markdown("<div style='background:rgba(34,197,94,0.15); border:1px solid #22c55e; border-radius:6px; padding:5px 8px; font-weight:700; color:#4ade80; text-align:center; font-size:0.83rem;'>🟢 Classic Mode</div>", unsafe_allow_html=True)
+        st.sidebar.markdown("<div style='background:rgba(34,197,94,0.15); border:1px solid #22c55e; border-radius:6px; padding:5px 8px; font-weight:700; color:#4ade80; text-align:center; font-size:0.83rem;'>🟢 Regolamento Classic</div>", unsafe_allow_html=True)
     else:
-        st.markdown("<div style='background:rgba(239,68,68,0.15); border:1px solid #ef4444; border-radius:6px; padding:5px 8px; font-weight:700; color:#f87171; text-align:center; font-size:0.83rem;'>🔴 Mantra Mode</div>", unsafe_allow_html=True)
-with col_m2:
-    target_mode = "mantra" if is_classic else "classic"
-    btn_label = "Passa a Mantra" if is_classic else "Passa a Classic"
-    if st.button(btn_label, key="sb_btn_toggle_mode", width='stretch', help=f"Cambia la modalità di gioco di {leagues_dict[active_league]['name']}"):
-        set_league_type(target_mode, persist_disk=is_current_user_admin())
-        st.rerun()
+        st.sidebar.markdown("<div style='background:rgba(239,68,68,0.15); border:1px solid #ef4444; border-radius:6px; padding:5px 8px; font-weight:700; color:#f87171; text-align:center; font-size:0.83rem;'>🔴 Regolamento Mantra</div>", unsafe_allow_html=True)
 
 
 # -------------------------------------------------------------
@@ -429,10 +450,10 @@ if league_teams:
         options=league_teams,
         index=idx_team,
         key=f'sb_team_select_{current_active_team}',
-        help='Imposta quale delle squadre della lega è la tua squadra.'
+        help='Seleziona la squadra da visualizzare e analizzare.'
     )
     if selected_my_team != current_active_team:
-        set_active_my_team(selected_my_team)
+        set_active_my_team(selected_my_team, persist_disk=is_current_user_admin())
         st.rerun()
 
 if 'custom_league_data' in st.session_state:
@@ -477,7 +498,7 @@ st.sidebar.markdown(f'''
     <div style="font-size: 1.0rem; font-weight: 700; color: #38bdf8;">{matchday_info['label']}</div>
     <div style="font-size: 0.78rem; color: {'#4ade80' if matchday_info['status'] == 'live' else '#facc15'};
     margin-top: 2px;">
-        {'🟢 Turno in corso' if matchday_info['status'] == 'live' else '⏳ Prossimo turno'}
+        {'🟢 Turno in corso' if matchday_info['status'] == 'live' else '🟡 Prossimo turno'}
     </div>
 </div>
 ''', unsafe_allow_html=True)
@@ -504,9 +525,30 @@ st.sidebar.markdown('---')
 last_sync_lbl = format_last_sync_display(sync_state)
 rem_lbl = format_remaining_time(sync_state.get('remaining_seconds', 0))
 
-col_sb_s1, col_sb_s2 = st.sidebar.columns([1.4, 0.9])
-with col_sb_s1:
-    st.markdown(
+if is_current_user_admin():
+    col_sb_s1, col_sb_s2 = st.sidebar.columns([1.4, 0.9])
+    with col_sb_s1:
+        st.markdown(
+            f"<div style='font-size:0.74rem; line-height:1.25; margin-top:2px;'>"
+            f"<span style='color:#4ade80;'>🟢 <b>Dati Live Attivi</b></span><br>"
+            f"<span style='color:#cbd5e1; font-size:0.70rem;'>Sync: <b>{last_sync_lbl}</b></span><br>"
+            f"<span style='color:#64748b; font-size:0.68rem;'>Auto (12h): <b>tra {rem_lbl}</b></span>"
+            f"</div>",
+            unsafe_allow_html=True
+        )
+    with col_sb_s2:
+        if st.button('Sync', key='sb_quick_sync_btn', width='stretch', help=f'Aggiorna subito voti, statistiche e infortuni da Fantacalcio.it e Understat. (Ultimo: {sync_state.get("last_sync_datetime", "N/D")}. Prossimo auto-check tra: {rem_lbl})'):
+            st.cache_data.clear()
+            st.cache_resource.clear()
+            with st.spinner('Sincronizzazione in corso...'):
+                ok_sync, msg_sync = run_full_sync_pipeline(force_live_scrape=True, source="manual_sidebar")
+            if ok_sync:
+                st.sidebar.success('Aggiornato!')
+            else:
+                st.sidebar.error('Errore sync')
+            st.rerun()
+else:
+    st.sidebar.markdown(
         f"<div style='font-size:0.74rem; line-height:1.25; margin-top:2px;'>"
         f"<span style='color:#4ade80;'>🟢 <b>Dati Live Attivi</b></span><br>"
         f"<span style='color:#cbd5e1; font-size:0.70rem;'>Sync: <b>{last_sync_lbl}</b></span><br>"
@@ -514,17 +556,6 @@ with col_sb_s1:
         f"</div>",
         unsafe_allow_html=True
     )
-with col_sb_s2:
-    if st.button('Sync', key='sb_quick_sync_btn', width='stretch', help=f'Aggiorna subito voti, statistiche e infortuni da Fantacalcio.it e Understat. (Ultimo: {sync_state.get("last_sync_datetime", "N/D")}. Prossimo auto-check tra: {rem_lbl})'):
-        st.cache_data.clear()
-        st.cache_resource.clear()
-        with st.spinner('Sincronizzazione in corso...'):
-            ok_sync, msg_sync = run_full_sync_pipeline(force_live_scrape=True, source="manual_sidebar")
-        if ok_sync:
-            st.sidebar.success('Aggiornato!')
-        else:
-            st.sidebar.error('Errore sync')
-        st.rerun()
 
 st.sidebar.caption(f'Rosa `{current_active_team}`: **{len(user_squad_names)} calciatori**')
 
@@ -536,7 +567,7 @@ tab_formazione, tab_rosa, tab_scambi, tab_esplora, tab_impostazioni = st.tabs([
     'La Mia Rosa',
     'Trade Center',
     'Esplora & Scouting',
-    'Impostazioni & Sync'
+    'Pannello Admin'
 ])
 
 with tab_formazione:
@@ -565,13 +596,14 @@ with tab_formazione:
                 key=f"select_modulo_override_{current_active_team}"
             )
         with top_bar_c3:
-            st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
-            if st.button(" Aggiorna Probabili", width='stretch', key="btn_refresh_prob_lineups"):
-                with st.spinner("Scaricamento Probabili Formazioni e Infortuni/Squalifiche in corso..."):
-                    refresh_live_lineups_and_injuries()
-                    st.cache_data.clear()
-                st.toast("Probabili formazioni e infortunati aggiornati con successo!")
-                st.rerun()
+            if is_current_user_admin():
+                st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
+                if st.button(" Aggiorna Probabili", width='stretch', key="btn_refresh_prob_lineups"):
+                    with st.spinner("Scaricamento Probabili Formazioni e Infortuni/Squalifiche in corso..."):
+                        refresh_live_lineups_and_injuries()
+                        st.cache_data.clear()
+                    st.toast("Probabili formazioni e infortunati aggiornati con successo!")
+                    st.rerun()
 
         # Consolidated Coach Overrides & Injury Management (Collapsed by Default)
         curr_indisp = df_my_roster[df_my_roster['Stato_Disponibilita'] != 'Disponibile'].copy() if 'Stato_Disponibilita' in df_my_roster.columns else pd.DataFrame()
@@ -616,32 +648,33 @@ with tab_formazione:
                 })
                 st.dataframe(df_indisp_display, hide_index=True, width='stretch')
 
-            st.markdown("---")
-            st.markdown("** Modifica Manualmente Stato Medico (Notizie Ultim'Ora):**")
-            ov_col1, ov_col2, ov_col3, ov_col4 = st.columns([2, 2, 1, 1])
-            with ov_col1:
-                sel_p = st.selectbox("Calciatore:", options=all_roster_names, key="override_sel_p")
-            with ov_col2:
-                sel_status = st.selectbox(
-                    "Nuovo stato:",
-                    options=["Disponibile (Forzato)", "Infortunato", "Squalificato", "In dubbio", "Ripristina Automatico"],
-                    key="override_sel_st"
-                )
-            with ov_col3:
-                st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
-                if st.button(" Applica", type="primary", key="btn_apply_override", width='stretch'):
-                    if sel_status == "Ripristina Automatico":
-                        clear_player_manual_override(sel_p)
-                    else:
-                        set_player_manual_override(sel_p, sel_status)
-                    st.cache_data.clear()
-                    st.rerun()
-            with ov_col4:
-                st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
-                if st.button(" Reset Tutti", key="btn_reset_all_overrides", width='stretch'):
-                    clear_all_manual_overrides()
-                    st.cache_data.clear()
-                    st.rerun()
+            if is_current_user_admin():
+                st.markdown("---")
+                st.markdown("** Modifica Manualmente Stato Medico (Notizie Ultim'Ora - Admin):**")
+                ov_col1, ov_col2, ov_col3, ov_col4 = st.columns([2, 2, 1, 1])
+                with ov_col1:
+                    sel_p = st.selectbox("Calciatore:", options=all_roster_names, key="override_sel_p")
+                with ov_col2:
+                    sel_status = st.selectbox(
+                        "Nuovo stato:",
+                        options=["Disponibile (Forzato)", "Infortunato", "Squalificato", "In dubbio", "Ripristina Automatico"],
+                        key="override_sel_st"
+                    )
+                with ov_col3:
+                    st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
+                    if st.button(" Applica", type="primary", key="btn_apply_override", width='stretch'):
+                        if sel_status == "Ripristina Automatico":
+                            clear_player_manual_override(sel_p)
+                        else:
+                            set_player_manual_override(sel_p, sel_status)
+                        st.cache_data.clear()
+                        st.rerun()
+                with ov_col4:
+                    st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
+                    if st.button(" Reset Tutti", key="btn_reset_all_overrides", width='stretch'):
+                        clear_all_manual_overrides()
+                        st.cache_data.clear()
+                        st.rerun()
 
         eligible_roster = df_my_roster.copy()
         # Always exclude players loaned out or out of Serie A from matchday squad
@@ -1480,7 +1513,7 @@ with tab_rosa:
                 key=f"main_team_picker_{current_active_team}"
             )
             if main_team_choice != current_active_team:
-                set_active_my_team(main_team_choice)
+                set_active_my_team(main_team_choice, persist_disk=is_current_user_admin())
                 st.rerun()
     
     # Prestiti, Infortuni & Svincoli Breakdown
@@ -1548,7 +1581,7 @@ with tab_rosa:
 
     # 2. Compact Collapsible Loan Management
     cur_team_name = get_active_my_team()
-    with st.expander(f" Accordi di Prestito della Tua Rosa ({len(loans_in)} IN, {len(loans_out)} OUT) — Gestisci / Registra", expanded=(not loans_in.empty or not loans_out.empty)):
+    with st.expander(f" Accordi di Prestito della Tua Rosa ({len(loans_in)} IN, {len(loans_out)} OUT)", expanded=(not loans_in.empty or not loans_out.empty)):
         col_l1, col_l2 = st.columns(2)
         with col_l1:
             st.markdown("**🟢 Prestiti in Entrata (IN - Schierabili nella tua formazione):**")
@@ -1557,14 +1590,15 @@ with tab_rosa:
                     p_name_t = r['Giocatore']
                     owner_src = r.get('Controparte_Prestito') or r.get('Controparte') or 'Proprietario'
                     st.markdown(f"- **{p_name_t}** ({r['RuoloClassic'] if is_classic else r['RuoloMantra']}): *{r['Dettaglio_Prestito']}*")
-                    if st.button(f"🔴 Risolvi prestito di {p_name_t}", key=f"t1_term_in_{p_name_t}", width='stretch'):
-                        ok, msg = terminate_loan(p_name_t, cur_team_name, owner_team=owner_src)
-                        if ok:
-                            st.cache_data.clear()
-                            st.success(msg)
-                            st.rerun()
-                        else:
-                            st.error(msg)
+                    if is_current_user_admin():
+                        if st.button(f"🔴 Risolvi prestito di {p_name_t}", key=f"t1_term_in_{p_name_t}", width='stretch'):
+                            ok, msg = terminate_loan(p_name_t, cur_team_name, owner_team=owner_src)
+                            if ok:
+                                st.cache_data.clear()
+                                st.success(msg)
+                                st.rerun()
+                            else:
+                                st.error(msg)
             else:
                 st.caption("Nessun calciatore in prestito in entrata.")
         with col_l2:
@@ -1574,58 +1608,62 @@ with tab_rosa:
                     p_name_t = r['Giocatore']
                     borrower_t = r.get('Controparte_Prestito') or r.get('Controparte') or ''
                     st.markdown(f"- **{p_name_t}** ({r['RuoloClassic'] if is_classic else r['RuoloMantra']}): *{r['Dettaglio_Prestito']}* (asta: {r['Costo']} cr)")
-                    if st.button(f"🟢 Richiama alla base {p_name_t}", key=f"t1_term_out_{p_name_t}", width='stretch'):
-                        ok, msg = terminate_loan(p_name_t, borrower_t, owner_team=cur_team_name)
-                        if ok:
-                            st.cache_data.clear()
-                            st.success(msg)
-                            st.rerun()
-                        else:
-                            st.error(msg)
+                    if is_current_user_admin():
+                        if st.button(f"🟢 Richiama alla base {p_name_t}", key=f"t1_term_out_{p_name_t}", width='stretch'):
+                            ok, msg = terminate_loan(p_name_t, borrower_t, owner_team=cur_team_name)
+                            if ok:
+                                st.cache_data.clear()
+                                st.success(msg)
+                                st.rerun()
+                            else:
+                                st.error(msg)
             else:
                 st.caption("Nessun calciatore ceduto in prestito.")
 
-        # Quick inline loan registration
-        st.markdown("---")
-        st.markdown("**➕ Registra Nuovo Prestito Rapido per la Tua Squadra:**")
-        q_l_type = st.radio("Tipo di operazione:", options=["🔴 Concedi tuo calciatore in prestito (Prestito OUT)", "🟢 Prendi calciatore in prestito da altra squadra (Prestito IN)"], horizontal=True, key="quick_loan_type_t2")
-        q_c1, q_c2, q_c3 = st.columns([1.5, 1.5, 1])
-        all_l_teams = [t for t in league_teams if t != cur_team_name]
-        all_rosters_dict = load_league_rosters()
-        if "Concedi" in q_l_type:
-            with q_c1:
-                my_avail_out = sorted([p['Giocatore'] for p in all_rosters_dict.get(cur_team_name, []) if p.get('Costo', 0) > 0 and not loans_out['Giocatore'].isin([p['Giocatore']]).any()])
-                sel_p_loan = st.selectbox("Tuo calciatore da prestare:", options=my_avail_out if my_avail_out else ["Nessun giocatore disponibile"], key="quick_loan_out_p")
-            with q_c2:
-                sel_target_team = st.selectbox("Squadra ricevente:", options=all_l_teams if all_l_teams else ["Nessuna squadra"], key="quick_loan_out_team")
-            with q_c3:
-                q_fee = st.number_input("Costo prestito (cr):", min_value=0, max_value=500, value=0, step=1, key="quick_loan_out_fee")
-                if st.button("Concedi Prestito", type="primary", key="btn_quick_loan_out", width='stretch'):
-                    if sel_p_loan and sel_p_loan != "Nessun giocatore disponibile" and sel_target_team != "Nessuna squadra":
-                        ok, msg = add_or_update_loan(sel_p_loan, cur_team_name, sel_target_team, loan_fee=q_fee)
-                        if ok:
-                            st.cache_data.clear()
-                            st.success(msg)
-                            st.rerun()
-                        else:
-                            st.error(msg)
+        # Quick inline loan registration (riservato all'Amministratore)
+        if is_current_user_admin():
+            st.markdown("---")
+            st.markdown("**🟢 Registra Nuovo Prestito Rapido per la Tua Squadra:**")
+            q_l_type = st.radio("Tipo di operazione:", options=["🔴 Concedi tuo calciatore in prestito (Prestito OUT)", "🟢 Prendi calciatore in prestito da altra squadra (Prestito IN)"], horizontal=True, key="quick_loan_type_t2")
+            q_c1, q_c2, q_c3 = st.columns([1.5, 1.5, 1])
+            all_l_teams = [t for t in league_teams if t != cur_team_name]
+            all_rosters_dict = load_league_rosters()
+            if "Concedi" in q_l_type:
+                with q_c1:
+                    my_avail_out = sorted([p['Giocatore'] for p in all_rosters_dict.get(cur_team_name, []) if p.get('Costo', 0) > 0 and not loans_out['Giocatore'].isin([p['Giocatore']]).any()])
+                    sel_p_loan = st.selectbox("Tuo calciatore da prestare:", options=my_avail_out if my_avail_out else ["Nessun giocatore disponibile"], key="quick_loan_out_p")
+                with q_c2:
+                    sel_target_team = st.selectbox("Squadra ricevente:", options=all_l_teams if all_l_teams else ["Nessuna squadra"], key="quick_loan_out_team")
+                with q_c3:
+                    q_fee = st.number_input("Costo prestito (cr):", min_value=0, max_value=500, value=0, step=1, key="quick_loan_out_fee")
+                    if st.button("Concedi Prestito", type="primary", key="btn_quick_loan_out", width='stretch'):
+                        if sel_p_loan and sel_p_loan != "Nessun giocatore disponibile" and sel_target_team != "Nessuna squadra":
+                            ok, msg = add_or_update_loan(sel_p_loan, cur_team_name, sel_target_team, loan_fee=q_fee)
+                            if ok:
+                                st.cache_data.clear()
+                                st.success(msg)
+                                st.rerun()
+                            else:
+                                st.error(msg)
+            else:
+                with q_c1:
+                    sel_source_team = st.selectbox("Squadra proprietaria:", options=all_l_teams if all_l_teams else ["Nessuna squadra"], key="quick_loan_in_team")
+                with q_c2:
+                    src_pls = sorted([p['Giocatore'] for p in all_rosters_dict.get(sel_source_team, []) if p.get('Costo', 0) > 0 and not loans_in['Giocatore'].isin([p['Giocatore']]).any()])
+                    sel_p_loan = st.selectbox("Calciatore da prendere in prestito:", options=src_pls if src_pls else ["Nessun giocatore disponibile"], key="quick_loan_in_p")
+                with q_c3:
+                    q_fee = st.number_input("Costo prestito (cr):", min_value=0, max_value=500, value=0, step=1, key="quick_loan_in_fee")
+                    if st.button("Ricevi Prestito", type="primary", key="btn_quick_loan_in", width='stretch'):
+                        if sel_p_loan and sel_p_loan != "Nessun giocatore disponibile" and sel_source_team != "Nessuna squadra":
+                            ok, msg = add_or_update_loan(sel_p_loan, sel_source_team, cur_team_name, loan_fee=q_fee)
+                            if ok:
+                                st.cache_data.clear()
+                                st.success(msg)
+                                st.rerun()
+                            else:
+                                st.error(msg)
         else:
-            with q_c1:
-                sel_source_team = st.selectbox("Squadra proprietaria:", options=all_l_teams if all_l_teams else ["Nessuna squadra"], key="quick_loan_in_team")
-            with q_c2:
-                src_pls = sorted([p['Giocatore'] for p in all_rosters_dict.get(sel_source_team, []) if p.get('Costo', 0) > 0 and not loans_in['Giocatore'].isin([p['Giocatore']]).any()])
-                sel_p_loan = st.selectbox("Calciatore da prendere in prestito:", options=src_pls if src_pls else ["Nessun giocatore disponibile"], key="quick_loan_in_p")
-            with q_c3:
-                q_fee = st.number_input("Costo prestito (cr):", min_value=0, max_value=500, value=0, step=1, key="quick_loan_in_fee")
-                if st.button("Ricevi Prestito", type="primary", key="btn_quick_loan_in", width='stretch'):
-                    if sel_p_loan and sel_p_loan != "Nessun giocatore disponibile" and sel_source_team != "Nessuna squadra":
-                        ok, msg = add_or_update_loan(sel_p_loan, sel_source_team, cur_team_name, loan_fee=q_fee)
-                        if ok:
-                            st.cache_data.clear()
-                            st.success(msg)
-                            st.rerun()
-                        else:
-                            st.error(msg)
+            st.caption("⚪ La registrazione o risoluzione ufficiale dei prestiti è riservata all'Amministratore.")
 
     st.markdown("---")
 
@@ -3287,12 +3325,13 @@ with tab_esplora:
             else:
                 st.info("Nessun calciatore indisponibile registrato.")
         with top_c2:
-            if st.button(" Aggiorna Live", key="btn_sync_inj_esplora", type="primary", width='stretch'):
-                with st.spinner("Scaricamento dati live in corso..."):
-                    fetch_live_injuries_from_fantacalcio()
-                    st.cache_data.clear()
-                st.success(" Dati aggiornati!")
-                st.rerun()
+            if is_current_user_admin():
+                if st.button(" Aggiorna Live", key="btn_sync_inj_esplora", type="primary", width='stretch'):
+                    with st.spinner("Scaricamento dati live in corso..."):
+                        fetch_live_injuries_from_fantacalcio()
+                        st.cache_data.clear()
+                    st.success(" Dati aggiornati!")
+                    st.rerun()
 
         if not df_all_unavail.empty:
             fb1, fb2, fb3 = st.columns([2, 2, 2])
@@ -3383,7 +3422,7 @@ with tab_esplora:
                 st.dataframe(df_league_summary, width='stretch', hide_index=True)
 
         loan_map_all, df_all_loans = build_loan_registry()
-        with st.expander(f" Registro Prestiti di Lega ({len(df_all_loans)} attivi) & Gestione Accordi", expanded=(len(df_all_loans) > 0)):
+        with st.expander(f" Registro Prestiti di Lega ({len(df_all_loans)} attivi)", expanded=(len(df_all_loans) > 0)):
             if not df_all_loans.empty:
                 st.dataframe(
                     df_all_loans[['Calciatore', 'Ruolo', 'Squadra', 'Proprietario', 'In_Prestito_A', 'Costo_Asta', 'Tipo']],
@@ -3393,44 +3432,47 @@ with tab_esplora:
             else:
                 st.info("🟢 Nessun prestito attualmente attivo nella lega.")
 
-            m_col1, m_col2 = st.columns(2)
-            with m_col1:
-                st.markdown("##### Risolvi un Prestito Esistente")
-                if not df_all_loans.empty:
-                    loan_options = [f"{r['Calciatore']} ({r['Proprietario']} -> {r['In_Prestito_A']})" for _, r in df_all_loans.iterrows()]
-                    selected_loan_to_term = st.selectbox("Seleziona il prestito da risolvere:", options=loan_options, key=f"select_loan_term_{active_league}")
-                    if st.button("Termina Prestito Selezionato", type="secondary", key="btn_term_loan_tab4", width='stretch'):
-                        sel_idx = loan_options.index(selected_loan_to_term)
-                        row_sel = df_all_loans.iloc[sel_idx]
-                        ok, msg = terminate_loan(row_sel['Calciatore'], row_sel['In_Prestito_A'], owner_team=row_sel['Proprietario'])
-                        if ok:
-                            st.cache_data.clear()
-                            st.success(msg)
-                            st.rerun()
-                        else:
-                            st.error(msg)
-                else:
-                    st.caption("Nessun prestito da risolvere.")
-            with m_col2:
-                st.markdown("##### Registra Nuovo Prestito Manuale")
-                owner_team_new = st.selectbox("Squadra Proprietaria:", options=league_teams, key="new_loan_owner_tab4")
-                all_rosters_dict = load_league_rosters()
-                avail_owner_players = sorted([
-                    p['Giocatore'] for p in all_rosters_dict.get(owner_team_new, []) 
-                    if p.get('Costo', 0) > 0 and loan_map_all.get((owner_team_new, p['Giocatore']), {}).get('Stato_Prestito') != 'Prestito OUT'
-                ])
-                player_to_loan_new = st.selectbox("Calciatore da prestare:", options=avail_owner_players if avail_owner_players else ["Nessun giocatore"], key="new_loan_p_tab4")
-                borrower_team_new = st.selectbox("Squadra Ricevente:", options=[t for t in league_teams if t != owner_team_new], key="new_loan_borrower_tab4")
-                fee_tab4 = st.number_input("Costo del prestito (crediti, 0 = gratuito):", min_value=0, max_value=500, value=0, step=1, key="new_loan_fee_tab4")
-                if st.button("Registra Prestito", type="primary", key="btn_add_loan_tab4", width='stretch'):
-                    if player_to_loan_new and player_to_loan_new != "Nessun giocatore":
-                        ok, msg = add_or_update_loan(player_to_loan_new, owner_team_new, borrower_team_new, loan_fee=fee_tab4)
-                        if ok:
-                            st.cache_data.clear()
-                            st.success(msg)
-                            st.rerun()
-                        else:
-                            st.error(msg)
+            if is_current_user_admin():
+                m_col1, m_col2 = st.columns(2)
+                with m_col1:
+                    st.markdown("##### Risolvi un Prestito Esistente")
+                    if not df_all_loans.empty:
+                        loan_options = [f"{r['Calciatore']} ({r['Proprietario']} -> {r['In_Prestito_A']})" for _, r in df_all_loans.iterrows()]
+                        selected_loan_to_term = st.selectbox("Seleziona il prestito da risolvere:", options=loan_options, key=f"select_loan_term_{active_league}")
+                        if st.button("Termina Prestito Selezionato", type="secondary", key="btn_term_loan_tab4", width='stretch'):
+                            sel_idx = loan_options.index(selected_loan_to_term)
+                            row_sel = df_all_loans.iloc[sel_idx]
+                            ok, msg = terminate_loan(row_sel['Calciatore'], row_sel['In_Prestito_A'], owner_team=row_sel['Proprietario'])
+                            if ok:
+                                st.cache_data.clear()
+                                st.success(msg)
+                                st.rerun()
+                            else:
+                                st.error(msg)
+                    else:
+                        st.caption("Nessun prestito da risolvere.")
+                with m_col2:
+                    st.markdown("##### Registra Nuovo Prestito Manuale")
+                    owner_team_new = st.selectbox("Squadra Proprietaria:", options=league_teams, key="new_loan_owner_tab4")
+                    all_rosters_dict = load_league_rosters()
+                    avail_owner_players = sorted([
+                        p['Giocatore'] for p in all_rosters_dict.get(owner_team_new, []) 
+                        if p.get('Costo', 0) > 0 and loan_map_all.get((owner_team_new, p['Giocatore']), {}).get('Stato_Prestito') != 'Prestito OUT'
+                    ])
+                    player_to_loan_new = st.selectbox("Calciatore da prestare:", options=avail_owner_players if avail_owner_players else ["Nessun giocatore"], key="new_loan_p_tab4")
+                    borrower_team_new = st.selectbox("Squadra Ricevente:", options=[t for t in league_teams if t != owner_team_new], key="new_loan_borrower_tab4")
+                    fee_tab4 = st.number_input("Costo del prestito (crediti, 0 = gratuito):", min_value=0, max_value=500, value=0, step=1, key="new_loan_fee_tab4")
+                    if st.button("Registra Prestito", type="primary", key="btn_add_loan_tab4", width='stretch'):
+                        if player_to_loan_new and player_to_loan_new != "Nessun giocatore":
+                            ok, msg = add_or_update_loan(player_to_loan_new, owner_team_new, borrower_team_new, loan_fee=fee_tab4)
+                            if ok:
+                                st.cache_data.clear()
+                                st.success(msg)
+                                st.rerun()
+                            else:
+                                st.error(msg)
+            else:
+                st.caption("⚪ La modifica del registro prestiti ufficiale è riservata all'Amministratore.")
 
         df_out_league = get_out_of_serie_a_summary()
         if not df_out_league.empty:
@@ -3469,26 +3511,37 @@ with tab_esplora:
             st.dataframe(df_ratings[cols_ratings].sort_values(by='Posizione_Attuale', ascending=True), width='stretch', hide_index=True)
 
 # =============================================================
-# TAB 5: IMPOSTAZIONI & SYNC
+# TAB 5: PANNELLO DI AMMINISTRAZIONE (RISERVATO ALL'ADMIN)
 # =============================================================
 with tab_impostazioni:
-    st.header(' Impostazioni, Leghe & Sincronizzazione Dati')
-    st.caption('Pannello centralizzato per configurare le leghe, sincronizzare i dati e gestire gli accessi.')
-    sub_imp_leghe, sub_imp_sync, sub_imp_admin = st.tabs([
-        ' Gestione Leghe',
-        ' Sincronizzazione Dati & File',
-        ' Pannello Admin & Utenti'
-    ])
-    with sub_imp_leghe:
-        st.caption(f" Link diretto a questa lega: `?league={active_league}&mode={active_league_type}`")
+    if not is_current_user_admin():
+        render_admin_unlock_panel(key_suffix="tab_admin_main")
+    else:
+        adm_top1, adm_top2 = st.columns([2.5, 1.0])
+        with adm_top1:
+            st.header('Pannello di Amministrazione')
+            st.caption('Area riservata per gestire le leghe, caricare i file Excel ufficiali delle rose, sincronizzare il database e configurare la password Admin.')
+        with adm_top2:
+            st.markdown("<div style='height: 18px;'></div>", unsafe_allow_html=True)
+            if st.button("Blocca Pannello Admin (Vista Ospite)", key="btn_lock_admin_tab", width='stretch'):
+                lock_admin_session()
+                st.rerun()
 
-        if is_current_user_admin() or current_user.get('can_create_leagues', False):
+        sub_imp_leghe, sub_imp_sync, sub_imp_admin = st.tabs([
+            'Gestione Leghe & Rose',
+            'Sincronizzazione Database & Live',
+            'Sicurezza Admin & Cloud GitHub'
+        ])
+        with sub_imp_leghe:
+            st.caption(f"Link diretto di condivisione per questa lega: `?league={active_league}&mode={active_league_type}`")
+            render_league_upload_section("tab_imp", df_master, label_title="🟢 Carica / Aggiorna File Rose della Lega (.xlsx, .xls, .csv)")
+
             st.markdown("---")
-            st.markdown("** Crea Nuova Lega**")
+            st.markdown("**Crea Nuova Lega**")
             with st.form("new_league_form"):
                 new_lg_name = st.text_input("Nome della nuova lega:", placeholder="es. Fanta Amici 2026")
                 new_lg_mode = st.radio("Tipologia lega:", ["Mantra", "Classic"], horizontal=True, key="new_lg_mode_radio")
-                create_btn = st.form_submit_button("Crea Nuova Lega", type="primary")
+                create_btn = st.form_submit_button("🟢 Crea Nuova Lega", type="primary")
                 if create_btn:
                     if not new_lg_name.strip():
                         st.warning("Inserisci un nome valido.")
@@ -3499,272 +3552,157 @@ with tab_impostazioni:
                             st.rerun()
                         else:
                             st.error(msg)
-        else:
-            st.caption(" Solo l'amministratore o gli utenti abilitati possono creare nuove leghe.")
-                
-        if is_current_user_admin() and len(league_ids) > 1:
-            st.markdown("---")
-            st.markdown("** Elimina Lega**")
-            del_target = st.selectbox(
-                "Seleziona lega da eliminare:",
-                options=[lid for lid in league_ids if lid != active_league],
-                format_func=lambda x: leagues_dict.get(x, {}).get('name', x),
-                key="del_league_target"
-            )
-            if st.button("Elimina Definitivamente", type="secondary"):
-                ok_del, del_msg = delete_league(del_target)
-                if ok_del:
-                    st.success(del_msg)
-                    st.rerun()
-                else:
-                    st.error(del_msg)
+                    
+            if len(league_ids) > 1:
+                st.markdown("---")
+                st.markdown("**Elimina Lega**")
+                del_target = st.selectbox(
+                    "Seleziona lega da eliminare:",
+                    options=[lid for lid in league_ids if lid != active_league],
+                    format_func=lambda x: leagues_dict.get(x, {}).get('name', x),
+                    key="del_league_target"
+                )
+                if st.button("🔴 Elimina Definitivamente", type="secondary"):
+                    ok_del, del_msg = delete_league(del_target)
+                    if ok_del:
+                        st.success(del_msg)
+                        st.rerun()
+                    else:
+                        st.error(del_msg)
 
-        # -------------------------------------------------------------
-
-        st.markdown('---')
-        st.markdown('** Riconfigurazione Rapida:**')
-        if st.button('Riconfigura Lega / Ricarica File Excel', key='btn_reconfig_tab_imp'):
-            st.session_state['setup_mode'] = True
-            st.rerun()
-        meta_sidebar = get_league_metadata()
-        st.caption(f" Rose di Lega aggiornate al: {meta_sidebar.get('last_updated')}")
-    with sub_imp_sync:
-        render_league_upload_section("tab_imp", df_master, label_title="Carica / Aggiorna File Rose della Lega (.xlsx, .xls, .csv)")
-        st.markdown("---")
-
-        current_sync = get_sync_state()
-        sync_dt_disp = format_last_sync_display(current_sync)
-        sync_rem_disp = format_remaining_time(current_sync.get('remaining_seconds', 0))
-        sync_status_badge = "🟢 Sincronizzato con Successo" if current_sync.get('status') == 'success' else "🟡 In Attesa"
-
-        st.markdown(f"""
-        <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 10px; padding: 14px 18px; margin-bottom: 16px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                <span style="font-weight: 700; color: #38bdf8; font-size: 1.05rem;">Auto-Sincronizzazione Database (Ogni 12 Ore)</span>
-                <span style="font-size: 0.8rem; background: rgba(56, 189, 248, 0.15); color: #7dd3fc; border: 1px solid rgba(56, 189, 248, 0.3); padding: 3px 8px; border-radius: 6px;">Auto-Check all'Avvio: <b>Attivo</b></span>
-            </div>
-            <div style="font-size: 0.88rem; color: #cbd5e1; margin-bottom: 8px;">
-                Il sistema verifica all'avvio dell'app se sono trascorse più di <b>12 ore</b> dall'ultimo aggiornamento. Se necessario, scarica automaticamente i nuovi voti, le statistiche ufficiali da Fantacalcio.it, le metriche Understat (xG, xA) e il bollettino infortuni.
-            </div>
-            <div style="display: flex; gap: 20px; font-size: 0.82rem; color: #94a3b8; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px; flex-wrap: wrap;">
-                <div>Ultimo Aggiornamento: <b style="color: #f8fafc;">{current_sync.get('last_sync_datetime', 'N/D')}</b> ({sync_dt_disp})</div>
-                <div>Prossimo Controllo Automatico: <b style="color: #38bdf8;">tra {sync_rem_disp}</b></div>
-                <div> Stato: <b style="color: #4ade80;">{sync_status_badge}</b></div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-        col_sync1, col_sync2 = st.columns([2, 1])
-        with col_sync1:
-            if st.button("Sincronizza Tutti i Dati Live Adesso (Fantacalcio.it + Understat + Infortuni)", type="primary", width='stretch'):
-                st.cache_data.clear()
-                st.cache_resource.clear()
-                with st.spinner("Sincronizzazione completa in corso da Fantacalcio.it e Understat..."):
-                    ok_sync, msg_sync = run_full_sync_pipeline(force_live_scrape=True, source="manual_settings")
-                if ok_sync:
-                    st.success(" Database, statistiche, metriche Understat e infortuni aggiornati con successo!")
-                else:
-                    st.error(f"Errore durante la sincronizzazione: {msg_sync}")
+            st.markdown('---')
+            st.markdown('**Riconfigurazione Guidata:**')
+            if st.button('Avvia Setup Wizard / Ricarica File Excel', key='btn_reconfig_tab_imp'):
+                st.session_state['setup_mode'] = True
                 st.rerun()
-        with col_sync2:
-            if st.button("Svuota Cache", width='stretch'):
-                st.cache_data.clear()
-                st.cache_resource.clear()
-                st.success("Cache svuotata!")
-                st.rerun()
+            meta_sidebar = get_league_metadata()
+            st.caption(f"Rose di Lega aggiornate al: {meta_sidebar.get('last_updated')}")
 
-        with st.expander(" Opzioni Avanzate & Caricamento Manuale File Statistiche", expanded=False):
-            st.markdown("**Carica manualmente file Statistiche_Fantacalcio (.xlsx):**")
-            uploaded_stats_file = st.file_uploader(
-                "Carica Statistiche_Fantacalcio (.xlsx):",
-                type=['xlsx', 'xls'],
-                key="upload_stats_file_direct"
+        with sub_imp_sync:
+            current_sync = get_sync_state()
+            sync_dt_disp = format_last_sync_display(current_sync)
+            sync_rem_disp = format_remaining_time(current_sync.get('remaining_seconds', 0))
+            sync_status_badge = "🟢 Sincronizzato con Successo" if current_sync.get('status') == 'success' else "🟡 In Attesa"
+
+            st.markdown(f"""
+            <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 10px; padding: 14px 18px; margin-bottom: 16px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap;">
+                    <span style="font-weight: 700; color: #38bdf8; font-size: 1.05rem;">Auto-Sincronizzazione Database (Ogni 12 Ore)</span>
+                    <span style="font-size: 0.8rem; background: rgba(56, 189, 248, 0.15); color: #7dd3fc; border: 1px solid rgba(56, 189, 248, 0.3); padding: 3px 8px; border-radius: 6px;">Auto-Check all'Avvio: <b>Attivo</b></span>
+                </div>
+                <div style="font-size: 0.88rem; color: #cbd5e1; margin-bottom: 8px;">
+                    Il sistema verifica all'avvio dell'app se sono trascorse più di <b>12 ore</b> dall'ultimo aggiornamento. Se necessario, scarica automaticamente i nuovi voti, le statistiche ufficiali da Fantacalcio.it, le metriche Understat (xG, xA) e il bollettino infortuni.
+                </div>
+                <div style="display: flex; gap: 20px; font-size: 0.82rem; color: #94a3b8; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px; flex-wrap: wrap;">
+                    <div>Ultimo Aggiornamento: <b style="color: #f8fafc;">{current_sync.get('last_sync_datetime', 'N/D')}</b> ({sync_dt_disp})</div>
+                    <div>Prossimo Controllo Automatico: <b style="color: #38bdf8;">tra {sync_rem_disp}</b></div>
+                    <div>Stato: <b style="color: #4ade80;">{sync_status_badge}</b></div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+            col_sync1, col_sync2 = st.columns([2, 1])
+            with col_sync1:
+                if st.button("🟢 Sincronizza Tutti i Dati Live Adesso (Fantacalcio.it + Understat + Infortuni)", type="primary", width='stretch'):
+                    st.cache_data.clear()
+                    st.cache_resource.clear()
+                    with st.spinner("Sincronizzazione completa in corso da Fantacalcio.it e Understat..."):
+                        ok_sync, msg_sync = run_full_sync_pipeline(force_live_scrape=True, source="manual_settings")
+                    if ok_sync:
+                        st.success("Database, statistiche, metriche Understat e infortuni aggiornati con successo!")
+                    else:
+                        st.error(f"Errore durante la sincronizzazione: {msg_sync}")
+                    st.rerun()
+            with col_sync2:
+                if st.button("Svuota Cache", width='stretch'):
+                    st.cache_data.clear()
+                    st.cache_resource.clear()
+                    st.success("Cache svuotata!")
+                    st.rerun()
+
+            with st.expander("Opzioni Avanzate & Caricamento Manuale File Statistiche", expanded=False):
+                st.markdown("**Carica manualmente file Statistiche_Fantacalcio (.xlsx):**")
+                uploaded_stats_file = st.file_uploader(
+                    "Carica Statistiche_Fantacalcio (.xlsx):",
+                    type=['xlsx', 'xls'],
+                    key="upload_stats_file_direct"
+                )
+                if uploaded_stats_file is not None:
+                    file_sig = f"{uploaded_stats_file.name}_{uploaded_stats_file.size}"
+                    if st.session_state.get('last_processed_stats_sig') != file_sig:
+                        dest_stats = os.path.join(APP_DIR, "data", "Statistiche_Fantacalcio_Live.xlsx")
+                        with open(dest_stats, "wb") as f:
+                            f.write(uploaded_stats_file.getbuffer())
+                        with st.spinner("Sincronizzazione ruoli e statistiche ufficiali..."):
+                            sync_and_build_database(dest_stats)
+                            save_sync_state(status="success", details="Caricamento manuale file Excel statistiche", source="manual_excel")
+                            st.cache_data.clear()
+                        st.session_state['last_processed_stats_sig'] = file_sig
+                        st.success("Statistiche e ruoli ufficiali caricati con successo!")
+                        st.rerun()
+                    else:
+                        st.success("File statistiche sincronizzato e attivo!")
+
+                st.markdown("---")
+                c_adv1, c_adv2 = st.columns(2)
+                with c_adv1:
+                    if st.button("Aggiorna Solo Understat (xG/xA)", key="sync_understat_btn", width='stretch'):
+                        with st.spinner("Aggiornamento metriche Understat in corso..."):
+                            df_updated = sync_understat_metrics(df_master)
+                            from engine.data_loader import compute_sufficiency_metrics
+                            df_updated = compute_sufficiency_metrics(df_updated)
+                            master_csv = os.path.join(APP_DIR, "data", "players_master.csv")
+                            df_updated.to_csv(master_csv, index=False)
+                            st.cache_data.clear()
+                        st.success("Dati Understat aggiornati!")
+                        st.rerun()
+                with c_adv2:
+                    if st.button("Aggiorna Solo Infortuni Live", key="btn_sync_injuries_sidebar", width='stretch'):
+                        with st.spinner("Scraping indisponibili in tempo reale..."):
+                            fetch_live_injuries_from_fantacalcio()
+                            st.cache_data.clear()
+                        st.success("Infortuni e squalifiche aggiornati!")
+                        st.rerun()
+
+        with sub_imp_admin:
+            st.markdown("##### Password di Protezione del Pannello Amministratore")
+            st.caption(
+                "L'applicazione è liberamente accessibile a chiunque possieda il link per consultare formazioni, rose, Trade Center e statistiche. "
+                "Su PC locale (localhost) sei riconosciuto automaticamente come Amministratore; quando apri il link pubblico da remoto o smartphone, "
+                "puoi sbloccare questo pannello inserendo la tua Password Admin."
             )
-            if uploaded_stats_file is not None:
-                file_sig = f"{uploaded_stats_file.name}_{uploaded_stats_file.size}"
-                if st.session_state.get('last_processed_stats_sig') != file_sig:
-                    dest_stats = os.path.join(APP_DIR, "data", "Statistiche_Fantacalcio_Live.xlsx")
-                    with open(dest_stats, "wb") as f:
-                        f.write(uploaded_stats_file.getbuffer())
-                    with st.spinner("Sincronizzazione ruoli e statistiche ufficiali..."):
-                        sync_and_build_database(dest_stats)
-                        save_sync_state(status="success", details="Caricamento manuale file Excel statistiche", source="manual_excel")
-                        st.cache_data.clear()
-                    st.session_state['last_processed_stats_sig'] = file_sig
-                    st.success(" Statistiche e ruoli ufficiali caricati con successo!")
-                    st.rerun()
-                else:
-                    st.success(" File statistiche sincronizzato e attivo!")
-
-            st.markdown("---")
-            c_adv1, c_adv2 = st.columns(2)
-            with c_adv1:
-                if st.button(" Aggiorna Solo Understat (xG/xA)", key="sync_understat_btn", width='stretch'):
-                    with st.spinner("Aggiornamento metriche Understat in corso..."):
-                        df_updated = sync_understat_metrics(df_master)
-                        from engine.data_loader import compute_sufficiency_metrics
-                        df_updated = compute_sufficiency_metrics(df_updated)
-                        master_csv = os.path.join(APP_DIR, "data", "players_master.csv")
-                        df_updated.to_csv(master_csv, index=False)
-                        st.cache_data.clear()
-                    st.success("Dati Understat aggiornati!")
-                    st.rerun()
-            with c_adv2:
-                if st.button(" Aggiorna Solo Infortuni Live", key="btn_sync_injuries_sidebar", width='stretch'):
-                    with st.spinner("Scraping indisponibili in tempo reale..."):
-                        fetch_live_injuries_from_fantacalcio()
-                        st.cache_data.clear()
-                    st.success(" Infortuni e squalifiche aggiornati!")
-                    st.rerun()
-
-    with sub_imp_admin:
-            st.caption("Gestisci gli utenti che possono accedere all'app pubblica su Streamlit Cloud e scegli quali leghe può vedere ciascun utente. Ogni salvataggio viene ora memorizzato in modo permanente in locale e sincronizzato in automatico con GitHub/Cloud.")
             if '_admin_user_saved_msg' in st.session_state:
                 st.success(st.session_state.pop('_admin_user_saved_msg'))
 
-            all_sys_leagues = get_available_leagues(include_all_for_admin=True)
-            all_sys_league_ids = list(all_sys_leagues.keys())
-            full_db_obj = load_users_db()
-            users_db = full_db_obj.get("users", {})
-
-            st.markdown("** Utenti Registrati:**")
-            for uname_k, u_info in users_db.items():
-                u_leagues = u_info.get("allowed_leagues", [])
-                if "*" in u_leagues or u_info.get("role") == "admin":
-                    lg_str = "Tutte le leghe (*)"
-                elif u_leagues:
-                    lg_str = ", ".join([all_sys_leagues.get(l, {}).get("name", l) for l in u_leagues])
-                else:
-                    lg_str = "Nessuna lega"
-                def_t_map = u_info.get("default_team_by_league", {}) or {}
-                def_t_str = f" · Squadra: `{def_t_map.get(active_league)}`" if def_t_map.get(active_league) else ""
-                st.markdown(
-                    f"<div style='background:rgba(15,23,42,0.75); border-left:3px solid {'#f59e0b' if u_info.get('role')=='admin' else '#38bdf8'}; padding:6px 9px; border-radius:5px; margin-bottom:5px; font-size:0.78rem;'>"
-                    f"<b>{u_info.get('display_name', uname_k)}</b> (<code>{uname_k}</code>) — <i>{u_info.get('role', 'user')}</i><br>"
-                    f"<span style='color:#94a3b8;'> Leghe: {lg_str}{def_t_str}</span></div>",
-                    unsafe_allow_html=True
-                )
+            with st.form("admin_change_password_form"):
+                new_adm_pwd = st.text_input("Nuova Password Amministratore:", type="password", placeholder="Inserisci nuova password")
+                conf_adm_pwd = st.text_input("Conferma Nuova Password:", type="password", placeholder="Ripeti nuova password")
+                if st.form_submit_button("🟢 Aggiorna Password Admin", type="primary"):
+                    if not new_adm_pwd or len(new_adm_pwd.strip()) < 4:
+                        st.error("🔴 Inserisci una password di almeno 4 caratteri.")
+                    elif new_adm_pwd != conf_adm_pwd:
+                        st.error("🔴 Le due password non coincidono.")
+                    else:
+                        ok_u, msg_u = create_or_update_user(
+                            username="admin",
+                            display_name="Amministratore",
+                            password=new_adm_pwd.strip(),
+                            role="admin",
+                            allowed_leagues=["*"],
+                            can_create_leagues=True
+                        )
+                        if ok_u:
+                            unlock_admin_session()
+                            st.session_state['_admin_user_saved_msg'] = "🟢 Password Amministratore aggiornata e sincronizzata!"
+                            st.rerun()
+                        else:
+                            st.error(msg_u)
 
             st.markdown("---")
-            st.markdown("** Crea / Aggiorna Utente**")
-            edit_mode_sel = st.selectbox(
-                "Azione:",
-                options=[" Nuovo Utente"] + [f" Modifica: {u}" for u in users_db.keys()],
-                key="admin_user_edit_mode"
-            )
-            is_editing_existing = edit_mode_sel.startswith(" Modifica: ")
-            target_uname_prefill = edit_mode_sel.replace(" Modifica: ", "").strip() if is_editing_existing else ""
-            existing_u_obj = users_db.get(target_uname_prefill, {}) if is_editing_existing else {}
-
-            with st.form("admin_create_update_user_form"):
-                f_uname = st.text_input(
-                    "Username (per il login):",
-                    value=target_uname_prefill,
-                    placeholder="es. marco"
-                )
-                f_dname = st.text_input(
-                    "Nome Visualizzato:",
-                    value=existing_u_obj.get("display_name", ""),
-                    placeholder="es. Marco Rossi"
-                )
-                f_pwd = st.text_input(
-                    "Password" + (" (lascia vuoto per non cambiarla):" if is_editing_existing else ":"),
-                    type="password",
-                    placeholder="Inserisci password"
-                )
-                f_role = st.selectbox(
-                    "Ruolo:",
-                    options=["user", "admin"],
-                    index=1 if existing_u_obj.get("role") == "admin" else 0
-                )
-                default_lg_sel = [l for l in existing_u_obj.get("allowed_leagues", []) if l in all_sys_league_ids]
-                if not is_editing_existing and active_league in all_sys_league_ids:
-                    default_lg_sel = [active_league]
-                f_leagues = st.multiselect(
-                    "Leghe visibili a questo utente:",
-                    options=all_sys_league_ids,
-                    default=default_lg_sel,
-                    format_func=lambda x: all_sys_leagues.get(x, {}).get("name", x)
-                )
-                f_can_create = st.checkbox(
-                    "Consenti all'utente di creare nuove leghe in autonomia",
-                    value=bool(existing_u_obj.get("can_create_leagues", False))
-                )
-
-                # Optional default team in active league
-                curr_rosters_admin = load_league_rosters(active_league)
-                team_opts_admin = ["(Nessuna predefinita)"] + (list(curr_rosters_admin.keys()) if curr_rosters_admin else [])
-                existing_def_team = (existing_u_obj.get("default_team_by_league", {}) or {}).get(active_league, "(Nessuna predefinita)")
-                def_team_idx = team_opts_admin.index(existing_def_team) if existing_def_team in team_opts_admin else 0
-                f_def_team = st.selectbox(
-                    f"Squadra predefinita in '{all_sys_leagues.get(active_league, {}).get('name', active_league)}':",
-                    options=team_opts_admin,
-                    index=def_team_idx
-                )
-
-                if st.form_submit_button(" Salva Utente", type="primary", width='stretch'):
-                    def_team_dict = dict(existing_u_obj.get("default_team_by_league", {}) or {})
-                    if f_def_team != "(Nessuna predefinita)":
-                        def_team_dict[active_league] = f_def_team
-                    else:
-                        def_team_dict.pop(active_league, None)
-
-                    ok_u, msg_u = create_or_update_user(
-                        username=f_uname,
-                        display_name=f_dname,
-                        password=f_pwd if f_pwd else None,
-                        role=f_role,
-                        allowed_leagues=["*"] if f_role == "admin" else f_leagues,
-                        can_create_leagues=f_can_create,
-                        default_team_by_league=def_team_dict
-                    )
-                    if ok_u:
-                        st.session_state['_admin_panel_expanded'] = True
-                        st.session_state['_admin_user_saved_msg'] = msg_u
-                        st.rerun()
-                    else:
-                        st.error(msg_u)
-
-            non_admin_users = [u for u in users_db.keys() if u != "admin"]
-            if non_admin_users:
-                st.markdown("---")
-                st.markdown("** Rimuovi Utente**")
-                del_u_sel = st.selectbox("Utente da eliminare:", options=non_admin_users, key="admin_del_user_sel")
-                if st.button(" Elimina Utente", key="admin_btn_del_user", type="secondary", width='stretch'):
-                    ok_du, msg_du = delete_user_account(del_u_sel)
-                    if ok_du:
-                        st.session_state['_admin_panel_expanded'] = True
-                        st.session_state['_admin_user_saved_msg'] = msg_du
-                        st.rerun()
-                    else:
-                        st.error(msg_du)
-
-            st.markdown("---")
-            st.markdown("** Backup & Sincronizzazione Cloud**")
-            st.download_button(
-                " Scarica Backup Utenti (JSON)",
-                data=json.dumps(full_db_obj, indent=2, ensure_ascii=False),
-                file_name="users_db_backup.json",
-                mime="application/json",
-                width='stretch'
-            )
-            uploaded_users_bk = st.file_uploader(" Ripristina Utenti da file JSON:", type=["json"], key="admin_restore_users_json")
-            if uploaded_users_bk is not None:
-                try:
-                    loaded_bk = json.loads(uploaded_users_bk.read().decode('utf-8'))
-                    if isinstance(loaded_bk, dict) and "users" in loaded_bk:
-                        save_users_db(loaded_bk, trigger_git_sync=True)
-                        st.session_state['_admin_panel_expanded'] = True
-                        st.session_state['_admin_user_saved_msg'] = " Backup utenti ripristinato e sincronizzato!"
-                        st.rerun()
-                except Exception as ex_bk:
-                    st.error(f"File JSON non valido: {ex_bk}")
-
+            st.markdown("##### Sincronizzazione Multi-PC & GitHub Cloud")
             if is_running_on_localhost():
-                st.markdown("---")
-                st.markdown("** Sincronizzazione Multi-PC & GitHub Cloud**")
                 lan_ip_admin = get_local_network_ip()
-                st.info(f" **Accesso Rete Locale (Wi-Fi):** Puoi collegarti a questa istanza da un altro PC, Mac, tablet o smartphone sulla stessa rete Wi-Fi digitando nel browser: `http://{lan_ip_admin}:8501`")
+                st.info(f"**Accesso Rete Locale (Wi-Fi):** Puoi collegarti a questa istanza da un altro PC, Mac, tablet o smartphone sulla stessa rete Wi-Fi digitando nel browser: `http://{lan_ip_admin}:8501`")
 
                 col_sync1, col_sync2 = st.columns(2)
                 with col_sync1:
@@ -3778,9 +3716,14 @@ with tab_impostazioni:
                             else:
                                 st.error(msg_p)
                 with col_sync2:
-                    if st.button("🟠 Invia Dati su GitHub Cloud (Push)", key="admin_btn_sync_cloud", width='stretch', help="Carica rose, leghe, prestiti e utenti su GitHub per renderli disponibili sugli altri PC o su Streamlit Cloud"):
+                    if st.button("🟠 Invia Dati su GitHub Cloud (Push)", key="admin_btn_sync_cloud", width='stretch', help="Carica rose, leghe, prestiti e configurazione su GitHub per renderli disponibili sugli altri PC o su Streamlit Cloud"):
                         with st.spinner("Sincronizzazione dati con GitHub in corso..."):
                             sync_users_and_leagues_to_github(background=False)
-                            st.success(" Tutti i dati (rose, leghe, prestiti, utenti) pubblicati su GitHub!")
+                            st.success("🟢 Tutti i dati (rose, leghe, prestiti, impostazioni) pubblicati su GitHub!")
+            else:
+                if st.button("🟠 Sincronizza Configurazione su GitHub Cloud", key="admin_btn_sync_cloud_remote", width='stretch'):
+                    with st.spinner("Sincronizzazione dati con GitHub in corso..."):
+                        sync_users_and_leagues_to_github(background=False)
+                        st.success("🟢 Dati sincronizzati con GitHub!")
 
         # Calcolo automatico della giornata in base a data odierna e calendario ufficiale Serie A

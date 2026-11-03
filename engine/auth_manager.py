@@ -1,9 +1,8 @@
 """
-Multi-User Authentication, Role Permissions, and League Isolation Manager.
-- Auto-authenticates as 'admin' on localhost (unless explicitly testing another user or logged out).
-- Enforces login screen on Streamlit Cloud / remote access, persisting login across F5 refreshes via a signed HMAC token in URL query params.
-- Dual-location persistence: saves users in both data/users_db.json AND ~/.fantamantra_storage/users_db.json (outside git working tree) and automatically merges them on load.
-- Auto-syncs users_db.json and leagues to GitHub (master & dev) whenever users are created, updated, or deleted.
+Gestore Accesso Libero & Sicurezza Pannello di Amministrazione.
+- L'applicazione è ad accesso libero in consultazione e simulazione per chiunque possieda il link.
+- Riconosce automaticamente l'Amministratore ('admin') su PC locale (localhost), salvo attivazione manuale della "Vista Ospite".
+- Sul link pubblico / Streamlit Cloud protegge il Pannello di Amministrazione e tutte le modifiche permanenti (caricamento rose, gestione leghe, prestiti ufficiali, sync GitHub) tramite Password Amministratore con token firmato HMAC persistente.
 """
 
 import os
@@ -11,6 +10,7 @@ import sys
 import json
 import hmac
 import base64
+import shutil
 import hashlib
 import secrets
 import datetime
@@ -282,8 +282,8 @@ def pull_latest_from_github() -> tuple[bool, str]:
 
 def load_users_db() -> dict:
     """
-    Loads the users database by merging data/users_db.json and ~/.fantamantra_storage/users_db.json.
-    This guarantees that git branch switches, pulls, or resets never erase created users.
+    Loads the users database by merging data/users_db.json and ~/.fantapando_storage/users_db.json.
+    This guarantees that git branch switches, pulls, or resets never erase admin credentials.
     """
     os.makedirs(DATA_DIR, exist_ok=True)
     os.makedirs(PERSISTENT_STORAGE_DIR, exist_ok=True)
@@ -315,7 +315,6 @@ def load_users_db() -> dict:
                 if uname not in merged_users:
                     merged_users[uname] = uobj
                 else:
-                    # Keep whichever record has the newer updated_at / created_at timestamp
                     ts_existing = merged_users[uname].get("updated_at") or merged_users[uname].get("created_at") or ""
                     ts_new = uobj.get("updated_at") or uobj.get("created_at") or ""
                     if ts_new >= ts_existing:
@@ -341,7 +340,6 @@ def load_users_db() -> dict:
             "deleted_users": sorted(list(deleted_set))
         }
 
-        # Keep both storage locations in sync if they differed
         if repo_db != merged_db:
             _write_json_safe(USERS_DB_FILE, merged_db)
         if pers_db != merged_db:
@@ -349,7 +347,6 @@ def load_users_db() -> dict:
 
         return merged_db
 
-    # Initialize default admin user (initial password: admin2026)
     salt, pwd_hash = _hash_password("admin2026")
     default_db = {
         "users": {
@@ -374,8 +371,8 @@ def load_users_db() -> dict:
 
 def save_users_db(db: dict, trigger_git_sync: bool = True):
     """
-    Persists the users database to both data/users_db.json AND ~/.fantamantra_storage/users_db.json,
-    and optionally auto-syncs to GitHub so Streamlit Cloud and Localhost never lose users on restart.
+    Persists the users database to both data/users_db.json AND ~/.fantapando_storage/users_db.json,
+    and optionally auto-syncs to GitHub so Streamlit Cloud and Localhost never lose credentials on restart.
     """
     _write_json_safe(USERS_DB_FILE, db)
     _write_json_safe(PERSISTENT_USERS_DB_FILE, db)
@@ -411,20 +408,38 @@ def authenticate_user(username: str, password: str):
     return False, None, "Password non corretta."
 
 
-def get_current_user():
+def _get_guest_user_profile() -> dict:
+    """Restituisce il profilo pubblico predefinito (Sola Consultazione e Simulazione) per chiunque apra il link."""
+    return {
+        "username": "guest",
+        "display_name": "Visitatore (Accesso Libero)",
+        "role": "guest",
+        "allowed_leagues": ["*"],
+        "can_create_leagues": False,
+        "default_team_by_league": {},
+        "active": True
+    }
+
+
+def get_current_user() -> dict:
     """
-    Returns the currently logged-in user dictionary, or None if not authenticated.
-    1. Checks st.session_state['auth_username']
-    2. Checks signed HMAC token in st.query_params['auth'] (survives F5 page refreshes and server restarts)
-    3. On localhost, auto-logs in as 'admin' unless the user manually clicked Logout/Test.
+    Restituisce il dizionario dell'utente corrente (non restituisce mai None, così l'app è sempre ad accesso libero).
+    1. Se 'force_guest_mode' è attivo in session_state, restituisce il profilo Ospite (utile anche per testare da localhost).
+    2. Controlla st.session_state['auth_username'] per verificare se l'Admin è autenticato.
+    3. Controlla il token HMAC firmato in st.query_params['auth'] (persiste ai refresh F5 sul Cloud).
+    4. Su localhost (PC locale), autentica automaticamente come 'admin'.
+    5. In tutti gli altri casi (link pubblico / Cloud), restituisce il profilo Ospite ad accesso libero.
     """
+    if st.session_state.get('force_guest_mode', False) or st.session_state.get('force_login_screen', False):
+        return _get_guest_user_profile()
+
     db = load_users_db()
     users = db.get('users', {})
 
-    # 1. Check session_state
+    # 1. Controlla session_state
     if 'auth_username' in st.session_state and st.session_state['auth_username']:
         uname = st.session_state['auth_username']
-        if uname in users and users[uname].get('active', True):
+        if uname in users and users[uname].get('active', True) and users[uname].get('role') == 'admin':
             u_obj = users[uname]
             try:
                 if hasattr(st, 'query_params'):
@@ -435,33 +450,28 @@ def get_current_user():
                 pass
             return u_obj
 
-    # 2. Check signed URL query parameter ?auth=username.signature (survives F5 refresh & server restart)
-    if not st.session_state.get('force_login_screen', False):
-        try:
-            if hasattr(st, 'query_params') and 'auth' in st.query_params:
-                raw_tok = st.query_params.get('auth')
-                if isinstance(raw_tok, list) and raw_tok:
-                    raw_tok = raw_tok[0]
-                verified_u = _verify_auth_token(raw_tok, users)
-                if verified_u:
-                    st.session_state['auth_username'] = verified_u['username']
-                    return verified_u
-        except Exception:
-            pass
+    # 2. Controlla parametro URL firmato ?auth=admin.signature (persiste ai refresh F5 sul Cloud)
+    try:
+        if hasattr(st, 'query_params') and 'auth' in st.query_params:
+            raw_tok = st.query_params.get('auth')
+            if isinstance(raw_tok, list) and raw_tok:
+                raw_tok = raw_tok[0]
+            verified_u = _verify_auth_token(raw_tok, users)
+            if verified_u and verified_u.get('role') == 'admin':
+                st.session_state['auth_username'] = verified_u['username']
+                return verified_u
+    except Exception:
+        pass
 
-    # 3. Auto-login as admin on localhost unless user explicitly clicked 'Logout / Test Login'
-    if is_running_on_localhost() and not st.session_state.get('force_login_screen', False):
+    # 3. Auto-login come Admin su PC locale (localhost)
+    if is_running_on_localhost():
         admin_u = users.get('admin')
         if admin_u:
             st.session_state['auth_username'] = 'admin'
-            try:
-                if hasattr(st, 'query_params'):
-                    st.query_params['auth'] = _make_auth_token('admin', admin_u)
-            except Exception:
-                pass
             return admin_u
 
-    return None
+    # 4. Accesso libero come Visitatore per chiunque apra il link pubblico
+    return _get_guest_user_profile()
 
 
 def is_current_user_admin() -> bool:
@@ -469,29 +479,68 @@ def is_current_user_admin() -> bool:
     return bool(u and u.get('role') == 'admin')
 
 
+def authenticate_admin(password: str):
+    """
+    Verifica la password dell'Amministratore per sbloccare il Pannello Admin sul link pubblico.
+    Supporta sia la password salvata in users_db.json per l'utente 'admin', sia un eventuale ADMIN_PASSWORD in st.secrets / env.
+    """
+    if not password:
+        return False, None, "Inserisci la password di amministrazione."
+
+    db = load_users_db()
+    admin_u = db.get('users', {}).get('admin')
+
+    # Check eventuale override in secrets / env
+    env_pwd = os.environ.get("ADMIN_PASSWORD", "").strip()
+    if not env_pwd:
+        try:
+            if hasattr(st, "secrets") and "ADMIN_PASSWORD" in st.secrets:
+                env_pwd = str(st.secrets["ADMIN_PASSWORD"]).strip()
+        except Exception:
+            pass
+
+    if env_pwd and secrets.compare_digest(str(password), env_pwd) and admin_u:
+        return True, admin_u, "Pannello di Amministrazione sbloccato!"
+
+    if admin_u and verify_password(password, admin_u.get('salt', ''), admin_u.get('password_hash', '')):
+        return True, admin_u, "Pannello di Amministrazione sbloccato!"
+
+    return False, None, "Password Amministratore non corretta."
+
+
+def unlock_admin_session(admin_u: dict = None):
+    """Attiva la modalità Amministratore nella sessione corrente e imposta il token HMAC nell'URL."""
+    if not admin_u:
+        db = load_users_db()
+        admin_u = db.get('users', {}).get('admin', {})
+    st.session_state['auth_username'] = 'admin'
+    st.session_state['force_guest_mode'] = False
+    st.session_state['force_login_screen'] = False
+    try:
+        if hasattr(st, 'query_params') and admin_u:
+            st.query_params['auth'] = _make_auth_token('admin', admin_u)
+    except Exception:
+        pass
+
+
+def lock_admin_session():
+    """Blocca il Pannello Admin e passa alla modalità Visitatore (sola consultazione e simulazione)."""
+    st.session_state.pop('auth_username', None)
+    st.session_state['force_guest_mode'] = True
+    try:
+        if hasattr(st, 'query_params'):
+            st.query_params.pop('auth', None)
+    except Exception:
+        pass
+
+
 def filter_leagues_for_current_user(all_leagues_dict: dict) -> dict:
     """
-    Filters the available leagues dictionary according to the logged-in user's permissions.
-    Admins (or users with '*' in allowed_leagues) see all leagues.
-    Standard users see only leagues in their allowed_leagues list or leagues they created.
+    Poiché l'app è libera per chiunque abbia il link, tutte le leghe sono liberamente consultabili.
     """
     if not all_leagues_dict:
         return {}
-    u = get_current_user()
-    if not u:
-        return {}
-    if u.get('role') == 'admin':
-        return all_leagues_dict
-    allowed = set(u.get('allowed_leagues', []))
-    if '*' in allowed:
-        return all_leagues_dict
-
-    uname = u.get('username', '')
-    filtered = {}
-    for lid, linfo in all_leagues_dict.items():
-        if lid in allowed or (isinstance(linfo, dict) and linfo.get('owner') == uname):
-            filtered[lid] = linfo
-    return filtered
+    return all_leagues_dict
 
 
 def create_or_update_user(
@@ -541,7 +590,7 @@ def create_or_update_user(
         "updated_at": now_str
     }
     save_users_db(db, trigger_git_sync=True)
-    return True, f"Utente '{clean_u}' salvato in modo permanente (Locale + GitHub Cloud)!"
+    return True, f"Credenziali '{clean_u}' salvate in modo permanente (Locale + GitHub Cloud)!"
 
 
 def delete_user_account(username: str):
@@ -558,7 +607,7 @@ def delete_user_account(username: str):
     if clean_u not in deleted_list:
         deleted_list.append(clean_u)
     save_users_db(db, trigger_git_sync=True)
-    return True, f"️ Utente '{clean_u}' eliminato definitivamente."
+    return True, f"Utente '{clean_u}' eliminato definitivamente."
 
 
 def grant_league_to_user(username: str, league_id: str):
@@ -574,56 +623,46 @@ def grant_league_to_user(username: str, league_id: str):
             save_users_db(db, trigger_git_sync=True)
 
 
-def render_login_screen():
-    """Renders the centered Login Screen when no user is authenticated."""
+def render_admin_unlock_panel(key_suffix: str = "main"):
+    """
+    Mostra la schermata di sblocco protetta da password per accedere al Pannello di Amministrazione.
+    """
     st.markdown(
         """
-        <div style="max-width: 460px; margin: 60px auto 20px auto; padding: 28px 32px; background: linear-gradient(145deg, #0f172a, #1e293b); border: 1.5px solid #00f0ff; border-radius: 14px; box-shadow: 0 0 25px rgba(0, 240, 255, 0.2);">
-            <div style="text-align: center; font-size: 2.2rem; margin-bottom: 4px;"></div>
-            <h2 style="text-align: center; color: #00f0ff; margin: 0 0 6px 0; font-weight: 800;">FantaManager AI</h2>
-            <p style="text-align: center; color: #94a3b8; font-size: 0.9rem; margin-bottom: 16px;">
-                Inserisci le tue credenziali per accedere alle tue leghe Mantra & Classic.
+        <div style="max-width: 520px; margin: 28px auto 18px auto; padding: 24px 28px; background: linear-gradient(145deg, #0f172a, #1e293b); border: 1.5px solid #38bdf8; border-radius: 14px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);">
+            <h3 style="text-align: center; color: #38bdf8; margin: 0 0 8px 0; font-weight: 800;">Pannello di Amministrazione Protetto</h3>
+            <p style="text-align: center; color: #cbd5e1; font-size: 0.90rem; margin-bottom: 6px;">
+                🟢 L'applicazione è ad <b>accesso libero</b> per consultare formazioni, rose, scambi e statistiche.
+            </p>
+            <p style="text-align: center; color: #94a3b8; font-size: 0.84rem; margin-bottom: 0;">
+                Le modifiche permanenti (caricamento rose Excel, creazione/eliminazione leghe, gestione prestiti ufficiali e sincronizzazione Cloud/GitHub) sono riservate esclusivamente all'Amministratore.
             </p>
         </div>
         """,
         unsafe_allow_html=True
     )
 
-    col_l, col_c, col_r = st.columns([1.2, 1.6, 1.2])
+    col_l, col_c, col_r = st.columns([1.1, 1.8, 1.1])
     with col_c:
-        with st.form("login_auth_form"):
-            in_user = st.text_input(" Username:", placeholder="es. admin o il tuo username")
-            in_pass = st.text_input(" Password:", type="password", placeholder="••••••••")
-            submit_login = st.form_submit_button(" Accedi all'App", type="primary", width='stretch')
+        with st.form(f"admin_unlock_form_{key_suffix}"):
+            in_pass = st.text_input("Password Amministratore:", type="password", placeholder="Inserisci la tua password Admin")
+            submit_unlock = st.form_submit_button("🟢 Sblocca Pannello di Amministrazione", type="primary", width='stretch')
 
-            if submit_login:
-                ok, u_obj, msg = authenticate_user(in_user, in_pass)
+            if submit_unlock:
+                ok, admin_u, msg = authenticate_admin(in_pass)
                 if ok:
-                    st.session_state['auth_username'] = u_obj['username']
-                    st.session_state['force_login_screen'] = False
-                    try:
-                        if hasattr(st, 'query_params'):
-                            st.query_params['auth'] = _make_auth_token(u_obj['username'], u_obj)
-                    except Exception:
-                        pass
-                    st.session_state.pop('active_league_id', None)
-                    st.session_state.pop('active_my_team', None)
-                    st.session_state.pop('_last_live_synced_team', None)
-                    st.success(f"Benvenuto, {u_obj.get('display_name', u_obj['username'])}!")
+                    unlock_admin_session(admin_u)
+                    st.success(f"🟢 {msg}")
                     st.rerun()
                 else:
-                    st.error(f"{msg}")
+                    st.error(f"🔴 {msg}")
 
         if is_running_on_localhost():
-            st.markdown("---")
-            if st.button(" Accesso Rapido Localhost (Admin)", width='stretch'):
-                db = load_users_db()
-                admin_u = db.get('users', {}).get('admin', {})
-                st.session_state['auth_username'] = 'admin'
-                st.session_state['force_login_screen'] = False
-                try:
-                    if hasattr(st, 'query_params') and admin_u:
-                        st.query_params['auth'] = _make_auth_token('admin', admin_u)
-                except Exception:
-                    pass
+            if st.button("🟢 Ripristina Accesso Rapido Localhost (Admin)", key=f"btn_localhost_fast_admin_{key_suffix}", width='stretch'):
+                unlock_admin_session()
                 st.rerun()
+
+
+def render_login_screen():
+    """Alias di compatibilità per il pannello di sblocco Admin."""
+    render_admin_unlock_panel(key_suffix="legacy")

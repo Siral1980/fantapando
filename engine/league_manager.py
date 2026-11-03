@@ -312,6 +312,7 @@ def purge_team_and_league_session_state():
             'auth_user',
             'current_user',
             'force_login_screen',
+            'force_guest_mode',
             'active_league_id',
             'active_my_team',
             'active_league_type',
@@ -409,16 +410,16 @@ def set_active_league_id(league_id, persist_disk=True):
     except Exception:
         pass
 
-    # Synchronize user_roster.json for the new league & team (without recursion)
-    try:
-        sync_user_roster_from_league(league_data=rosters, team_name=league_team, league_id=league_id, update_active_team=False)
-    except Exception:
-        pass
-
     # Purge all stale widget session state across all tabs and clear cache
     purge_team_and_league_session_state()
 
     if persist_disk:
+        # Synchronize user_roster.json for the new league & team (without recursion)
+        try:
+            sync_user_roster_from_league(league_data=rosters, team_name=league_team, league_id=league_id, update_active_team=False)
+        except Exception:
+            pass
+
         os.makedirs(DATA_DIR, exist_ok=True)
         try:
             with open(ACTIVE_LEAGUE_FILE, 'w', encoding='utf-8') as f:
@@ -438,19 +439,19 @@ def set_active_league_id(league_id, persist_disk=True):
         except Exception:
             pass
 
-    # Mirror files to root data/ for backwards compatibility
-    for src, dst in [
-        (paths['rosters'], ROOT_LEAGUE_FILE),
-        (paths['config'], ROOT_CONFIG_FILE),
-        (paths['metadata'], ROOT_METADATA_FILE),
-        (paths['user_roster'], ROOT_USER_ROSTER_FILE),
-    ]:
-        if os.path.exists(src):
-            try:
-                import shutil
-                shutil.copy2(src, dst)
-            except Exception:
-                pass
+        # Mirror files to root data/ for backwards compatibility
+        for src, dst in [
+            (paths['rosters'], ROOT_LEAGUE_FILE),
+            (paths['config'], ROOT_CONFIG_FILE),
+            (paths['metadata'], ROOT_METADATA_FILE),
+            (paths['user_roster'], ROOT_USER_ROSTER_FILE),
+        ]:
+            if os.path.exists(src):
+                try:
+                    import shutil
+                    shutil.copy2(src, dst)
+                except Exception:
+                    pass
 
     return league_id
 
@@ -1282,16 +1283,15 @@ def set_active_my_team(team_name, persist_disk=False, league_id=None):
     except Exception:
         pass
 
-    # Synchronize user_roster.json for this team in this league (without recursion)
-    try:
-        sync_user_roster_from_league(team_name=team_name, league_id=lid, update_active_team=False)
-    except Exception:
-        pass
-
     # Purge all stale widget session state across all tabs and clear cache
     purge_team_and_league_session_state()
 
     if persist_disk:
+        # Synchronize user_roster.json for this team in this league (without recursion)
+        try:
+            sync_user_roster_from_league(team_name=team_name, league_id=lid, update_active_team=False)
+        except Exception:
+            pass
         paths = get_league_paths(lid)
         curr_lt = get_league_type(lid)
         try:
