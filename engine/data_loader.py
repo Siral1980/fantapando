@@ -10,6 +10,7 @@ import glob
 import json
 import html
 import re
+import time
 import requests
 import pandas as pd
 import numpy as np
@@ -44,25 +45,40 @@ TEAM_CODE_MAP = {
 }
 
 
-def scrape_official_fantacalcio_stats():
+def scrape_official_fantacalcio_stats(max_retries: int = 3, retry_delay: float = 2.0):
     """
     Scrapes official Fantacalcio.it Serie A statistics live from:
     https://www.fantacalcio.it/statistiche-serie-a
     Returns a clean DataFrame with all players, roles (Classic + Mantra), and official season stats.
+    Includes automatic retries with exponential backoff.
     Does not require login or credentials.
     """
     url = 'https://www.fantacalcio.it/statistiche-serie-a'
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'it-IT,it;q=0.9,en-US;q=0.8,en;q=0.7',
     }
-    r = requests.get(url, headers=headers, timeout=25)
-    if r.status_code != 200:
-        raise RuntimeError(f'HTTP error {r.status_code} from fantacalcio.it')
-    
-    text = r.text
-    rows = text.split('<tr class="player-row"')
-    if len(rows) < 100:
-        raise ValueError(f'Too few player rows found ({len(rows)})')
+    last_err = None
+    text = ''
+    for attempt in range(1, max_retries + 1):
+        try:
+            r = requests.get(url, headers=headers, timeout=30)
+            if r.status_code != 200:
+                raise RuntimeError(f'HTTP error {r.status_code} from fantacalcio.it')
+            text = r.text
+            rows = text.split('<tr class="player-row"')
+            if len(rows) < 100:
+                raise ValueError(f'Too few player rows found ({len(rows)})')
+            # Success!
+            break
+        except Exception as e:
+            last_err = e
+            print(f'[DataLoader] Scrape attempt {attempt}/{max_retries} failed: {e}')
+            if attempt < max_retries:
+                time.sleep(retry_delay * attempt)
+    else:
+        raise RuntimeError(f'Impossibile scaricare statistiche live da Fantacalcio.it dopo {max_retries} tentativi: {last_err}')
         
     records = []
     for segment in rows[1:]:
@@ -172,6 +188,55 @@ def scrape_official_fantacalcio_stats():
         
     df_official = pd.DataFrame(records)
     return df_official
+
+
+def save_official_stats_excel(df_players, dest_path=DEFAULT_STATS_FILE):
+    """
+    Saves a DataFrame of players to the standard multi-sheet Excel format
+    matching Fantacalcio.it official statistics export:
+    Sheets: Tutti, Portieri, Difensori, Centrocampisti, Attaccanti.
+    """
+    if df_players is None or len(df_players) == 0:
+        return False
+    try:
+        cols_map = {
+            'Cod': 'Id',
+            'RuoloClassic': 'R',
+            'RuoloMantra': 'Rm',
+            'Giocatore': 'Nome',
+            'Squadra': 'Squadra',
+            'Presenze': 'Pv',
+            'MV_Stagione': 'Mv',
+            'FM_Stagione': 'Fm',
+            'GF': 'Gf',
+            'GS': 'Gs',
+            'RP': 'Rp',
+            'RC': 'Rc',
+            'R_Plus': 'R+',
+            'R_Minus': 'R-',
+            'ASS': 'Ass',
+            'AMM': 'Amm',
+            'ESP': 'Esp',
+            'AU': 'Au'
+        }
+        df_excel = pd.DataFrame()
+        for col_csv, col_xl in cols_map.items():
+            if col_csv in df_players.columns:
+                df_excel[col_xl] = df_players[col_csv]
+            else:
+                df_excel[col_xl] = 0
+
+        os.makedirs(os.path.dirname(dest_path), exist_ok=True)
+        with pd.ExcelWriter(dest_path, engine='openpyxl') as writer:
+            df_excel.to_excel(writer, sheet_name='Tutti', startrow=1, index=False)
+            for s_name, r_code in [('Portieri', 'P'), ('Difensori', 'D'), ('Centrocampisti', 'C'), ('Attaccanti', 'A')]:
+                sub_df = df_excel[df_excel['R'] == r_code]
+                sub_df.to_excel(writer, sheet_name=s_name, startrow=1, index=False)
+        print(f"[DataLoader] Saved {len(df_excel)} players to official stats Excel: {dest_path}")
+        return True
+    except Exception as e:
+        print(f"[DataLoader] Notice saving official stats Excel: {e}")
+        return False
 
 
 def load_official_stats_excel(file_path_or_buffer=None):
@@ -543,28 +608,61 @@ def compute_goalkeeper_advanced_metrics(df_master):
     return df_master
 
 
-def sync_and_build_database(stats_file=None, force_live_scrape=True):
+def sync_and_build_database(stats_file=None, force_live_scrape=True, return_status=False):
     """
-    Builds the clean player master database strictly from the official statistics Excel.
-    Applies real triennium data and real Understat metrics if present.
+    Builds the clean player master database strictly from official statistics.
+    Prioritizes live official Fantacalcio.it scraping with automatic retries.
+    Enforces a strict non-regression invariant: never overwrites newer data with stale data.
     """
     os.makedirs(DATA_DIR, exist_ok=True)
     
     df_master = None
+    live_ok = False
+    live_err = ""
+    
     if force_live_scrape and stats_file is None:
         try:
             print("Scraping live official Fantacalcio.it statistics...")
-            df_scraped = scrape_official_fantacalcio_stats()
+            df_scraped = scrape_official_fantacalcio_stats(max_retries=3, retry_delay=2.0)
             if df_scraped is not None and len(df_scraped) >= 400:
                 df_master = df_scraped
+                live_ok = True
                 print(f"Loaded {len(df_master)} official players from live Fantacalcio.it.")
+                # Keep Statistiche_Fantacalcio_Live.xlsx constantly synchronized
+                save_official_stats_excel(df_master)
         except Exception as e:
-            print(f"Live scrape notice ({e}), falling back to Excel file.")
+            live_err = str(e)
+            print(f"Live scrape notice ({e}), checking existing database or Excel fallback.")
             
     if df_master is None:
-        print("Loading official Fantacalcio.it statistics from Excel...")
-        df_master = load_official_stats_excel(stats_file)
-        print(f"Loaded {len(df_master)} official players.")
+        # Non-regression protection: does players_master.csv already exist on disk?
+        df_existing = None
+        cur_max_p = 0
+        if os.path.exists(MASTER_CSV):
+            try:
+                df_existing = pd.read_csv(MASTER_CSV)
+                if len(df_existing) >= 400 and 'Presenze' in df_existing.columns:
+                    cur_max_p = int(df_existing['Presenze'].max())
+            except Exception:
+                df_existing = None
+                cur_max_p = 0
+                
+        # Check candidate Excel file if provided or fallback
+        if stats_file is not None or df_existing is None:
+            df_excel = load_official_stats_excel(stats_file)
+            fb_max_p = int(df_excel['Presenze'].max()) if (df_excel is not None and 'Presenze' in df_excel.columns) else 0
+            
+            # Non-regression check:
+            if df_existing is not None and cur_max_p > fb_max_p:
+                print(f"[DataLoader] Refusing stale Excel fallback: existing database has max {cur_max_p} presenze vs Excel {fb_max_p}. Retaining existing database.")
+                df_master = df_existing
+            else:
+                df_master = df_excel
+                print(f"Loaded {len(df_master)} official players from Excel.")
+        else:
+            # We have an existing valid master database and no manual stats file was passed
+            print(f"[DataLoader] Retaining existing database ({len(df_existing)} players, max {cur_max_p} presenze).")
+            df_master = df_existing
     
     # 1. Enrich with Historical Triennio if available
     if os.path.exists(STORICO_CSV):
@@ -620,9 +718,24 @@ def sync_and_build_database(stats_file=None, force_live_scrape=True):
     except Exception as e:
         print(f"FVM enrichment notice: {e}")
 
-    # 5. Save clean players_master.csv
-    df_master.to_csv(MASTER_CSV, index=False)
-    print(f"Master database saved to {MASTER_CSV} ({len(df_master)} players).")
+    # 5. Save clean players_master.csv with Circuit Breaker
+    can_save = True
+    if os.path.exists(MASTER_CSV):
+        try:
+            df_disk = pd.read_csv(MASTER_CSV, usecols=['Presenze'])
+            disk_max_p = int(df_disk['Presenze'].max()) if len(df_disk) > 0 and 'Presenze' in df_disk.columns else 0
+            new_max_p = int(df_master['Presenze'].max()) if 'Presenze' in df_master.columns else 0
+            if new_max_p < disk_max_p:
+                print(f"[DataLoader] CRITICAL CIRCUIT BREAKER: Refusing to overwrite {MASTER_CSV} because new dataset has fewer presenze ({new_max_p}) than on disk ({disk_max_p}).")
+                can_save = False
+        except Exception as e_cb:
+            print(f"[DataLoader] Circuit breaker notice: {e_cb}")
+
+    if can_save:
+        df_master.to_csv(MASTER_CSV, index=False)
+        print(f"Master database saved to {MASTER_CSV} ({len(df_master)} players).")
+    else:
+        print(f"Master database NOT overwritten on disk due to circuit breaker protection.")
     
     # Check or create dummy/empty df_voti if needed
     if os.path.exists(VOTI_CSV):
@@ -630,6 +743,8 @@ def sync_and_build_database(stats_file=None, force_live_scrape=True):
     else:
         df_voti = pd.DataFrame()
         
+    if return_status:
+        return df_master, df_voti, live_ok, live_err
     return df_master, df_voti
 
 

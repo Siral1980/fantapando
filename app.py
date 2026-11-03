@@ -224,15 +224,16 @@ def cached_find_win_win_trades(my_team_name, league_sig, matchday, target_role_f
 # -------------------------------------------------------------
 sync_state = get_sync_state()
 if sync_state.get('is_due', False):
-    with st.spinner("Auto-check 12h: Aggiornamento database live in corso (Fantacalcio.it + Understat)..."):
+    spinner_text = "Auto-sync calendario: rilevati dati arretrati, aggiornamento live in corso..." if sync_state.get('is_stale_matchday') else "Auto-check: Aggiornamento database live in corso (Fantacalcio.it + Understat)..."
+    with st.spinner(spinner_text):
         sync_ok, sync_msg = run_full_sync_pipeline(force_live_scrape=True, source="auto_startup")
         if sync_ok:
             st.cache_data.clear()
             st.cache_resource.clear()
-            st.toast(" Database aggiornato automaticamente (ciclo 12h completato)!")
+            st.toast("🟢 Database aggiornato automaticamente all'ultima giornata!")
             sync_state = get_sync_state()
         else:
-            st.toast(f" Auto-check live non completato: {sync_msg}. Uso dati locali salvati.")
+            st.toast(f"🟡 Auto-check live non completato: {sync_msg}. Mantenuta copia locale protetta.")
 
 master_csv_path = os.path.join(APP_DIR, "data", "players_master.csv")
 mtime_val = os.path.getmtime(master_csv_path) if os.path.exists(master_csv_path) else 0
@@ -557,10 +558,10 @@ if is_current_user_admin():
             if ok_sync:
                 sync_st_now = get_sync_state()
                 if sync_st_now.get('roster_imported'):
-                    st.toast("🟢 Rose di lega aggiornate da nuovo export Fantacalcio.it!", icon="⚽")
+                    st.toast("🟢 Rose di lega aggiornate da nuovo export Fantacalcio.it!")
                     st.sidebar.success('Rose & Dati Aggiornati!')
                 else:
-                    st.toast("🟢 Statistiche e voti live sincronizzati!", icon="⚽")
+                    st.toast("🟢 Statistiche e voti live sincronizzati!")
                     st.sidebar.success('Aggiornato!')
             else:
                 st.sidebar.error('Errore sync')

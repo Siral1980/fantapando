@@ -1,18 +1,9 @@
 {
-  "last_sync_timestamp": 1793714894.46039,
-  "last_sync_datetime": "03/11/2026 15:08:14",
-  "status": {
-    "last_sync_timestamp": 1793714894.46039,
-    "last_sync_datetime": "03/11/2026 15:08:14",
-    "status": "success",
-    "details": "Sincronizzati 603 calciatori con statistiche ufficiali live da Fantacalcio.it (Giornata 10), Understat e voti reali.",
-    "source": "live_stats_refresh",
-    "roster_imported": false,
-    "roster_details": "Statistiche e voti ufficiali aggiornati con successo per tutti i calciatori.",
-    "interval_hours": 12.0
-  },
-  "details": "",
-  "source": "auto",
+  "last_sync_timestamp": 1793715538.7559648,
+  "last_sync_datetime": "03/11/2026 15:18:58",
+  "status": "success",
+  "details": "Sincronizzati 603 calciatori con statistiche ufficiali live da Fantacalcio.it (Giornata 10), Understat e voti reali.",
+  "source": "manual_verify",
   "roster_imported": false,
   "roster_details": "",
   "interval_hours": 12.0
