@@ -49,7 +49,7 @@ try:
 except Exception:
     pass
 from engine.trade_finder import (
-    analyze_squad_weaknesses, find_win_win_trades, find_trades_for_target_players,
+    analyze_squad_weaknesses,
     RECOMMENDED_QUOTAS, RECOMMENDED_QUOTAS_CLASSIC,
     safe_float, safe_int
 )
@@ -200,24 +200,6 @@ def _league_signature(league, league_type=None):
 def cached_analyze_squad_weaknesses(team_name, league_sig, matchday, code_ver, _league_data, _df_master, league_type=None):
     return analyze_squad_weaknesses(team_name, _league_data, _df_master, matchday=matchday, league_type=league_type)
 
-
-@st.cache_data(show_spinner=False, max_entries=32, ttl=1800)
-def cached_find_win_win_trades(my_team_name, league_sig, matchday, target_role_filter, give_player_filter,
-                               opp_team_filter, min_starter_filter, trade_format_filter, max_proposals,
-                               code_ver, _league_data, _df_master, league_type=None):
-    return find_win_win_trades(
-        my_team_name=my_team_name,
-        league_data=_league_data,
-        df_master=_df_master,
-        matchday=matchday,
-        target_role_filter=target_role_filter,
-        give_player_filter=give_player_filter,
-        opp_team_filter=opp_team_filter,
-        min_starter_filter=min_starter_filter,
-        trade_format_filter=trade_format_filter,
-        max_proposals=max_proposals,
-        league_type=league_type
-    )
 
 # -------------------------------------------------------------
 # AUTO-CHECK & SYNC LIVE DATA (12-HOUR CYCLE)
@@ -1803,689 +1785,16 @@ with tab_rosa:
 
 # =============================================================
 with tab_scambi:
-    st.subheader(f" Trade Center & Ottimizzazione Scambi {'Classic' if is_classic else 'Mantra'}")
+    st.subheader(f"🟢 Trade Center & Valutazione Scambi {'Classic' if is_classic else 'Mantra'}")
     st.caption(
-        "Valuta qualsiasi scambio con il modello ibrido a 4 pilastri, scopri le proposte Win-Win automatiche o cerca un obiettivo specifico."
+        "Valuta qualsiasi trattativa di mercato con il modello scientifico a 4 pilastri e consulta il check-up strutturale della tua rosa."
     )
     
-    subtab_sim, subtab_radar, subtab_target, subtab_diag = st.tabs([
-        " Valutatore Scambio Libero",
-        " Proposte Automatiche (Win-Win)",
-        " Cerca un Obiettivo",
-        " Diagnosi Rosa & Esuberi"
+    subtab_sim, subtab_diag = st.tabs([
+        "🟢 Valutatore Scambio Libero",
+        "🟢 Diagnosi Rosa & Esuberi"
     ])
 
-    # -------------------------------------------------------------
-    # SUBTAB 1: DIAGNOSI PUNTI DEBOLI & ASSET
-    # -------------------------------------------------------------
-    with subtab_diag:
-        st.subheader(" Check-up Strutturale & Analisi Carenze di Modulo")
-        st.caption(
-            f"L'algoritmo analizza la distribuzione dei ruoli {'Classic' if is_classic else 'Mantra'}, i giocatori con presenze continuative, "
-            "la qualità media e la copertura del D-Factor per evidenziare rischi di squilibrio tattico."
-        )
-        
-        my_team = get_active_my_team()
-        diag_teams = league_teams if league_teams else [my_team]
-        col_sel_d1, col_sel_d2 = st.columns([2, 1])
-        with col_sel_d1:
-            target_diag_team = st.selectbox(
-                "Squadra da Analizzare:",
-                options=diag_teams,
-                index=diag_teams.index(my_team) if my_team in diag_teams else 0,
-                key=f"diag_team_select_{my_team}"
-            )
-        with col_sel_d2:
-            st.write("")
-            st.caption(f"Squadra attiva dell'utente: **{my_team}**")
-            
-        diag_res = cached_analyze_squad_weaknesses(
-            target_diag_team, _league_signature(league_dict, active_league_type),
-            selected_giornata, current_code_version, league_dict, df_master,
-            league_type=active_league_type
-        )
-        
-        if 'error' in diag_res:
-            st.error(diag_res['error'])
-        else:
-            # Top KPIs
-            dk1, dk2, dk3, dk4 = st.columns(4)
-            with dk1:
-                st.metric("Modulo Benchmark Titolare", diag_res.get('Modulo_Titolare', 'N/D'))
-            with dk2:
-                st.metric("Punti Attesi Titolari (xFV)", f"{diag_res.get('Punti_Titolari', 0.0):.2f} pt")
-            with dk3:
-                num_w = len(diag_res.get('Punti_Deboli', []))
-                st.metric("Punti Deboli Rilevati", num_w, delta="Attenzione" if num_w > 0 else "Nessuno", delta_color="inverse")
-            with dk4:
-                num_s = len(diag_res.get('Surplus_Cedibili', []))
-                st.metric("Asset Spendibili (Esuberi)", num_s)
-                
-            st.markdown("---")
-            
-            # Punti Deboli Section
-            st.subheader(" Punti Deboli & Bottleneck Strutturali")
-            weaknesses = diag_res.get('Punti_Deboli', [])
-            if not weaknesses:
-                st.success(" Congratulazioni! La rosa presenta una struttura bilanciata in tutti i reparti chiave.")
-            else:
-                for w in weaknesses:
-                    sev = w.get('Severita', 'MEDIA')
-                    bg_color = {
-                        'CRITICA': '#450a0a',
-                        'ELEVATA': '#431407',
-                        'MEDIA': '#422006'
-                    }.get(sev, '#1e293b')
-                    border_color = {
-                        'CRITICA': '#ef4444',
-                        'ELEVATA': '#f97316',
-                        'MEDIA': '#eab308'
-                    }.get(sev, '#64748b')
-                    badge_color = {
-                        'CRITICA': '#ef4444',
-                        'ELEVATA': '#f97316',
-                        'MEDIA': '#eab308'
-                    }.get(sev, '#64748b')
-                    
-                    st.markdown(f"""
-                    <div style="background: {bg_color}; border-left: 5px solid {border_color}; border-radius: 8px; padding: 14px 18px; margin-bottom: 14px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                            <span style="font-weight: 700; font-size: 1.05rem; color: #f8fafc;">
-                                {w['Reparto']} ({w['Ruolo']}) — {w['Titolo']}
-                            </span>
-                            <span style="background: {badge_color}; color: white; padding: 3px 9px; border-radius: 12px; font-weight: 700; font-size: 0.75rem;">
-                                {sev}
-                            </span>
-                        </div>
-                        <p style="margin: 4px 0 8px 0; color: #cbd5e1; font-size: 0.92rem;">{w['Diagnosi']}</p>
-                        <div style="font-size: 0.88rem; color: #38bdf8; font-weight: 600;">
-                             Obiettivo di Mercato: {w['Obiettivo_Mercato']}
-                        </div>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    
-            # Punti di Forza
-            strengths = diag_res.get('Punti_di_Forza', [])
-            if strengths:
-                with st.expander("⭐ Punti di Forza & Certezze della Rosa", expanded=False):
-                    for s in strengths:
-                        st.markdown(f"-  **{s}**")
-                        
-            # Surplus Assets Table
-            st.markdown("---")
-            st.subheader(" Asset Spendibili sul Mercato (Esuberi di Fanta-Valore)")
-            st.caption(
-                "Calciatori di valore (o con segnale SELL-HIGH) che attualmente siedono in panchina o fanno parte "
-                "di reparti sovraffollati. Sono la tua moneta di scambio ideale da offrire per colmare i punti deboli sopra evidenziati."
-            )
-            surplus = diag_res.get('Surplus_Cedibili', [])
-            if surplus:
-                df_surplus = pd.DataFrame(surplus)
-                s_role_col = 'RuoloClassic' if is_classic and 'RuoloClassic' in df_surplus.columns else 'RuoloMantra'
-                st.dataframe(
-                    df_surplus[['Giocatore', s_role_col, 'Squadra', 'xFV', 'FM_Stagione', 'Signal', 'Motivo_Cessione']],
-                    width='stretch',
-                    hide_index=True
-                )
-            else:
-                st.info("Nessun calciatore di rilievo attualmente in esubero.")
-                
-            # Quota Coverage Matrix
-            with st.expander(f" Matrice di Copertura Ruoli {'Classic' if is_classic else 'Mantra'} (Quote Consigliate vs Attivi)", expanded=False):
-                matrix_rows = []
-                c_all = diag_res.get('Conteggio_Totale', {})
-                c_act = diag_res.get('Conteggio_Attivi', {})
-                is_two_striker_mod = diag_res.get('Is_Two_Striker_Modulo', False)
-                quotas_to_show = RECOMMENDED_QUOTAS_CLASSIC if is_classic else RECOMMENDED_QUOTAS
-                for role, q in quotas_to_show.items():
-                    act = c_act.get(role, 0)
-                    tot = c_all.get(role, 0)
-                    min_q = q['min_active']
-                    tgt = q['target']
-                    if role == 'Pc' and not is_classic and not is_two_striker_mod:
-                        min_q = 2
-                    
-                    if act < min_q:
-                        status = " Carente"
-                    elif act == min_q:
-                        status = " Al Minimo"
-                    elif act >= tgt + 2:
-                        status = " Esubero"
-                    else:
-                        status = " Coperto"
-                        
-                    matrix_rows.append({
-                        'Ruolo': role,
-                        'Descrizione': q['name'],
-                        'Attivi (Disponibili & Voto Sicuro)': act,
-                        'Totali in Rosa': tot,
-                        'Minimo Consigliato': min_q,
-                        'Target Ideale': tgt,
-                        'Stato Copertura': status
-                    })
-                st.dataframe(pd.DataFrame(matrix_rows), width='stretch', hide_index=True)
-
-    # -------------------------------------------------------------
-    # SUBTAB 2: RADAR SCAMBI INTELLIGENTI (WIN-WIN)
-    # -------------------------------------------------------------
-    with subtab_radar:
-        st.subheader(" Radar Scambi Intelligenti (Win-Win Reciproco)")
-        st.markdown(
-            "L'algoritmo incrocia la diagnosi della tua squadra con le rose di tutti gli 11 avversari di lega. "
-            "Identifica opportunità a **somma positiva** dove tu cedi un giocatore spendibile e ricevi un elemento che "
-            "risolve un tuo punto debole, garantendo allo stesso tempo all'avversario un titolare nel reparto in cui è scoperto."
-        )
-        
-        my_team = get_active_my_team()
-        
-        # Pre-compute diagnosi for filters
-        my_diag = cached_analyze_squad_weaknesses(
-            my_team, _league_signature(league_dict, active_league_type),
-            selected_giornata, current_code_version, league_dict, df_master,
-            league_type=active_league_type
-        )
-        my_weak_roles = [w['Ruolo'] for w in my_diag.get('Punti_Deboli', [])]
-        surplus_pnames = [p['Giocatore'] for p in my_diag.get('Surplus_Cedibili', [])]
-        
-        r_col1, r_col2, r_col3, r_col4, r_col5 = st.columns([1.1, 1.1, 1.2, 1.3, 1.3])
-        with r_col1:
-            all_roles = ['P', 'D', 'C', 'A'] if is_classic else ['Por', 'Dc', 'B', 'Dd', 'Ds', 'E', 'M', 'C', 'W', 'T', 'A', 'Pc']
-            target_role_opts = ["TUTTI"] + list(dict.fromkeys(my_weak_roles + all_roles))
-            selected_target_role = st.selectbox(
-                "Ruolo che vuoi RICEVERE:",
-                options=target_role_opts,
-                index=1 if my_weak_roles else 0,
-                key=f"trade_winwin_role_{my_team}",
-                help="Seleziona il ruolo che intendi rinforzare. Di default è impostato sulla tua priorità debole principale."
-            )
-        with r_col2:
-            give_opts = ["TUTTI"] + surplus_pnames
-            selected_give_player = st.selectbox(
-                "Calciatore che vuoi CEDERE:",
-                options=give_opts,
-                index=0,
-                key=f"trade_winwin_give_{my_team}",
-                help="Puoi filtrare per un tuo specifico esubero o lasciare TUTTI per esplorare tutte le combinazioni."
-            )
-        with r_col3:
-            opp_opts = ["TUTTI"] + [t for t in league_teams if t != my_team]
-            selected_opp_team = st.selectbox(
-                "Filtra per Squadra Avversaria:",
-                options=opp_opts,
-                index=0,
-                key=f"trade_winwin_opp_{my_team}",
-                help="Scegli se trattare con un avversario specifico o scansionare l'intera lega."
-            )
-        with r_col4:
-            format_filter_map = {
-                " Tutti i Formati (1x1, 2x2, 2x1, 1x2)": "TUTTI",
-                " Solo Scambi Multipli (2x2, 2x1, 1x2)": "SOLO_MULTIPLI",
-                " Solo Scambi Singoli (1x1)": "SOLO_SINGOLI"
-            }
-            selected_format_label = st.selectbox(
-                "Formato Scambio:",
-                options=list(format_filter_map.keys()),
-                index=0,
-                key=f"trade_winwin_fmt_{my_team}",
-                help="Scegli se vedere tutti i formati, oppure focalizzarti su scambi singoli (1x1) o pacchetti multipli (combo titolari + riserve, 2x1, 1x2)."
-            )
-            selected_format_filter = format_filter_map[selected_format_label]
-        with r_col5:
-            starter_filter_map = {
-                "🟡 Titolari + Co-Titolari (>40 min/p) [Consigliato]": "TITOLARI_E_CO",
-                "🟢 Solo Titolari Fissi (>55 min/p)": "TITOLARI_SOLO",
-                "🟠 Tutti (incluse riserve/subentranti)": "TUTTI"
-            }
-            selected_starter_label = st.selectbox(
-                "Filtro Minutaggio Reale Serie A:",
-                options=list(starter_filter_map.keys()),
-                index=0,
-                help="Esclude automaticamente riserve e subentranti occasionali (es. Lucca, Nzola, Kevin Carlos)."
-            )
-            selected_starter_filter = starter_filter_map[selected_starter_label]
-            
-        # Action Bar: On-Demand Scan to prevent locking Trade Center for 30s on page load
-        radar_session_key = f"winwin_proposals_{active_league}_{my_team}"
-        has_cached_proposals = (radar_session_key in st.session_state and st.session_state[radar_session_key] is not None)
-        
-        btn_c1, btn_c2 = st.columns([1.6, 2.8])
-        with btn_c1:
-            btn_label = "🟢 Avvia Scansione Win-Win" if not has_cached_proposals else "🔄 Ricalcola Scansione"
-            run_winwin_scan = st.button(btn_label, type="primary", key=f"btn_scan_winwin_{my_team}", width='stretch')
-        with btn_c2:
-            if has_cached_proposals:
-                st.caption(f"⚡ Proposte pronte in memoria: **{len(st.session_state[radar_session_key])} scambi Win-Win**. Risultati salvati istantaneamente.")
-            else:
-                st.caption("ℹ️ Clicca sul pulsante verde per scansionare le rose degli 11 avversari ed elaborare le offerte ottimali.")
-
-        if run_winwin_scan:
-            with st.spinner("Scansione rose avversarie e calcolo scambi Win-Win in corso..."):
-                try:
-                    proposals = cached_find_win_win_trades(
-                        my_team, _league_signature(league_dict, active_league_type), selected_giornata,
-                        selected_target_role, selected_give_player, selected_opp_team,
-                        selected_starter_filter, selected_format_filter, 30,
-                        current_code_version, league_dict, df_master,
-                        league_type=active_league_type
-                    )
-                    st.session_state[radar_session_key] = proposals
-                except TypeError:
-                    try:
-                        proposals = find_win_win_trades(
-                            my_team_name=my_team,
-                            league_data=league_dict,
-                            df_master=df_master,
-                            matchday=selected_giornata,
-                            target_role_filter=selected_target_role,
-                            give_player_filter=selected_give_player,
-                            opp_team_filter=selected_opp_team,
-                            min_starter_filter=selected_starter_filter,
-                            max_proposals=30,
-                            league_type=active_league_type
-                        )
-                        st.session_state[radar_session_key] = proposals
-                    except Exception as inner_e:
-                        import traceback
-                        st.error(f"Errore durante l'elaborazione degli scambi: {inner_e}")
-                        proposals = []
-                except Exception as e:
-                    import traceback
-                    st.error(f"Errore durante l'elaborazione degli scambi: {e}")
-                    proposals = []
-        else:
-            proposals = st.session_state.get(radar_session_key, None)
-
-        if proposals is None:
-            st.info("💡 **Premi il pulsante verde 'Avvia Scansione Win-Win'** per analizzare le 11 rose avversarie e trovare le migliori proposte di scambio.")
-        elif not proposals:
-            st.warning("Nessuna proposta Win-Win trovata con i filtri correnti. Prova a impostare 'TUTTI' nei filtri per allargare la ricerca.")
-        else:
-            st.success(f" Trovate **{len(proposals)} proposte di scambio Win-Win** su misura per la tua rosa!")
-            
-            for idx, prop in enumerate(proposals[:15], 1):
-                opp = prop['Squadra_Avversaria']
-                score = prop['Score']
-                give_list = prop.get('Tu_Cedi_List', [prop['Tu_Cedi']])
-                rec_list = prop.get('Tu_Ricevi_List', [prop['Tu_Ricevi']])
-                label_tipo = prop.get('Label_Tipo', ' Scambio Diretto (1x1)')
-                tipo_scambio = prop.get('Tipo_Scambio', '1x1')
-                tot_c_give = prop.get('Tot_Costo_Cedi', sum(safe_int(p.get('Costo', 0)) for p in give_list))
-                tot_c_rec = prop.get('Tot_Costo_Ricevi', sum(safe_int(p.get('Costo', 0)) for p in rec_list))
-                tot_x_give = prop.get('Tot_xFV_Cedi', round(sum(safe_float(p.get('xFV', 0.0)) for p in give_list), 2))
-                tot_x_rec = prop.get('Tot_xFV_Ricevi', round(sum(safe_float(p.get('xFV', 0.0)) for p in rec_list), 2))
-                delta_xfv = prop.get('Delta_xFV', round(tot_x_rec - tot_x_give, 2))
-                
-                with st.container():
-                    render_html(f"""
-                    <div style="background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 16px 20px; margin-bottom: 18px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #334155; padding-bottom: 8px;">
-                            <div>
-                                <span style="font-size: 1.15rem; font-weight: 700; color: #f8fafc;">#{idx} Proposta con: <span style="color: #38bdf8;">{opp}</span></span>
-                                <span style="margin-left: 8px; background: #6366f1; color: white; padding: 2px 8px; border-radius: 6px; font-size: 0.78rem; font-weight: 600;">{label_tipo}</span>
-                                <span style="margin-left: 6px; background: #0284c7; color: white; padding: 2px 8px; border-radius: 6px; font-size: 0.78rem; font-weight: 600;">Ruolo: {prop['Ruolo_Target']}</span>
-                            </div>
-                            <div>
-                                <span style="background: #10b981; color: white; padding: 4px 10px; border-radius: 12px; font-weight: 700; font-size: 0.85rem;">
-                                    Win-Win Index: {int(safe_float(score, 50.0))} / 200
-                                </span>
-                            </div>
-                        </div>
-                    """, unsafe_allow_html=True)
-                    
-                    # Columns for Cedi and Ricevi
-                    c_give, c_rec = st.columns(2)
-                    with c_give:
-                        n_g = len(give_list)
-                        render_html(f"""
-                        <div style="font-size: 0.82rem; color: #ef4444; font-weight: bold; text-transform: uppercase; margin-bottom: 6px;">
-                            🔴 Tu Cedi ({n_g} calciator{'e' if n_g == 1 else 'i'}) | Tot FVM/1000: <b>{tot_c_give}</b> | Tot xFV: <b>{tot_x_give:.2f}</b>
-                        </div>
-                        """, unsafe_allow_html=True)
-                        for cedi in give_list:
-                            sig_badge = f"<span style='background:#f97316;color:white;padding:1px 6px;border-radius:4px;font-size:0.75rem;font-weight:bold;'>{cedi.get('Signal', '')}</span>" if 'SELL-HIGH' in cedi.get('Signal', '') else ""
-                            role_disp_give = cedi.get('RuoloClassic' if is_classic else 'RuoloMantra', cedi.get('RuoloMantra', ''))
-                            render_html(f"""
-                            <div style="background: rgba(239, 68, 68, 0.08); border-left: 4px solid #ef4444; padding: 10px 14px; border-radius: 6px; margin-bottom: 8px;">
-                                <div style="font-size: 1.05rem; font-weight: bold; color: #f8fafc;">
-                                    {cedi['Giocatore']} {sig_badge}
-                                    <span style="font-size: 0.78rem; color: #94a3b8; font-weight: normal;">(FVM: <b>{cedi.get('FVM', cedi.get('Costo', 0))}</b>)</span>
-                                </div>
-                                <div style="color: #cbd5e1; font-size: 0.85rem;">{cedi['Squadra']} — <b>{role_disp_give}</b></div>
-                                <div style="color: #94a3b8; font-size: 0.80rem; margin-top: 2px;">xFV Giornata: <b>{cedi['xFV']:.2f}</b> | FM: <b>{cedi['FM']:.2f}</b></div>
-                            </div>
-                            """, unsafe_allow_html=True)
-                        
-                    with c_rec:
-                        delta_color = "#10b981" if delta_xfv >= 0 else "#f59e0b"
-                        n_r = len(rec_list)
-                        render_html(f"""
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                            <span style="font-size: 0.82rem; color: #10b981; font-weight: bold; text-transform: uppercase;">
-                                🟢 Tu Ricevi ({n_r} calciator{'e' if n_r == 1 else 'i'}) | Tot FVM/1000: <b>{tot_c_rec}</b>
-                            </span>
-                            <span style="color: {delta_color}; font-weight: bold; font-size: 0.85rem;">
-                                Delta: {'+' if delta_xfv > 0 else ''}{delta_xfv} xFV
-                            </span>
-                        </div>
-                        """, unsafe_allow_html=True)
-                        for ricevi in rec_list:
-                            sig_rec_badge = f"<span style='background:#0284c7;color:white;padding:1px 6px;border-radius:4px;font-size:0.75rem;font-weight:bold;'>BUY-LOW</span>" if ricevi.get('Is_Buy_Low') else ""
-                            bench_badge = "<span style='background:#475569;color:white;padding:1px 6px;border-radius:4px;font-size:0.75rem;'>Panchina Avversaria</span>" if ricevi.get('Is_Bench_In_Opponent') else ""
-                            status_tit = ricevi.get('Status_Titolarita', 'TITOLARE')
-                            tit_color = {
-                                'TITOLARE': '#16a34a',
-                                'CO_TITOLARE': '#ca8a04',
-                                'SUBENTRANTE': '#ea580c',
-                                'MARGINALE': '#dc2626'
-                            }.get(status_tit, '#64748b')
-                            tit_badge = f"<span style='background:{tit_color};color:white;padding:1px 6px;border-radius:4px;font-size:0.75rem;font-weight:bold;'>{ricevi.get('Badge_Titolarita', status_tit)}</span>"
-                            stash_badge = f"<span style='background:#d97706;color:white;padding:1px 6px;border-radius:4px;font-size:0.75rem;font-weight:bold;'> STASH INFORTUNIO</span>" if ricevi.get('Is_Stash_Injury') else ""
-
-                            role_disp_rec = ricevi.get('RuoloClassic' if is_classic else 'RuoloMantra', ricevi.get('RuoloMantra', ''))
-                            render_html(f"""
-                            <div style="background: rgba(16, 185, 129, 0.08); border-left: 4px solid #10b981; padding: 10px 14px; border-radius: 6px; margin-bottom: 8px;">
-                                <div style="font-size: 1.05rem; font-weight: bold; color: #f8fafc;">
-                                    {ricevi['Giocatore']} {tit_badge} {stash_badge} {sig_rec_badge} {bench_badge}
-                                    <span style="font-size: 0.78rem; color: #94a3b8; font-weight: normal;">(FVM: <b>{ricevi.get('FVM', ricevi.get('Costo', 0))}</b>)</span>
-                                </div>
-                                <div style="color: #cbd5e1; font-size: 0.85rem;">{ricevi['Squadra']} — <b>{role_disp_rec}</b></div>
-                                <div style="color: #94a3b8; font-size: 0.80rem; margin-top: 2px;">
-                                    xFV Giornata: <b>{ricevi['xFV']:.2f}</b> | FM: <b>{ricevi['FM']:.2f}</b> | Sufficienze: <b>{ricevi.get('Pct_Sufficienza', 0)}%</b>
-                                </div>
-                            </div>
-                            """, unsafe_allow_html=True)
-                        
-                    st.markdown("<div style='margin-top: 10px; font-weight: 600; font-size: 0.9rem; color: #e2e8f0;'> Perché ha senso per entrambi:</div>", unsafe_allow_html=True)
-                    for m in prop['Motivazioni']:
-                        st.markdown(f"<div style='font-size: 0.85rem; color: #94a3b8; margin-left: 8px;'>• {m}</div>", unsafe_allow_html=True)
-                        
-                    # WhatsApp Pitch Box
-                    st.markdown("<div style='margin-top: 12px;'></div>", unsafe_allow_html=True)
-                    with st.expander(" Messaggio Pronto da Inviare su WhatsApp", expanded=False):
-                        st.caption("Copia e incolla direttamente nella chat privata o di lega con il tuo avversario:")
-                        st.code(prop['Messaggio_Trattativa'], language="text")
-                        
-                    # Action button to prefill simulator
-                    btn_col1, btn_col2 = st.columns([1, 3])
-                    with btn_col1:
-                        if st.button(f" Simula nel Valutatore", key=f"btn_sim_{idx}"):
-                            g_names = [p['Giocatore'] for p in give_list]
-                            r_names = [p['Giocatore'] for p in rec_list]
-                            st.session_state['sim_prefill_give'] = g_names
-                            st.session_state['sim_prefill_receive'] = r_names
-                            st.session_state['sim_prefill_opp'] = opp
-                            st.session_state['sim_prefill_mode'] = " Trattativa di Lega (Inter-Squadra)"
-                            st.session_state['sim_last_trade_res'] = evaluate_trade(
-                                g_names, r_names, df_master, start_matchday=selected_giornata, horizon=None, calendar=calendar
-                            )
-                            st.success(f" Scambio con {opp} caricato e calcolato! Clicca sulla scheda ' Valutatore Scambio Libero' per il verdetto completo.")
-                            
-                    st.markdown("</div>", unsafe_allow_html=True)
-
-    # -------------------------------------------------------------
-    # SUBTAB 3: SCAMBIO MIRATO SU OBIETTIVO (REVERSE TRADE FINDER)
-    # -------------------------------------------------------------
-    with subtab_target:
-        st.subheader(" Scambio Mirato su Obiettivo (Reverse Trade Finder)")
-        st.markdown(
-            "Cerca uno o più calciatori che desideri strappare a un avversario di lega. "
-            "L'algoritmo valuta l'**intera rosa senza discriminazioni** (titolari, panchinari ed esuberi) "
-            "e formula pacchetti d'offerta **molti-a-molti (1x1, 2x1, 1x2, 2x2, 3x2, 2x3, 3x3...)** "
-            "rigorosamente **migliorativi** per la tua formazione titolare e credibili per l'avversario."
-        )
-
-        my_team = get_active_my_team()
-        opp_team_candidates = [t for t in league_teams if t != my_team]
-
-        if not opp_team_candidates:
-            st.info("Carica le rose della tua lega nella sidebar o nel wizard per attivare la funzione di scambio mirato.")
-        else:
-            col_sel_opp, col_sel_targs = st.columns([1, 2])
-            with col_sel_opp:
-                target_opp_team = st.selectbox(
-                    "1. Seleziona Squadra Avversaria:",
-                    options=opp_team_candidates,
-                    key=f"target_finder_opp_team_{my_team}"
-                )
-
-            # Get target opponent roster (exclude loans and players to release / out of Serie A)
-            opp_roster_df = get_team_roster_df(target_opp_team, df_master)
-            mask_opp = pd.Series(True, index=opp_roster_df.index)
-            if 'InPrestito' in opp_roster_df.columns:
-                mask_opp &= ~opp_roster_df['InPrestito'].astype(bool)
-            if 'Prestito_OUT' in opp_roster_df.columns:
-                mask_opp &= ~opp_roster_df['Prestito_OUT'].astype(bool)
-            if 'Stato_Prestito' in opp_roster_df.columns:
-                mask_opp &= (opp_roster_df['Stato_Prestito'] == 'Proprietà')
-            if 'Da_Svincolare' in opp_roster_df.columns:
-                mask_opp &= ~opp_roster_df['Da_Svincolare'].astype(bool)
-            if 'FuoriSerieA' in opp_roster_df.columns:
-                mask_opp &= ~opp_roster_df['FuoriSerieA'].astype(bool)
-            if 'Giocatore' in opp_roster_df.columns:
-                mask_opp &= ~opp_roster_df['Giocatore'].astype(str).str.contains(r'\*')
-            opp_owned_df = opp_roster_df[mask_opp]
-            sort_cols = [c for c in ['Costo', 'FM_Stagione', 'MV_Stagione'] if c in opp_owned_df.columns]
-            if sort_cols:
-                opp_owned_df = opp_owned_df.sort_values(by=sort_cols, ascending=[False] * len(sort_cols))
-
-            # Prepare player options
-            opp_player_labels = []
-            label_to_pname = {}
-            for _, r_opp in opp_owned_df.iterrows():
-                pname = r_opp['Giocatore']
-                roles = r_opp.get('RuoloClassic' if is_classic else 'RuoloMantra', '')
-                costo = int(r_opp.get('Costo', 0))
-                fm = float(r_opp.get('FM_Stagione', 0.0))
-                label = f"{pname} ({roles}) — {r_opp.get('Squadra', '')} [Costo {costo}, FM {fm:.2f}]"
-                opp_player_labels.append(label)
-                label_to_pname[label] = pname
-
-            with col_sel_targs:
-                selected_labels = st.multiselect(
-                    "2. Scegli il/i Giocatore/i da Chiedere all'Avversario:",
-                    options=opp_player_labels,
-                    key=f"target_finder_selected_players_{my_team}",
-                    help="Puoi selezionare un singolo obiettivo (es. una prima punta, un top difensore) o un pacchetto di 2 giocatori."
-                )
-                selected_target_pnames = [label_to_pname[lbl] for lbl in selected_labels]
-
-            # Format Selector (Many-to-Many M x N)
-            pkg_size_label = st.selectbox(
-                "Formato Pacchetto Scambio:",
-                options=[
-                    "Tutti i formati Molti-a-Molti (1x1, 2x1, 1x2, 2x2, 3x2, 2x3, 3x3)",
-                    "Solo Scambio Singolo Diretto (1x1)",
-                    "Solo Pacchetti Multipli (M x N: 2x1, 1x2, 2x2, 3x2, 2x3, 3x3)"
-                ],
-                index=0,
-                key=f"target_finder_pkg_size_{my_team}",
-                help="Gli scambi possono coinvolgere qualsiasi combinazione molti-a-molti senza limiti. Vengono proposte offerte rigorosamente migliorative per la tua rosa."
-            )
-            pkg_types_map = {
-                "Tutti i formati Molti-a-Molti (1x1, 2x1, 1x2, 2x2, 3x2, 2x3, 3x3)": 'ALL',
-                "Solo Scambio Singolo Diretto (1x1)": 'SOLO_1X1',
-                "Solo Pacchetti Multipli (M x N: 2x1, 1x2, 2x2, 3x2, 2x3, 3x3)": 'SOLO_MULTIPLI'
-            }
-            chosen_pkg_types = pkg_types_map[pkg_size_label]
-
-            # Show Instant Rival Check-up Card
-            with st.expander(f" Check-up Immediato Carenze di {target_opp_team} (Perché dovrebbero accettare)", expanded=False):
-                opp_diag = cached_analyze_squad_weaknesses(
-                    target_opp_team, _league_signature(league_dict, active_league_type),
-                    selected_giornata, current_code_version, league_dict, df_master,
-                    league_type=active_league_type
-                )
-                opp_w = opp_diag.get('Punti_Deboli', [])
-                if opp_w:
-                    st.markdown(f"**Criticità emerse nella rosa di {target_opp_team}:**")
-                    for w in opp_w:
-                        sev_badge = "🔴" if w['Severita'] == 'CRITICA' else ("🟠" if w['Severita'] == 'ELEVATA' else "🟡")
-                        st.markdown(f"- {sev_badge} **{w['Reparto']} ({w['Ruolo']})**: {w['Diagnosi']} *({w['Obiettivo_Mercato']})*")
-                else:
-                    st.info(f"{target_opp_team} ha una rosa numericamente completa; accetterà scambi basati su valore tecnico e affinità tattica.")
-
-            st.markdown("---")
-
-            # Execution
-            if not selected_target_pnames:
-                st.info(" Seleziona almeno un calciatore dal menu a tendina sopra per generare le proposte di offerta su misura.")
-            else:
-                with st.spinner("Analisi delle criticità dell'avversario e formulazione offerte intelligenti in corso..."):
-                    try:
-                        target_proposals = find_trades_for_target_players(
-                            my_team_name=my_team,
-                            opp_team_name=target_opp_team,
-                            target_player_names=selected_target_pnames,
-                            league_data=league_dict,
-                            df_master=df_master,
-                            matchday=selected_giornata,
-                            package_types=chosen_pkg_types,
-                            league_type=active_league_type
-                        )
-                    except Exception as e:
-                        st.error(f"Errore durante l'elaborazione delle proposte per {', '.join(selected_target_pnames)}: {e}")
-                        target_proposals = []
-
-                if not target_proposals:
-                    st.warning(
-                        f"Nessuna combinazione molti-a-molti trovata per acquisire **{', '.join(selected_target_pnames)}** "
-                        "che risulti sia migliorativa per la tua rosa sia appetibile e sostenibile per l'avversario. "
-                        "Prova a selezionare una rosa o un obiettivo differente."
-                    )
-                else:
-                    st.success(f" Trovate **{len(target_proposals)} proposte di scambio migliorative** per acquisire **{', '.join(selected_target_pnames)}**!")
-
-                    for p_idx, prop in enumerate(target_proposals):
-                        delta_pts = prop['Delta_Punti_Titolari']
-                        is_migliorativo = (delta_pts >= 0)
-                        card_border = "#10b981" if is_migliorativo else "#38bdf8"
-                        card_bg = "rgba(16, 185, 129, 0.06)" if is_migliorativo else "rgba(56, 189, 248, 0.05)"
-                        fmt_badge = prop.get('Formato', prop.get('Tipo_Pacchetto', 'M x N'))
-                        
-                        st.markdown(f"""
-                        <div style="background: {card_bg}; border: 1.5px solid {card_border}; border-radius: 10px; padding: 16px 20px; margin-bottom: 20px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
-                                <div>
-                                    <span style="font-weight: 800; font-size: 1.15rem; color: #ffffff;">Offerta #{p_idx+1}</span>
-                                    <span style="margin-left: 10px; background: rgba(56, 189, 248, 0.15); border: 1px solid #38bdf8; border-radius: 6px; padding: 3px 10px; font-weight: 800; font-size: 0.85rem; color: #38bdf8;">
-                                        {fmt_badge}
-                                    </span>
-                                    <span style="margin-left: 6px; background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; border-radius: 6px; padding: 3px 10px; font-weight: 800; font-size: 0.85rem; color: #34d399;">
-                                         +{delta_pts:.2f} pt attesi
-                                    </span>
-                                </div>
-                                <div style="display: flex; gap: 12px; align-items: center;">
-                                    <span style="font-weight: 700; font-size: 0.95rem; color: #f59e0b;"> Appetibilità Avversario: {prop['Appetibilita_Avversario']}%</span>
-                                </div>
-                            </div>
-                        """, unsafe_allow_html=True)
-
-                        col_give, col_rec = st.columns(2)
-                        with col_give:
-                            st.markdown("##### 🔴 Cosa Cedi Tu")
-                            for p in prop['Tu_Cedi']:
-                                role_display = p.get('RuoloClassic' if is_classic else 'RuoloMantra', p.get('Ruolo', ''))
-                                render_html(f"""
-                                <div style="background: rgba(255,255,255,0.04); border-left: 3px solid #38bdf8; padding: 8px 12px; border-radius: 6px; margin-bottom: 6px;">
-                                    <div style="font-weight: 700; color: #ffffff;">{p['Giocatore']} <span style="font-weight: 450; color: #94a3b8; font-size: 0.85rem;">({role_display} - {p['Squadra']})</span></div>
-                                    <div style="font-size: 0.8rem; color: #cbd5e1;">FM: <strong>{p['FM']:.2f}</strong> | xFV: <strong>{p['xFV']:.2f}</strong> | FVM: <strong>{p.get('FVM', p.get('Costo', 0))}</strong></div>
-                                </div>
-                                """, unsafe_allow_html=True)
-                            st.caption(f"Totale xFV Offerto: **{prop['Totale_xFV_Ceduti']}**")
-
-                        with col_rec:
-                            st.markdown(f"##### 🟢 Cosa Ricevi da {target_opp_team}")
-                            for p in prop['Tu_Ricevi']:
-                                role_display = p.get('RuoloClassic' if is_classic else 'RuoloMantra', p.get('Ruolo', ''))
-                                render_html(f"""
-                                <div style="background: rgba(16, 185, 129, 0.08); border-left: 3px solid #10b981; padding: 8px 12px; border-radius: 6px; margin-bottom: 6px;">
-                                    <div style="font-weight: 700; color: #ffffff;">{p['Giocatore']} <span style="font-weight: 450; color: #94a3b8; font-size: 0.85rem;">({role_display} - {p['Squadra']})</span></div>
-                                    <div style="font-size: 0.8rem; color: #cbd5e1;">FM: <strong>{p['FM']:.2f}</strong> | xFV: <strong>{p['xFV']:.2f}</strong> | FVM: <strong>{p.get('FVM', p.get('Costo', 0))}</strong></div>
-                                </div>
-                                """, unsafe_allow_html=True)
-                            st.caption(f"Totale xFV Ricevuto: **{prop['Totale_xFV_Ricevuti']}** (Δ xFV: **{prop['Delta_xFV']:+.2f}**)")
-
-                        # Tactical rationale & opponent leverage
-                        st.markdown("<div style='margin-top: 10px; font-weight: 700; font-size: 0.92rem; color: #38bdf8;'> Perché l'avversario accetta (Leva di Trattativa):</div>", unsafe_allow_html=True)
-                        st.markdown(f"<div style='font-size: 0.88rem; color: #cbd5e1; margin-bottom: 6px;'>{prop['Leva_di_Trattativa']}</div>", unsafe_allow_html=True)
-
-                        col_imp1, col_imp2 = st.columns(2)
-                        with col_imp1:
-                            render_html(f"""
-                            <div style='background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 8px 12px; margin-bottom: 8px;'>
-                                <div style='font-size: 0.78rem; text-transform: uppercase; color: #94a3b8; font-weight: 700;'> La Tua Formazione Titolare</div>
-                                <div style='font-size: 0.95rem; font-weight: 700; color: #ffffff; margin: 2px 0;'>
-                                    {prop['Punti_Titolari_Nuovi']:.2f} pt <span style='font-size: 0.85rem; color: {'#10b981' if prop['Delta_Punti_Titolari'] >= 0 else '#f97316'};'>({prop['Delta_Punti_Titolari']:+.2f} pt)</span>
-                                </div>
-                                <div style='font-size: 0.8rem; color: #94a3b8;'>Modulo {prop['Modulo_Titolare_Nuovo']} • {prop['Copertura_Nuova']}</div>
-                            </div>
-                            """, unsafe_allow_html=True)
-
-                        with col_imp2:
-                            opp_pts_txt = f"{prop.get('Punti_Avversario_Nuovi', 0):.2f} pt"
-                            opp_delta_val = prop.get('Delta_Punti_Avversario', 0)
-                            opp_delta_txt = f"{opp_delta_val:+.2f} pt"
-                            opp_delta_color = "#10b981" if opp_delta_val >= 0 else "#f59e0b"
-                            opp_mod = prop.get('Modulo_Avversario_Nuovo', 'N/D')
-                            reassure_msg = prop['Reassurances_Avversario'][0] if prop.get('Reassurances_Avversario') else " Nessuna nuova criticità creata per l'avversario"
-
-                            render_html(f"""
-                            <div style='background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 8px 12px; margin-bottom: 8px;'>
-                                <div style='font-size: 0.78rem; text-transform: uppercase; color: #94a3b8; font-weight: 700;'> Formazione {target_opp_team} Post-Scambio</div>
-                                <div style='font-size: 0.95rem; font-weight: 700; color: #ffffff; margin: 2px 0;'>
-                                    {opp_pts_txt} <span style='font-size: 0.85rem; color: {opp_delta_color};'>({opp_delta_txt})</span>
-                                </div>
-                                <div style='font-size: 0.8rem; color: #4ade80;'>Modulo {opp_mod} • {reassure_msg}</div>
-                            </div>
-                            """, unsafe_allow_html=True)
-
-                        # Pairwise Matching & Titolarita Breakdown
-                        pairs = prop.get('Accoppiamento_Coppie', [])
-                        if pairs and len(pairs) >= 1:
-                            with st.expander(" Dettaglio Accoppiamento a Coppie & Titolarità Reale (Vasi Comunicanti)", expanded=False):
-                                st.caption("Ogni calciatore richiesto viene confrontato direttamente con una contropartita di pari status. Il minutaggio e la titolarità reale pesano il valore di mercato effettivo.")
-                                for p_match in pairs:
-                                    g_pct = int(p_match['give_itit'] * 100)
-                                    t_pct = int(p_match['target_itit'] * 100)
-                                    d_val = p_match['delta']
-                                    d_color = "#10b981" if d_val >= 0 else "#f59e0b"
-                                    render_html(f"""
-                                    <div style='background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 6px; padding: 6px 12px; margin-bottom: 5px; font-size: 0.88rem; display: flex; justify-content: space-between; align-items: center;'>
-                                        <div>
-                                            🔴 <strong>{p_match['give_name']}</strong> (Titolarità {g_pct}%, {int(p_match.get('give_mins', 0))} min/p)
-                                            &nbsp;⇄&nbsp;
-                                            🟢 <strong>{p_match['target_name']}</strong> (Titolarità {t_pct}%, {int(p_match.get('target_mins', 0))} min/p)
-                                        </div>
-                                        <div>
-                                            <span style='color: {d_color}; font-weight: 700;'>Δ Valore Effettivo: {d_val:+.2f}</span>
-                                        </div>
-                                    </div>
-                                    """, unsafe_allow_html=True)
-                                st.caption(f"Valore Mercato Effettivo Complessivo: Offerto **{prop.get('Valore_Mercato_Ceduti', 0):.2f}** vs Richiesto **{prop.get('Valore_Mercato_Ricevuti', 0):.2f}** (Δ **{prop.get('Delta_Valore_Mercato', 0):+.2f}**)")
-
-                        # WhatsApp Box
-                        with st.expander(" Messaggio Pronto da Inviare su WhatsApp all'Avversario", expanded=False):
-                            st.caption("Copia e incolla direttamente nella chat per proporre lo scambio:")
-                            st.code(prop['Messaggio_Trattativa'], language="text")
-
-                        # Prefill Simulator Button
-                        if st.button(f" Simula nel Valutatore", key=f"btn_sim_target_{p_idx}"):
-                            g_names_t = prop['Simulazione_Payload']['give_names']
-                            r_names_t = prop['Simulazione_Payload']['receive_names']
-                            st.session_state['sim_prefill_give'] = g_names_t
-                            st.session_state['sim_prefill_receive'] = r_names_t
-                            st.session_state['sim_prefill_opp'] = target_opp_team
-                            st.session_state['sim_prefill_mode'] = " Trattativa di Lega (Inter-Squadra)"
-                            st.session_state['sim_last_trade_res'] = evaluate_trade(
-                                g_names_t, r_names_t, df_master, start_matchday=selected_giornata, horizon=None, calendar=calendar
-                            )
-                            st.success(" Scambio caricato e calcolato! Clicca sulla scheda ' Valutatore Scambio Libero' per il verdetto completo.")
-
-                        st.markdown("</div>", unsafe_allow_html=True)
-
-    # -------------------------------------------------------------
-    # SUBTAB 4: SIMULATORE SCAMBI LIBERO
-    # -------------------------------------------------------------
     @st.fragment
     def render_free_trade_simulator():
         """Rendered as a fragment: changing team/players reruns only this block, not the whole app."""
@@ -3068,6 +2377,153 @@ with tab_scambi:
 
     with subtab_sim:
         render_free_trade_simulator()
+
+    with subtab_diag:
+        st.subheader(" Check-up Strutturale & Analisi Carenze di Modulo")
+        st.caption(
+            f"L'algoritmo analizza la distribuzione dei ruoli {'Classic' if is_classic else 'Mantra'}, i giocatori con presenze continuative, "
+            "la qualità media e la copertura del D-Factor per evidenziare rischi di squilibrio tattico."
+        )
+        
+        my_team = get_active_my_team()
+        diag_teams = league_teams if league_teams else [my_team]
+        col_sel_d1, col_sel_d2 = st.columns([2, 1])
+        with col_sel_d1:
+            target_diag_team = st.selectbox(
+                "Squadra da Analizzare:",
+                options=diag_teams,
+                index=diag_teams.index(my_team) if my_team in diag_teams else 0,
+                key=f"diag_team_select_{my_team}"
+            )
+        with col_sel_d2:
+            st.write("")
+            st.caption(f"Squadra attiva dell'utente: **{my_team}**")
+            
+        diag_res = cached_analyze_squad_weaknesses(
+            target_diag_team, _league_signature(league_dict, active_league_type),
+            selected_giornata, current_code_version, league_dict, df_master,
+            league_type=active_league_type
+        )
+        
+        if 'error' in diag_res:
+            st.error(diag_res['error'])
+        else:
+            # Top KPIs
+            dk1, dk2, dk3, dk4 = st.columns(4)
+            with dk1:
+                st.metric("Modulo Benchmark Titolare", diag_res.get('Modulo_Titolare', 'N/D'))
+            with dk2:
+                st.metric("Punti Attesi Titolari (xFV)", f"{diag_res.get('Punti_Titolari', 0.0):.2f} pt")
+            with dk3:
+                num_w = len(diag_res.get('Punti_Deboli', []))
+                st.metric("Punti Deboli Rilevati", num_w, delta="Attenzione" if num_w > 0 else "Nessuno", delta_color="inverse")
+            with dk4:
+                num_s = len(diag_res.get('Surplus_Cedibili', []))
+                st.metric("Asset Spendibili (Esuberi)", num_s)
+                
+            st.markdown("---")
+            
+            # Punti Deboli Section
+            st.subheader(" Punti Deboli & Bottleneck Strutturali")
+            weaknesses = diag_res.get('Punti_Deboli', [])
+            if not weaknesses:
+                st.success(" Congratulazioni! La rosa presenta una struttura bilanciata in tutti i reparti chiave.")
+            else:
+                for w in weaknesses:
+                    sev = w.get('Severita', 'MEDIA')
+                    bg_color = {
+                        'CRITICA': '#450a0a',
+                        'ELEVATA': '#431407',
+                        'MEDIA': '#422006'
+                    }.get(sev, '#1e293b')
+                    border_color = {
+                        'CRITICA': '#ef4444',
+                        'ELEVATA': '#f97316',
+                        'MEDIA': '#eab308'
+                    }.get(sev, '#64748b')
+                    badge_color = {
+                        'CRITICA': '#ef4444',
+                        'ELEVATA': '#f97316',
+                        'MEDIA': '#eab308'
+                    }.get(sev, '#64748b')
+                    
+                    st.markdown(f"""
+                    <div style="background: {bg_color}; border-left: 5px solid {border_color}; border-radius: 8px; padding: 14px 18px; margin-bottom: 14px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                            <span style="font-weight: 700; font-size: 1.05rem; color: #f8fafc;">
+                                {w['Reparto']} ({w['Ruolo']}) — {w['Titolo']}
+                            </span>
+                            <span style="background: {badge_color}; color: white; padding: 3px 9px; border-radius: 12px; font-weight: 700; font-size: 0.75rem;">
+                                {sev}
+                            </span>
+                        </div>
+                        <p style="margin: 4px 0 8px 0; color: #cbd5e1; font-size: 0.92rem;">{w['Diagnosi']}</p>
+                        <div style="font-size: 0.88rem; color: #38bdf8; font-weight: 600;">
+                             Obiettivo di Mercato: {w['Obiettivo_Mercato']}
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+            # Punti di Forza
+            strengths = diag_res.get('Punti_di_Forza', [])
+            if strengths:
+                with st.expander("⭐ Punti di Forza & Certezze della Rosa", expanded=False):
+                    for s in strengths:
+                        st.markdown(f"-  **{s}**")
+                        
+            # Surplus Assets Table
+            st.markdown("---")
+            st.subheader(" Asset Spendibili sul Mercato (Esuberi di Fanta-Valore)")
+            st.caption(
+                "Calciatori di valore (o con segnale SELL-HIGH) che attualmente siedono in panchina o fanno parte "
+                "di reparti sovraffollati. Sono la tua moneta di scambio ideale da offrire per colmare i punti deboli sopra evidenziati."
+            )
+            surplus = diag_res.get('Surplus_Cedibili', [])
+            if surplus:
+                df_surplus = pd.DataFrame(surplus)
+                s_role_col = 'RuoloClassic' if is_classic and 'RuoloClassic' in df_surplus.columns else 'RuoloMantra'
+                st.dataframe(
+                    df_surplus[['Giocatore', s_role_col, 'Squadra', 'xFV', 'FM_Stagione', 'Signal', 'Motivo_Cessione']],
+                    width='stretch',
+                    hide_index=True
+                )
+            else:
+                st.info("Nessun calciatore di rilievo attualmente in esubero.")
+                
+            # Quota Coverage Matrix
+            with st.expander(f" Matrice di Copertura Ruoli {'Classic' if is_classic else 'Mantra'} (Quote Consigliate vs Attivi)", expanded=False):
+                matrix_rows = []
+                c_all = diag_res.get('Conteggio_Totale', {})
+                c_act = diag_res.get('Conteggio_Attivi', {})
+                is_two_striker_mod = diag_res.get('Is_Two_Striker_Modulo', False)
+                quotas_to_show = RECOMMENDED_QUOTAS_CLASSIC if is_classic else RECOMMENDED_QUOTAS
+                for role, q in quotas_to_show.items():
+                    act = c_act.get(role, 0)
+                    tot = c_all.get(role, 0)
+                    min_q = q['min_active']
+                    tgt = q['target']
+                    if role == 'Pc' and not is_classic and not is_two_striker_mod:
+                        min_q = 2
+                    
+                    if act < min_q:
+                        status = " Carente"
+                    elif act == min_q:
+                        status = " Al Minimo"
+                    elif act >= tgt + 2:
+                        status = " Esubero"
+                    else:
+                        status = " Coperto"
+                        
+                    matrix_rows.append({
+                        'Ruolo': role,
+                        'Descrizione': q['name'],
+                        'Attivi (Disponibili & Voto Sicuro)': act,
+                        'Totali in Rosa': tot,
+                        'Minimo Consigliato': min_q,
+                        'Target Ideale': tgt,
+                        'Stato Copertura': status
+                    })
+                st.dataframe(pd.DataFrame(matrix_rows), width='stretch', hide_index=True)
 
 # =============================================================
 # =============================================================
