@@ -62,6 +62,7 @@ from engine.league_manager import (
     create_new_league, delete_league, get_league_type, set_league_type,
     purge_team_and_league_session_state,
     find_latest_roster_export_file, auto_sync_league_rosters_from_downloads,
+    get_unconfirmed_zero_cost_loans,
     clear_loan_cache
 )
 from engine.understat_loader import sync_understat_metrics, get_understat_teams_metrics
@@ -3447,7 +3448,44 @@ with tab_esplora:
                 st.dataframe(df_league_summary, width='stretch', hide_index=True)
 
         loan_map_all, df_all_loans = build_loan_registry()
-        with st.expander(f" Registro Prestiti di Lega ({len(df_all_loans)} attivi)", expanded=(len(df_all_loans) > 0)):
+        unconfirmed_loans = get_unconfirmed_zero_cost_loans()
+        exp_title = f" Registro Prestiti di Lega ({len(df_all_loans)} attivi)"
+        if unconfirmed_loans:
+            exp_title += f" — ⚠️ {len(unconfirmed_loans)} da verificare"
+        with st.expander(exp_title, expanded=(len(df_all_loans) > 0 or len(unconfirmed_loans) > 0)):
+            if unconfirmed_loans and is_current_user_admin():
+                st.warning(
+                    f"⚠️ **Rilevati {len(unconfirmed_loans)} calciatori a Costo 0 da verificare nell'ultimo export Excel**\n\n"
+                    "Nel file delle rose compaiono calciatori a costo 0 non censiti nel registro prestiti ufficiale. "
+                    "Alcuni potrebbero essere prestiti attivi, mentre altri sono **prestiti già conclusi** lasciati a costo 0 sull'app. "
+                    "Specifica lo stato per ciascuno per allineare le rose:"
+                )
+                for u in unconfirmed_loans:
+                    c_u1, c_u2, c_u3, c_u4 = st.columns([1.8, 2.5, 1.2, 1.2])
+                    with c_u1:
+                        st.markdown(f"**{u['player_name']}** ({u['ruolo']})")
+                    with c_u2:
+                        st.caption(f"Cartellino: {u['owner_team']} ({u['cost']} cr) ➔ In rosa a costo 0 in: {u['borrower_team']}")
+                    with c_u3:
+                        if st.button("🟢 Attivo", key=f"btn_u_act_{u['player_name']}_{u['borrower_team']}", help="Conferma come prestito attualmente in corso", width='stretch'):
+                            ok, msg = add_or_update_loan(u['player_name'], u['owner_team'], u['borrower_team'], loan_fee=0)
+                            if ok:
+                                st.cache_data.clear()
+                                st.success(f"{u['player_name']} confermato come prestito attivo!")
+                                st.rerun()
+                            else:
+                                st.error(msg)
+                    with c_u4:
+                        if st.button("⚪ Concluso", key=f"btn_u_term_{u['player_name']}_{u['borrower_team']}", help="Segna come prestito concluso e ripulisci dalla rosa ricevente", width='stretch'):
+                            ok, msg = terminate_loan(u['player_name'], u['borrower_team'], owner_team=u['owner_team'])
+                            if ok:
+                                st.cache_data.clear()
+                                st.success(f"{u['player_name']} segnato come prestito concluso e ripulito!")
+                                st.rerun()
+                            else:
+                                st.error(msg)
+                st.markdown("---")
+
             if not df_all_loans.empty:
                 st.dataframe(
                     df_all_loans[['Calciatore', 'Ruolo', 'Squadra', 'Proprietario', 'In_Prestito_A', 'Costo_Asta', 'Tipo']],

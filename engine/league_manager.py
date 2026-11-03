@@ -1785,8 +1785,8 @@ def reconcile_rosters_with_loans(league_data, league_id=None, df_master=None):
                     b_p['Costo'] = fee
                     modified = True
 
-    # 3. Auto-discover duplicate appearances and cost 0 loans in raw files
-    known_pairs = {(str(l.get('player_name', '')).strip(), str(l.get('borrower_team', '')).strip()) for l in loans_list}
+    # 3. Handle duplicate appearances and Cost 0 players
+    known_pairs = {(str(l.get('player_name', '')).strip().lower(), str(l.get('borrower_team', '')).strip().lower()) for l in loans_list}
     all_player_apps = {}
     for t, pls in league_data.items():
         for p in pls:
@@ -1794,60 +1794,120 @@ def reconcile_rosters_with_loans(league_data, league_id=None, df_master=None):
             if pn:
                 all_player_apps.setdefault(pn, []).append((t, p.get('Costo', 0), p))
 
-    reg_modified = False
     for pn, apps in all_player_apps.items():
+        pn_lower = pn.lower()
         if len(apps) > 1:
             owner_entry = next((a for a in apps if a[1] > 0 and not a[2].get('InPrestito', False)), apps[0])
             for (t_cand, cost_cand, p_cand) in apps:
                 if t_cand != owner_entry[0]:
-                    if (pn, t_cand) in term_set:
-                        league_data[t_cand] = [p for p in league_data[t_cand] if not (p.get('Giocatore', '').strip() == pn and (p.get('Costo', 0) == 0 or p.get('InPrestito', False)))]
+                    t_cand_lower = t_cand.lower()
+                    if (pn_lower, t_cand_lower) in term_set:
+                        # Confirmed terminated loan: scrub from borrower team and restore owner
+                        league_data[t_cand] = [
+                            p for p in league_data[t_cand]
+                            if not (p.get('Giocatore', '').strip().lower() == pn_lower and (p.get('Costo', 0) == 0 or p.get('InPrestito', False)))
+                        ]
                         if owner_entry[2].get('Prestito_OUT', False):
                             owner_entry[2]['Prestito_OUT'] = False
                         modified = True
                         continue
 
-                    # Mark owner team entry as Prestito_OUT
-                    if not owner_entry[2].get('Prestito_OUT', False) or owner_entry[2].get('Controparte') != t_cand:
-                        owner_entry[2]['Prestito_OUT'] = True
-                        owner_entry[2]['InPrestito'] = False
-                        owner_entry[2]['Controparte'] = t_cand
-                        modified = True
+                    if (pn_lower, t_cand_lower) in known_pairs:
+                        # Confirmed active loan: enforce Prestito_OUT on owner and InPrestito on borrower
+                        if not owner_entry[2].get('Prestito_OUT', False) or owner_entry[2].get('Controparte') != t_cand:
+                            owner_entry[2]['Prestito_OUT'] = True
+                            owner_entry[2]['InPrestito'] = False
+                            owner_entry[2]['Controparte'] = t_cand
+                            modified = True
 
-                    # Mark borrower team entry as InPrestito
-                    if not p_cand.get('InPrestito', False) or p_cand.get('Prestito_OUT', False) or p_cand.get('Controparte') != owner_entry[0]:
-                        p_cand['InPrestito'] = True
+                        if not p_cand.get('InPrestito', False) or p_cand.get('Prestito_OUT', False) or p_cand.get('Controparte') != owner_entry[0]:
+                            p_cand['InPrestito'] = True
+                            p_cand['Prestito_OUT'] = False
+                            p_cand['Controparte'] = owner_entry[0]
+                            modified = True
+                    else:
+                        # Unconfirmed Cost 0 appearance (could be a concluded loan left at 0 in Excel):
+                        # DO NOT lock the owner!
+                        if owner_entry[2].get('Prestito_OUT', False):
+                            owner_entry[2]['Prestito_OUT'] = False
+                            modified = True
+                        # Mark borrower entry as unconfirmed / pending review (non schierabile)
+                        p_cand['InPrestito'] = False
                         p_cand['Prestito_OUT'] = False
+                        p_cand['Prestito_Da_Confermare'] = True
                         p_cand['Controparte'] = owner_entry[0]
-                        modified = True
-
-                    if (pn, t_cand) not in known_pairs:
-                        new_l = {
-                            'player_name': pn,
-                            'owner_team': owner_entry[0],
-                            'borrower_team': t_cand,
-                            'cost': owner_entry[1],
-                            'loan_fee': cost_cand,
-                            'status': 'active',
-                            'notes': 'Auto-rilevato da rose (costo 0)',
-                            'updated_at': datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                        }
-                        loans_list.append(new_l)
-                        known_pairs.add((pn, t_cand))
-                        reg_modified = True
         elif len(apps) == 1 and apps[0][1] == 0:
-            # Player appears in only one team at Cost 0 (e.g. loan where owner wasn't exported)
+            # Player appears in only one team at Cost 0
             p_single = apps[0][2]
-            if not p_single.get('InPrestito', False):
+            t_single = apps[0][0]
+            t_single_lower = t_single.lower()
+            if (pn_lower, t_single_lower) in known_pairs:
                 p_single['InPrestito'] = True
                 p_single['Prestito_OUT'] = False
+            elif (pn_lower, t_single_lower) in term_set:
+                league_data[t_single] = [
+                    p for p in league_data[t_single]
+                    if not (p.get('Giocatore', '').strip().lower() == pn_lower and p.get('Costo', 0) == 0)
+                ]
                 modified = True
-
-    if reg_modified:
-        registry['loans'] = loans_list
-        save_loans_registry(registry, lid)
+            else:
+                p_single['InPrestito'] = False
+                p_single['Prestito_Da_Confermare'] = True
 
     return modified, league_data
+
+
+def get_unconfirmed_zero_cost_loans(league_data=None, league_id=None):
+    """
+    Finds players appearing at Cost 0 in a team's roster who are neither
+    in active loans nor in terminated_loans in the league's loans_registry.json.
+    Returns list of dicts:
+      [{
+        'player_name': str,
+        'borrower_team': str,
+        'owner_team': str,
+        'cost': int,
+        'ruolo': str
+      }, ...]
+    """
+    lid = league_id or get_active_league_id()
+    if league_data is None:
+        league_data = load_league_rosters(lid)
+
+    registry = load_loans_registry(lid)
+    active_pairs = {(str(l.get('player_name', '')).strip().lower(), str(l.get('borrower_team', '')).strip().lower()) for l in registry.get('loans', [])}
+    term_pairs = {(str(t.get('player_name', '')).strip().lower(), str(t.get('borrower_team', '')).strip().lower()) for t in registry.get('terminated_loans', [])}
+
+    unconfirmed = []
+    for t_name, pls in league_data.items():
+        for p in pls:
+            if p.get('Costo') == 0:
+                pn = str(p.get('Giocatore', '')).strip()
+                if not pn or pn.lower() in ['totale', 'nan']:
+                    continue
+                key = (pn.lower(), t_name.lower())
+                if key in active_pairs or key in term_pairs:
+                    continue
+                # Search owner in other teams
+                owner_team = None
+                owner_cost = 0
+                for t2, pls2 in league_data.items():
+                    if t2 != t_name:
+                        for p2 in pls2:
+                            if str(p2.get('Giocatore', '')).strip().lower() == pn.lower() and p2.get('Costo', 0) > 0:
+                                owner_team = t2
+                                owner_cost = int(p2.get('Costo', 0))
+                                break
+                        if owner_team:
+                            break
+                unconfirmed.append({
+                    'player_name': pn,
+                    'borrower_team': t_name,
+                    'owner_team': owner_team or 'Sconosciuta',
+                    'cost': owner_cost,
+                    'ruolo': p.get('RuoloMantra') or p.get('RuoloClassic') or '-'
+                })
+    return unconfirmed
 
 
 def terminate_loan(player_name, borrower_team, owner_team=None, league_id=None):
@@ -2245,6 +2305,11 @@ def get_team_roster_df(team_name, league_data_or_master=None, df_master=None):
             badge_prestito = loan_info['Badge_Prestito']
             dettaglio_prestito = loan_info['Dettaglio_Prestito']
             schierabile = loan_info['Schierabile'] and not is_out
+        elif p.get('Prestito_Da_Confermare') or (cost == 0 and not loan_info):
+            stato_prestito = 'Prestito da Chiarire / Concluso'
+            badge_prestito = '⚪ PRESTITO CONCLUSO / DA CHIARIRE'
+            dettaglio_prestito = f"A costo 0 nel file ma non confermato nel registro prestiti attivi"
+            schierabile = False
         else:
             stato_prestito = 'Proprietà'
             badge_prestito = '-'
@@ -2259,6 +2324,11 @@ def get_team_roster_df(team_name, league_data_or_master=None, df_master=None):
             disp_status = 'Fuori Serie A'
             badge_disp = '🔴 DA SVINCOLARE (*)'
             det_disp = 'Fuori dalla Serie A (*) — da svincolare al prossimo mercato'
+            tit_cat = 'Non Schierabile'
+        elif p.get('Prestito_Da_Confermare') or (cost == 0 and not loan_info):
+            disp_status = 'Prestito da Chiarire / Concluso'
+            badge_disp = '⚪ PRESTITO CONCLUSO / DA CHIARIRE'
+            det_disp = 'Prestito non confermato o già concluso'
             tit_cat = 'Non Schierabile'
         elif not schierabile:
             badge_disp = '🔴 PRESTITO OUT'
