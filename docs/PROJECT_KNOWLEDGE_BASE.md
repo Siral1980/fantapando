@@ -69,10 +69,12 @@ Registro persistente dei prestiti tra leghe:
 - **Ghost Loan Suppression**: Rimozione e filtraggio automatico dei prestiti fantasma o duplicati.
 - **Funzione di Richiamo (Recall)**: Ripristina istantaneamente il giocatore nella rosa proprietaria.
 
-### `engine/sync_manager.py` & `engine/data_loader.py`
-Gestione dell'aggiornamento dati e persistenza:
+### `engine/sync_manager.py` & `engine/league_manager.py`
+Gestione dell'aggiornamento dati, persistenza e smart auto-sync rose:
 - **Auto-Check ogni 12 Ore**: All'avvio dell'app verifica l'orario dell'ultimo sync; se > 12 ore, avvia la sincronizzazione automatica.
-- **Scraping Fantacalcio & Understat**: Aggiornamento rose, voti reali (fino alla 10ª giornata e oltre) e metriche avanzate (xG, xA).
+- **Smart Roster Auto-Detection da Downloads**: Al clic sul tasto **Sync** (o all'avvio), scansiona la cartella `Downloads` dell'utente alla ricerca di nuovi file export scaricati da Fantacalcio.it (es. `lega-piombo-fuso-rosters-*.xlsx`, `fantarino-*-rosters-*.xlsx`). Se rilevato un file più recente, aggiorna automaticamente le rose di tutte le squadre, preserva i prestiti attivi, aggiorna la squadra utente e archivia la copia di sicurezza.
+- **Scraping Fantacalcio & Understat**: Aggiornamento probabili formazioni, indisponibili/squalificati (Sky, Fantacalcio, Gazzetta), voti reali e metriche avanzate (xG, xA).
+- **Tab 5 Monitor Sync**: Visualizzazione dello stato dei file nei Download, pulsante di re-importazione forzata e drag & drop alternativo rapido.
 - **Risoluzione Percorsi Relativi**: Supporto completo Cross-PC senza percorsi assoluti hardcoded (`C:\Users\...`).
 
 ### `engine/auth_manager.py`
