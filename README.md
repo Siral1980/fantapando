@@ -1,4 +1,4 @@
-# 🟢 FantaMantra AI Manager
+# 🟢 FantaPandoAssistant
 
 Applicazione analitica e gestionale avanzata per leghe Fantacalcio Classic e Mantra, con ottimizzatore di formazione, valutazione scambi, D-Factor, integrazione statistiche Fantacalcio.it e Understat (xG, xA, PSxG).
 

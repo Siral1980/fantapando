@@ -24,8 +24,10 @@ ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR = os.path.join(ROOT_DIR, "data")
 USERS_DB_FILE = os.path.join(DATA_DIR, "users_db.json")
 
-PERSISTENT_STORAGE_DIR = os.path.join(os.path.expanduser("~"), ".fantamantra_storage")
+PERSISTENT_STORAGE_DIR = os.path.join(os.path.expanduser("~"), ".fantapando_storage")
+LEGACY_PERSISTENT_STORAGE_DIR = os.path.join(os.path.expanduser("~"), ".fantamantra_storage")
 PERSISTENT_USERS_DB_FILE = os.path.join(PERSISTENT_STORAGE_DIR, "users_db.json")
+LEGACY_PERSISTENT_USERS_DB_FILE = os.path.join(LEGACY_PERSISTENT_STORAGE_DIR, "users_db.json")
 GITHUB_REPO = "Siral1980/fantapando"
 
 
@@ -160,7 +162,7 @@ def _push_file_via_github_api(rel_path: str, content_bytes: bytes, commit_msg: s
         "Authorization": f"Bearer {token}",
         "Accept": "application/vnd.github+json",
         "Content-Type": "application/json",
-        "User-Agent": "FantaMantra-AI"
+        "User-Agent": "FantaPandoAssistant"
     }
 
     for branch in ("master", "dev"):
@@ -288,6 +290,13 @@ def load_users_db() -> dict:
 
     repo_db = _read_json_safe(USERS_DB_FILE)
     pers_db = _read_json_safe(PERSISTENT_USERS_DB_FILE)
+    if not pers_db and os.path.exists(LEGACY_PERSISTENT_USERS_DB_FILE):
+        pers_db = _read_json_safe(LEGACY_PERSISTENT_USERS_DB_FILE)
+        if pers_db:
+            try:
+                shutil.copy2(LEGACY_PERSISTENT_USERS_DB_FILE, PERSISTENT_USERS_DB_FILE)
+            except Exception:
+                pass
 
     if repo_db or pers_db:
         merged_users = {}

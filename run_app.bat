@@ -1,17 +1,17 @@
 @echo off
-title FantaMantra AI Manager
+title FantaPandoAssistant
 cd /d "%~dp0"
 
 echo ========================================================
-echo       FantaMantra AI Manager - Avvio Applicazione
+echo       FantaPandoAssistant - Avvio Applicazione
 echo ========================================================
 echo.
 
 :: 1. Attivazione ambiente virtuale se presente (locale o su disco locale se eseguito da Google Drive)
 if exist "venv\Scripts\activate.bat" (
     call venv\Scripts\activate.bat
-) else if exist "%LOCALAPPDATA%\FantaMantra\venv\Scripts\activate.bat" (
-    call "%LOCALAPPDATA%\FantaMantra\venv\Scripts\activate.bat"
+) else if exist "%LOCALAPPDATA%\FantaPandoAssistant\venv\Scripts\activate.bat" (
+    call "%LOCALAPPDATA%\FantaPandoAssistant\venv\Scripts\activate.bat"
 )
 
 :: 2. Verifica e download automatico aggiornamenti cloud (Cross-PC)

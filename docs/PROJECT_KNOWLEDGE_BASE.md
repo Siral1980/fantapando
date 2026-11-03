@@ -1,4 +1,4 @@
-# FantaMantra AI — Master Project Knowledge Base & Context Dossier
+# FantaPandoAssistant — Master Project Knowledge Base & Context Dossier
 
 > **Dossier di Continuità Progetto e Conoscenza Chat**  
 > Questo documento racchiude l'intera memoria storica, architetturale e decisionale della conversazione Antigravity (`b7e95405-14b5-4c71-900a-ba94688b2f9a`).  
@@ -8,7 +8,7 @@
 
 ## 1. Panoramica del Progetto
 
-- **Nome**: FantaMantra AI Cockpit
+- **Nome**: FantaPandoAssistant Cockpit
 - **Framework**: Streamlit, Pandas, NumPy, PIL / Matplotlib, BeautifulSoup4 / Requests
 - **Repository Git**: `https://github.com/Delu96/fantapando`
 - **Branch Attivi**:
@@ -114,7 +114,7 @@ Gestione autenticazione Git e sincronizzazione remota:
    - Doppio clic su `run_app.bat` (o `./run_app.sh`).
 4. Se utilizzi un assistente AI (Antigravity, Cursor, ecc.) sul nuovo PC:
    - Apri una nuova chat e digita:
-     > *"Sto lavorando a FantaMantra AI. Leggi `@docs/PROJECT_KNOWLEDGE_BASE.md` e dimmi lo stato del progetto."*
+     > *"Sto lavorando a FantaPandoAssistant. Leggi `@docs/PROJECT_KNOWLEDGE_BASE.md` e dimmi lo stato del progetto."*
    - L'AI acquisirà immediatamente l'intero contesto operativo!
 
 ### Opzione B: Esportare la Trascrizione della Chat nel Repo

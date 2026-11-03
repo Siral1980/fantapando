@@ -1,6 +1,6 @@
 @echo off
 echo ========================================================
-echo   FantaMantra AI - Ripristino Sessione Chat Antigravity
+echo   FantaPandoAssistant - Ripristino Sessione Chat Antigravity
 echo ========================================================
 echo.
 python "%~dp0restore_chat_session.py"

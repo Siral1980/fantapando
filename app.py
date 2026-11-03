@@ -2,7 +2,7 @@ from engine.pitch_component import render_tactical_pitch
 import html
 import urllib.parse
 """
-FantaMantra AI - Applicazione di Gestione Rosa, Formazioni e Valutatore Scambi.
+FantaPandoAssistant - Applicazione di Gestione Rosa, Formazioni e Valutatore Scambi.
 Combina statistiche del fantacalcio e metriche reali dei calciatori (xG, xA, tiri, passaggi, duelli).
 """
 
@@ -93,7 +93,7 @@ from engine.auth_manager import (
 
 # Page configuration
 st.set_page_config(
-    page_title="FantaMantra AI Manager",
+    page_title="FantaPandoAssistant",
     page_icon="🟢",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -241,7 +241,7 @@ is_setup_mode = st.session_state.get('setup_mode', not has_config)
 if is_setup_mode:
     st.markdown("""
     <div style="text-align: center; margin-top: 15px; margin-bottom: 25px;">
-        <h1 style="color: #38bdf8; font-size: 2.4rem; margin-bottom: 5px;"> FantaMantra AI</h1>
+        <h1 style="color: #38bdf8; font-size: 2.4rem; margin-bottom: 5px;"> FantaPandoAssistant</h1>
         <p style="color: #94a3b8; font-size: 1.15rem;">Configurazione Iniziale: Carica la tua Lega</p>
     </div>
     """, unsafe_allow_html=True)
@@ -312,7 +312,7 @@ if is_setup_mode:
                 st.dataframe(df_team_preview[preview_cols].head(8), width='stretch', hide_index=True)
                 
             st.markdown("<br>", unsafe_allow_html=True)
-            if st.button(" Conferma e Accedi al FantaMantra Manager", type="primary", width='stretch'):
+            if st.button(" Conferma e Accedi a FantaPandoAssistant", type="primary", width='stretch'):
                 set_active_my_team(selected_team)
                 sync_user_roster_from_league(parsed_league, selected_team)
                 st.session_state['setup_mode'] = False
@@ -324,7 +324,7 @@ if is_setup_mode:
 # -------------------------------------------------------------
 # SIDEBAR
 # -------------------------------------------------------------
-st.sidebar.title(" FantaMantra AI")
+st.sidebar.title(" FantaPandoAssistant")
 st.sidebar.caption("Statistical & Tactical Engine con D-Factor")
 
 # User Badge & Logout / Switch User

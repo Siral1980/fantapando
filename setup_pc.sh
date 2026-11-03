@@ -5,7 +5,7 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 cd "$DIR"
 
 echo "========================================================"
-echo "   Configurazione FantaMantra AI Manager per questo PC"
+echo "   Configurazione FantaPandoAssistant per questo PC"
 echo "========================================================"
 echo ""
 

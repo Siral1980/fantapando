@@ -1,4 +1,4 @@
-# FantaMantra AI — Antigravity Project Instructions & Context (GEMINI.md)
+# FantaPandoAssistant — Antigravity Project Instructions & Context (GEMINI.md)
 
 Questo file definisce le direttive operative, l'architettura tecnica e le regole di business per qualsiasi agente AI (Google Antigravity, Gemini Code Assist) che opera su questo repository.
 

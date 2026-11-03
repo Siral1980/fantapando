@@ -1,9 +1,9 @@
 @echo off
-title Configurazione FantaMantra AI per Nuovo PC
+title Configurazione FantaPandoAssistant per Nuovo PC
 cd /d "%~dp0"
 
 echo ========================================================
-echo   Configurazione FantaMantra AI Manager per questo PC
+echo   Configurazione FantaPandoAssistant per questo PC
 echo ========================================================
 echo.
 
@@ -19,9 +19,9 @@ if %ERRORLEVEL% NEQ 0 (
 set "VENV_DIR=venv"
 if /i "%~d0"=="G:" (
     echo [INFO] Rilevata esecuzione da Google Drive (%~d0).
-    echo        L'ambiente virtuale verra salvato in locale (%LOCALAPPDATA%\FantaMantra\venv)
+    echo        L'ambiente virtuale verra salvato in locale (%LOCALAPPDATA%\FantaPandoAssistant\venv)
     echo        per mantenere Google Drive ultra-veloce e leggero.
-    set "VENV_DIR=%LOCALAPPDATA%\FantaMantra\venv"
+    set "VENV_DIR=%LOCALAPPDATA%\FantaPandoAssistant\venv"
 )
 
 echo [1/3] Creazione ambiente virtuale locale...
