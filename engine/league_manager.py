@@ -2093,14 +2093,14 @@ def render_league_upload_section(key_prefix, df_master, label_title="🟢 Carica
                     )
 
                     new_lg_custom_name = ""
-                    if scope_choice.startswith(""):
+                    if "NUOVA LEGA" in scope_choice:
                         new_lg_custom_name = st.text_input(
                             "Nome della nuova lega da creare:",
                             value=f"Lega {getattr(uploaded_file, 'name', 'Nuova').split('.')[0].replace('_', ' ').title()}",
                             key=f"{key_prefix}_new_league_name_input"
                         )
 
-                    current_ltype = get_league_type()
+                    current_ltype = get_league_type(active_lid)
                     regolamento_choice = st.radio(
                         "Tipo di Regolamento per questa lega:",
                         options=["Mantra (10 moduli tattici, ruoli specifici)", "Classic (P/D/C/A standard, moduli tradizionali)"],
@@ -2132,7 +2132,7 @@ def render_league_upload_section(key_prefix, df_master, label_title="🟢 Carica
                     saved_sig_key = f"{key_prefix}_saved_file_sig"
                     if apply_btn:
                         fname = getattr(uploaded_file, 'name', 'File_Rose_Lega')
-                        if scope_choice.startswith(""):
+                        if "Solo per questa mia sessione" in scope_choice:
                             st.session_state['custom_league_data'] = parsed_data
                             set_active_my_team(target_team, persist_disk=False)
                             st.session_state['custom_league_meta'] = {
@@ -2142,29 +2142,33 @@ def render_league_upload_section(key_prefix, df_master, label_title="🟢 Carica
                             }
                             sync_user_roster_from_league(parsed_data, target_team)
                             st.session_state[saved_sig_key] = file_sig
-                            st.toast(f"Lega ospite attivata per questa sessione!", )
+                            st.toast("Lega ospite attivata per questa sessione!")
                             st.rerun()
-                        elif scope_choice.startswith(""):
+                        elif "NUOVA LEGA" in scope_choice:
                             nl_name = new_lg_custom_name.strip() or "Nuova Lega"
                             ok, new_lid, msg = create_new_league(nl_name, parsed_data, target_team, league_type=chosen_type)
                             if ok:
                                 set_active_league_id(new_lid, persist_disk=True)
                                 set_active_my_team(target_team, persist_disk=True, league_id=new_lid)
                                 sync_user_roster_from_league(parsed_data, target_team, league_id=new_lid)
+                                clear_loan_cache()
                                 st.session_state[saved_sig_key] = file_sig
-                                st.toast(f"{msg} ({chosen_type.upper()})", )
+                                st.toast(f"{msg} ({chosen_type.upper()})")
                                 st.success(f"Nuova lega '{nl_name}' ({chosen_type.upper()}) creata con successo! Squadra attiva: **{target_team}**.")
                                 st.rerun()
                             else:
                                 st.error(msg)
                         else:
-                            save_league_rosters(parsed_data)
-                            set_league_type(chosen_type, persist_disk=True)
-                            save_league_metadata(source=f"File caricato ({fname})", filename=fname)
-                            set_active_my_team(target_team, persist_disk=True)
-                            sync_user_roster_from_league(parsed_data, target_team)
+                            # Aggiornamento PERMANENTE su disco della lega attiva
+                            save_league_rosters(parsed_data, league_id=active_lid)
+                            set_league_type(chosen_type, persist_disk=True, league_id=active_lid)
+                            save_league_metadata(source=f"File caricato ({fname})", filename=fname, league_id=active_lid)
+                            set_active_my_team(target_team, persist_disk=True, league_id=active_lid)
+                            sync_user_roster_from_league(parsed_data, target_team, league_id=active_lid)
+                            clear_loan_cache()
+                            st.session_state.pop('custom_league_data', None)
                             st.session_state[saved_sig_key] = file_sig
-                            st.toast(f"Lega '{curr_league_name}' aggiornata con successo ({chosen_type.upper()})!", )
+                            st.toast(f"🟢 Lega '{curr_league_name}' aggiornata e salvata con successo ({chosen_type.upper()})!")
                             st.rerun()
                         
                     # Preview of the chosen team
