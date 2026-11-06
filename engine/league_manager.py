@@ -1030,13 +1030,16 @@ def save_league_rosters(league_data, league_id=None):
     paths = get_league_paths(league_id)
     with open(paths['rosters'], 'w', encoding='utf-8') as f:
         json.dump(league_data, f, indent=2, ensure_ascii=False)
-    # Mirror to root for compatibility
+    # Mirror to root for compatibility only if it is the currently active league
     try:
-        os.makedirs(DATA_DIR, exist_ok=True)
-        with open(ROOT_LEAGUE_FILE, 'w', encoding='utf-8') as f:
-            json.dump(league_data, f, indent=2, ensure_ascii=False)
-        from engine.auth_manager import sync_users_and_leagues_to_github
-        sync_users_and_leagues_to_github(background=True)
+        active_lid = get_active_league_id()
+        target_lid = league_id or active_lid
+        if target_lid == active_lid:
+            os.makedirs(DATA_DIR, exist_ok=True)
+            with open(ROOT_LEAGUE_FILE, 'w', encoding='utf-8') as f:
+                json.dump(league_data, f, indent=2, ensure_ascii=False)
+            from engine.auth_manager import sync_users_and_leagues_to_github
+            sync_users_and_leagues_to_github(background=True)
     except Exception:
         pass
     return league_data
@@ -1250,7 +1253,7 @@ def auto_sync_league_rosters_from_downloads(league_id=None, df_master=None, forc
         archive_path = os.path.join(os.path.dirname(paths['rosters']), archive_name)
         try:
             shutil.copy2(fpath, archive_path)
-            if archive_name.endswith('.xlsx'):
+            if lid == get_active_league_id() and archive_name.endswith('.xlsx'):
                 shutil.copy2(fpath, os.path.join(DATA_DIR, "lista_calciatori_mantra_lega_attuale.xlsx"))
         except Exception:
             pass
@@ -2117,8 +2120,9 @@ def build_loan_registry(league_data=None, league_id=None):
         try:
             with open(paths['rosters'], 'w', encoding='utf-8') as f:
                 json.dump(league_data, f, indent=2, ensure_ascii=False)
-            with open(ROOT_LEAGUE_FILE, 'w', encoding='utf-8') as f:
-                json.dump(league_data, f, indent=2, ensure_ascii=False)
+            if lid == get_active_league_id():
+                with open(ROOT_LEAGUE_FILE, 'w', encoding='utf-8') as f:
+                    json.dump(league_data, f, indent=2, ensure_ascii=False)
         except Exception:
             pass
 
@@ -2249,29 +2253,30 @@ def get_out_of_serie_a_summary(league_data=None):
     return pd.DataFrame(columns=['Calciatore', 'NomeGrezzo', 'Squadra_Lega', 'Ruolo', 'Costo_Asta', 'Stato', 'Consiglio'])
 
 
-def get_team_roster_df(team_name, league_data_or_master=None, df_master=None):
+def get_team_roster_df(team_name, league_data_or_master=None, df_master=None, league_id=None):
     """
     Returns a enriched DataFrame for a specific team, incorporating loan status and out-of-Serie A flags.
     Accepts (team_name, df_master), (team_name, league_data, df_master), or (league_data, team_name, df_master).
     """
+    lid = league_id or get_active_league_id()
     if isinstance(team_name, dict) and isinstance(league_data_or_master, str):
         team_name, league_data_or_master = league_data_or_master, team_name
 
     if df_master is None:
         if isinstance(league_data_or_master, pd.DataFrame):
             df_master = league_data_or_master
-            league_data = load_league_rosters()
+            league_data = load_league_rosters(lid)
         else:
-            league_data = league_data_or_master if isinstance(league_data_or_master, dict) else load_league_rosters()
+            league_data = league_data_or_master if isinstance(league_data_or_master, dict) else load_league_rosters(lid)
             df_master = pd.DataFrame()
     else:
-        league_data = league_data_or_master if isinstance(league_data_or_master, dict) else load_league_rosters()
+        league_data = league_data_or_master if isinstance(league_data_or_master, dict) else load_league_rosters(lid)
 
     if not league_data or team_name not in league_data:
         return pd.DataFrame()
 
     players = league_data[team_name]
-    loan_map, _ = build_loan_registry(league_data)
+    loan_map, _ = build_loan_registry(league_data, league_id=lid)
 
     stats_map = {}
     if df_master is not None and not df_master.empty and 'Giocatore' in df_master.columns:

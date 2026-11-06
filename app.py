@@ -433,9 +433,9 @@ else:
 # -------------------------------------------------------------
 # ACTIVE SQUAD & ROSTER RESOLUTION
 # -------------------------------------------------------------
-league_dict = load_league_rosters()
+league_dict = load_league_rosters(league_id=active_league)
 league_teams = list(league_dict.keys()) if league_dict else []
-current_active_team = get_active_my_team()
+current_active_team = get_active_my_team(league_id=active_league)
 
 if league_teams:
     st.sidebar.markdown('---')
@@ -1581,7 +1581,7 @@ with tab_rosa:
         st.warning(f" **Calciatori fuori dalla Serie A da svincolare (+{svincoli_tot_cr} cr recuperabili):** {out_names}")
 
     # 2. Compact Collapsible Loan Management
-    cur_team_name = get_active_my_team()
+    cur_team_name = get_active_my_team(league_id=active_league)
     with st.expander(f" Accordi di Prestito della Tua Rosa ({len(loans_in)} IN, {len(loans_out)} OUT)", expanded=(not loans_in.empty or not loans_out.empty)):
         col_l1, col_l2 = st.columns(2)
         with col_l1:
@@ -1628,7 +1628,7 @@ with tab_rosa:
             q_l_type = st.radio("Tipo di operazione:", options=["🔴 Concedi tuo calciatore in prestito (Prestito OUT)", "🟢 Prendi calciatore in prestito da altra squadra (Prestito IN)"], horizontal=True, key="quick_loan_type_t2")
             q_c1, q_c2, q_c3 = st.columns([1.5, 1.5, 1])
             all_l_teams = [t for t in league_teams if t != cur_team_name]
-            all_rosters_dict = load_league_rosters()
+            all_rosters_dict = load_league_rosters(league_id=active_league)
             if "Concedi" in q_l_type:
                 with q_c1:
                     my_avail_out = sorted([p['Giocatore'] for p in all_rosters_dict.get(cur_team_name, []) if p.get('Costo', 0) > 0 and not loans_out['Giocatore'].isin([p['Giocatore']]).any()])
@@ -1816,7 +1816,7 @@ with tab_scambi:
 
         give_selection = []
         receive_selection = []
-        my_team = get_active_my_team()
+        my_team = get_active_my_team(league_id=active_league)
 
         # Row 1: Mode selector + Opponent selector (compact & aligned)
         if league_teams:
@@ -1851,7 +1851,7 @@ with tab_scambi:
 
         if trade_mode == " Trattativa di Lega (Inter-Squadra)" and league_teams and selected_opp:
             with col_sc1:
-                my_team_df = get_team_roster_df(my_team, df_master)
+                my_team_df = get_team_roster_df(my_team, df_master, league_id=active_league)
                 # Exclude borrowed players and players on loan OUT or to release from tradeable give list
                 my_mask = pd.Series(True, index=my_team_df.index)
                 if 'InPrestito' in my_team_df.columns:
@@ -1877,7 +1877,7 @@ with tab_scambi:
                     placeholder="Seleziona calciatore/i da cedere..."
                 )
             with col_sc2:
-                opp_team_df = get_team_roster_df(selected_opp, df_master)
+                opp_team_df = get_team_roster_df(selected_opp, df_master, league_id=active_league)
                 # Exclude borrowed players and players on loan OUT or to release from opponent receive list
                 opp_mask = pd.Series(True, index=opp_team_df.index)
                 if 'InPrestito' in opp_team_df.columns:
@@ -2385,7 +2385,7 @@ with tab_scambi:
             "la qualità media e la copertura del D-Factor per evidenziare rischi di squilibrio tattico."
         )
         
-        my_team = get_active_my_team()
+        my_team = get_active_my_team(league_id=active_league)
         diag_teams = league_teams if league_teams else [my_team]
         col_sel_d1, col_sel_d2 = st.columns([2, 1])
         with col_sel_d1:
@@ -2639,8 +2639,8 @@ with tab_esplora:
                 "Calciatori nelle rose dei tuoi avversari che stanno creando molto più di quanto raccolto finora (**xG/xA superiori ai bonus reali**). "
                 "Ideali da chiedere in uno scambio prima che si sblocchino."
             )
-            my_team = get_active_my_team()
-            league_rosters_dict = load_league_rosters()
+            my_team = get_active_my_team(league_id=active_league)
+            league_rosters_dict = load_league_rosters(league_id=active_league)
     
             if not league_rosters_dict:
                 st.info("Nessuna rosa di lega caricata.")
@@ -2649,7 +2649,7 @@ with tab_esplora:
                 for t_name, p_list in league_rosters_dict.items():
                     if t_name == my_team:
                         continue
-                    df_t = get_team_roster_df(t_name, df_master)
+                    df_t = get_team_roster_df(t_name, df_master, league_id=active_league)
                     for _, r in df_t.iterrows():
                         if r.get('InPrestito', False) or r.get('Costo', 1) == 0:
                             continue
@@ -2868,7 +2868,7 @@ with tab_esplora:
             index=cur_insp_idx,
             key=f"inspect_team_select_{current_active_team}"
         )
-        df_inspect = get_team_roster_df(selected_inspect_team, df_master)
+        df_inspect = get_team_roster_df(selected_inspect_team, df_master, league_id=active_league)
         if not df_inspect.empty:
             c_i1, c_i2, c_i3, c_i4 = st.columns(4)
             c_i1.metric("Giocatori in Rosa", len(df_inspect))
@@ -2983,7 +2983,7 @@ with tab_esplora:
                 with m_col2:
                     st.markdown("##### Registra Nuovo Prestito Manuale")
                     owner_team_new = st.selectbox("Squadra Proprietaria:", options=league_teams, key="new_loan_owner_tab4")
-                    all_rosters_dict = load_league_rosters()
+                    all_rosters_dict = load_league_rosters(league_id=active_league)
                     avail_owner_players = sorted([
                         p['Giocatore'] for p in all_rosters_dict.get(owner_team_new, []) 
                         if p.get('Costo', 0) > 0 and loan_map_all.get((owner_team_new, p['Giocatore']), {}).get('Stato_Prestito') != 'Prestito OUT'
