@@ -88,22 +88,6 @@
       "cost": 20,
       "loan_fee": 0,
       "status": "active"
-    },
-    {
-      "player_name": "Milla",
-      "owner_team": "Tonny Rio Malen by Pedony",
-      "borrower_team": "La Joya",
-      "cost": 16,
-      "loan_fee": 0,
-      "status": "active"
-    },
-    {
-      "player_name": "Kaiki",
-      "owner_team": "La Joya",
-      "borrower_team": "Tonny Rio Malen by Pedony",
-      "cost": 23,
-      "loan_fee": 0,
-      "status": "active"
     }
   ],
   "terminated_loans": [
@@ -156,6 +140,18 @@
       "player_name": "Zalewski",
       "owner_team": "Lestofanti FC",
       "borrower_team": "BORTETA FC"
+    },
+    {
+      "player_name": "Milla",
+      "owner_team": "Tonny Rio Malen by Pedony",
+      "borrower_team": "La Joya",
+      "terminated_at": "2026-11-23 20:27:34"
+    },
+    {
+      "player_name": "Kaiki",
+      "owner_team": "La Joya",
+      "borrower_team": "Tonny Rio Malen by Pedony",
+      "terminated_at": "2026-11-23 20:27:34"
     }
   ],
   "last_updated": "2026-11-03 14:39:54"
