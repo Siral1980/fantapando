@@ -465,7 +465,7 @@ if league_dict and current_active_team in league_dict:
     league_players = [p['Giocatore'] for p in league_dict[current_active_team]]
     user_squad_names = league_players
 else:
-    user_squad_names = load_user_roster()
+    user_squad_names = load_user_roster(league_id=active_league)
 
 # Live lineups and injuries are loaded once from local disk cache, updated via 12h cycle or button
 if '_live_lineups_initialized' not in st.session_state:
@@ -476,7 +476,7 @@ if '_live_lineups_initialized' not in st.session_state:
     st.session_state['_live_lineups_initialized'] = True
 
 # Top-level calculation of df_my_roster so all tabs immediately inherit the active team
-df_my_roster = get_roster_dataframe(df_master, user_squad_names)
+df_my_roster = get_roster_dataframe(df_master, user_squad_names, league_id=active_league)
 
 # -------------------------------------------------------------
 # MATCHDAY SELECTOR & LIVE SYNC WIDGET IN SIDEBAR

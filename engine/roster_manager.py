@@ -194,14 +194,20 @@ def remove_player_from_roster(player_name, league_id=None):
     return current
 
 
-def get_roster_dataframe(df_master, player_names=None):
+def get_roster_dataframe(df_master, player_names=None, league_id=None):
     """
     Returns the subset of df_master corresponding to user's squad.
     Enriches with loan status, out-of-Serie-A asterisks (*) from the official league data,
     injuries/suspensions, and live Probable Starter vs Probable Bench distinction.
     """
+    try:
+        from engine.league_manager import get_active_league_id
+        lid = league_id or get_active_league_id()
+    except Exception:
+        lid = league_id
+
     if player_names is None:
-        player_names = load_user_roster()
+        player_names = load_user_roster(league_id=lid)
 
     raw_star_names = {str(p).replace('*', '').strip() for p in player_names if '*' in str(p)}
     clean_targets = [str(p).replace('*', '').strip() for p in player_names]
@@ -210,8 +216,8 @@ def get_roster_dataframe(df_master, player_names=None):
     # Enrich with League & Loan info if available
     try:
         from engine.league_manager import build_loan_registry, get_active_my_team, load_league_rosters
-        my_team = get_active_my_team()
-        league = load_league_rosters()
+        my_team = get_active_my_team(league_id=lid)
+        league = load_league_rosters(league_id=lid)
 
         costs = {}
         stars = {g: True for g in raw_star_names}
@@ -274,23 +280,27 @@ def get_roster_dataframe(df_master, player_names=None):
         df_squad['FuoriSerieA'] = df_squad['Giocatore'].map(stars).fillna(False).astype(bool)
         df_squad['NomeGrezzo'] = [raw_names_map.get(g, g) for g in df_squad['Giocatore']]
 
-        loan_map, _ = build_loan_registry(league)
-        df_squad['Stato_Prestito'] = [loan_map.get((my_team, g), {}).get('Stato_Prestito', 'Proprietà') for g in df_squad['Giocatore']]
-        df_squad['Badge_Prestito'] = [loan_map.get((my_team, g), {}).get('Badge_Prestito', 'PROPRIETÀ') for g in df_squad['Giocatore']]
-        df_squad['Dettaglio_Prestito'] = [loan_map.get((my_team, g), {}).get('Dettaglio_Prestito', 'Cartellino di proprietà') for g in df_squad['Giocatore']]
-        df_squad['Controparte_Prestito'] = [loan_map.get((my_team, g), {}).get('Controparte', '-') for g in df_squad['Giocatore']]
+        loan_map, _ = build_loan_registry(league, league_id=lid)
+
+        def _get_loan_info(g_name):
+            return loan_map.get((my_team, g_name)) or loan_map.get((str(my_team).strip().lower(), str(g_name).strip().lower()), {})
+
+        df_squad['Stato_Prestito'] = [_get_loan_info(g).get('Stato_Prestito', 'Proprietà') for g in df_squad['Giocatore']]
+        df_squad['Badge_Prestito'] = [_get_loan_info(g).get('Badge_Prestito', 'PROPRIETÀ') for g in df_squad['Giocatore']]
+        df_squad['Dettaglio_Prestito'] = [_get_loan_info(g).get('Dettaglio_Prestito', 'Cartellino di proprietà') for g in df_squad['Giocatore']]
+        df_squad['Controparte_Prestito'] = [_get_loan_info(g).get('Controparte', '-') for g in df_squad['Giocatore']]
         df_squad['Controparte'] = df_squad['Controparte_Prestito']
-        df_squad['InPrestito'] = [bool(loan_map.get((my_team, g), {}).get('Stato_Prestito') == 'Prestito IN') for g in df_squad['Giocatore']]
-        df_squad['Prestito_OUT'] = [bool(loan_map.get((my_team, g), {}).get('Stato_Prestito') == 'Prestito OUT') for g in df_squad['Giocatore']]
+        df_squad['InPrestito'] = [bool(_get_loan_info(g).get('Stato_Prestito') == 'Prestito IN') for g in df_squad['Giocatore']]
+        df_squad['Prestito_OUT'] = [bool(_get_loan_info(g).get('Stato_Prestito') == 'Prestito OUT') for g in df_squad['Giocatore']]
 
         da_svincolare_list = [
-            bool(stars.get(g, False) or loan_map.get((my_team, g), {}).get('Da_Svincolare', False))
+            bool(stars.get(g, False) or _get_loan_info(g).get('Da_Svincolare', False))
             for g in df_squad['Giocatore']
         ]
         df_squad['Da_Svincolare'] = da_svincolare_list
         df_squad['FuoriSerieA'] = da_svincolare_list
         df_squad['Schierabile'] = [
-            bool(loan_map.get((my_team, g), {}).get('Schierabile', True) and not da_svinc)
+            bool(_get_loan_info(g).get('Schierabile', True) and not da_svinc)
             for g, da_svinc in zip(df_squad['Giocatore'], da_svincolare_list)
         ]
     except Exception:
