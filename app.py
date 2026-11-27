@@ -88,6 +88,9 @@ from engine.player_profile_view import (
     show_player_profile_dialog, render_player_profile_content
 )
 from engine.theme_helper import get_global_theme_css
+from engine.fantacalcio_api import (
+    sync_league_from_fantacalcio_api, get_stored_api_token, save_stored_api_token
+)
 
 def clean_html(raw_html: str) -> str:
     """Strips leading/trailing whitespace from each line to guarantee CommonMark never treats it as a code block."""
@@ -3137,6 +3140,87 @@ with tab_impostazioni:
                 </div>
             </div>
             """, unsafe_allow_html=True)
+
+            # -------------------------------------------------------------
+            # SINCRONIZZAZIONE DIRETTA API FANTACALCIO.IT (OPZIONE A)
+            # -------------------------------------------------------------
+            active_lid = get_active_league_id()
+            reg_leagues = get_available_leagues()
+            active_lname = reg_leagues.get(active_lid, {}).get('name', active_lid)
+            stored_fanta_token = get_stored_api_token(active_lid)
+
+            st.markdown(f"""
+            <div style="background: rgba(15, 23, 42, 0.85); border: 1.5px solid rgba(56, 189, 248, 0.4); border-radius: 12px; padding: 18px 22px; margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap;">
+                    <span style="font-weight: 700; color: #38bdf8; font-size: 1.1rem;">🟢 Integrazione Diretta API Fantacalcio.it (Auto-Sync Prestiti & Rose)</span>
+                    <span style="font-size: 0.82rem; background: rgba(56, 189, 248, 0.15); color: #7dd3fc; border: 1px solid rgba(56, 189, 248, 0.3); padding: 4px 10px; border-radius: 6px;">Lega: <b>{active_lname}</b></span>
+                </div>
+                <div style="font-size: 0.88rem; color: #cbd5e1; margin-bottom: 8px; line-height: 1.5;">
+                    Sincronizzazione in tempo reale dal database ufficiale di Fantacalcio.it. Recupera la durata esatta dei prestiti (giornata inizio e fine), fa scadere automaticamente i prestiti conclusi ed elimina le righe a costo 0 senza richiedere alcun download o controllo manuale.
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+            if stored_fanta_token:
+                col_tok_info, col_tok_act = st.columns([2, 1])
+                with col_tok_info:
+                    masked = stored_fanta_token[:12] + "••••••••" + stored_fanta_token[-8:] if len(stored_fanta_token) > 20 else "••••••••"
+                    st.success(f"🟢 Token API Collegato: `{masked}`")
+                with col_tok_act:
+                    c_b1, c_b2 = st.columns(2)
+                    with c_b1:
+                        if st.button("🔄 Sync API", key="btn_sync_api_active", type="primary", use_container_width=True):
+                            with st.spinner("Sincronizzazione con Fantacalcio.it in corso..."):
+                                ok_sync, msg_sync, _ = sync_league_from_fantacalcio_api(stored_fanta_token, league_id=active_lid, df_master=df_master)
+                            if ok_sync:
+                                st.success(msg_sync)
+                                st.toast("🟢 Sync API completato!", icon="⚽")
+                                st.cache_data.clear()
+                                st.rerun()
+                            else:
+                                st.error(f"Errore: {msg_sync}")
+                    with c_b2:
+                        if st.button("Rimuovi", key="btn_clear_fanta_token", type="secondary", use_container_width=True):
+                            save_stored_api_token("", active_lid)
+                            st.info("Token rimosso.")
+                            st.rerun()
+            else:
+                with st.expander("💡 Come collegare la tua lega in 3 semplici passaggi (Guida Rapida)", expanded=True):
+                    st.markdown("""
+                    Per abilitare la sincronizzazione diretta automatica a zero lavoro manuale:
+                    1. **Apri Google Chrome** sulla tua lega di Fantacalcio.it (`https://leghe.fantacalcio.it`) assicurandoti di aver fatto il login.
+                    2. Premi **F12** sulla tastiera (oppure tasto destro &rarr; *Ispeziona*), e seleziona la scheda **Console**.
+                    3. Incolla questo comando esatto e premi **Invio**:
+                    ```javascript
+                    copy(JSON.parse(sessionStorage.getItem('profile')).currentLeague.token)
+                    ```
+                    *(Il comando copierà direttamente il tuo Token negli appunti).*
+                    4. Incolla il Token nel campo qui sotto e clicca su **Collega & Sincronizza Subito**.
+                    """)
+
+                with st.form("form_fanta_token"):
+                    new_token_val = st.text_input(
+                        "Incolla qui il tuo Token di Lega Fantacalcio.it:",
+                        type="password",
+                        placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                        key="input_new_fanta_token"
+                    )
+                    btn_save_fanta_token = st.form_submit_button("🟢 Collega e Sincronizza Subito", type="primary")
+                    if btn_save_fanta_token:
+                        if not new_token_val.strip():
+                            st.warning("Inserisci un token valido.")
+                        else:
+                            with st.spinner("Connessione e sincronizzazione in corso..."):
+                                ok_sync, msg_sync, _ = sync_league_from_fantacalcio_api(new_token_val.strip(), league_id=active_lid, df_master=df_master)
+                            if ok_sync:
+                                st.success(msg_sync)
+                                st.toast("🟢 Connessione riuscita!", icon="⚽")
+                                st.cache_data.clear()
+                                st.rerun()
+                            else:
+                                st.error(f"Impossibile sincronizzare: {msg_sync}")
+
+            st.markdown("<hr style='margin: 20px 0; border: none; border-top: 1px solid rgba(255,255,255,0.08);'>", unsafe_allow_html=True)
 
             # -------------------------------------------------------------
             # AUTO-SYNC ROSE DI LEGA DA FANTACALCIO.IT

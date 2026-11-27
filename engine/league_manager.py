@@ -1317,13 +1317,29 @@ def sync_all_league_rosters(df_master=None, force_roster_reimport=False):
     if df_master.empty:
         return False, "df_master vuoto", False
 
-    # Step 1: Check and auto-import updated roster file from Downloads for active league
+    # Step 1: Check if Fantacalcio Direct API token is configured for active league
     active_lid = get_active_league_id()
-    roster_imported, roster_msg, new_fname = auto_sync_league_rosters_from_downloads(
-        league_id=active_lid,
-        df_master=df_master,
-        force=force_roster_reimport
-    )
+    roster_imported = False
+    roster_msg = ""
+    new_fname = None
+    try:
+        from engine.fantacalcio_api import get_stored_api_token, sync_league_from_fantacalcio_api
+        api_tok = get_stored_api_token(active_lid)
+        if api_tok:
+            ok_api, msg_api, stats_api = sync_league_from_fantacalcio_api(api_tok, league_id=active_lid, df_master=df_master)
+            if ok_api:
+                roster_imported = True
+                roster_msg = msg_api
+                new_fname = "Fantacalcio.it API Live"
+    except Exception as e_api:
+        print(f"[LeagueManager] Warning sync_league_from_fantacalcio_api: {e_api}")
+
+    if not roster_imported:
+        roster_imported, roster_msg, new_fname = auto_sync_league_rosters_from_downloads(
+            league_id=active_lid,
+            df_master=df_master,
+            force=force_roster_reimport
+        )
 
     # Build fast lookup maps from df_master
     master_by_cod = {}
@@ -1703,6 +1719,39 @@ def reconcile_rosters_with_loans(league_data, league_id=None, df_master=None):
     loans_list = registry.get('loans', [])
     term_list = registry.get('terminated_loans', [])
 
+    # Auto-expire any loan whose duration/matchday has passed
+    try:
+        from engine.fanta_calendar import get_matchday_from_date
+        current_giornata, _ = get_matchday_from_date()
+        expired_any = False
+        remaining_loans = []
+        for l in loans_list:
+            eday = l.get('end_matchday') or l.get('eDay') or l.get('scadenza_giornata')
+            if eday is not None:
+                try:
+                    eday_int = int(eday)
+                    if current_giornata > eday_int:
+                        expired_any = True
+                        term_entry = {
+                            'player_name': l.get('player_name'),
+                            'owner_team': l.get('owner_team'),
+                            'borrower_team': l.get('borrower_team'),
+                            'terminated_at': f"Auto-scaduto alla G{current_giornata} (scadenza: G{eday_int})"
+                        }
+                        term_list.append(term_entry)
+                        continue
+                except Exception:
+                    pass
+            remaining_loans.append(l)
+
+        if expired_any:
+            registry['loans'] = remaining_loans
+            registry['terminated_loans'] = term_list
+            save_loans_registry(registry, lid)
+            loans_list = remaining_loans
+    except Exception:
+        pass
+
     active_loan_borrowers = {(str(l.get('player_name', '')).strip().lower(), str(l.get('borrower_team', '')).strip().lower()): l for l in loans_list}
     active_loan_owners = {(str(l.get('player_name', '')).strip().lower(), str(l.get('owner_team', '')).strip().lower()): l for l in loans_list}
     active_players = {str(l.get('player_name', '')).strip().lower() for l in loans_list}
@@ -2020,10 +2069,10 @@ def terminate_loan(player_name, borrower_team, owner_team=None, league_id=None):
     return True, f"Prestito di {p_clean} a {b_team} risolto con successo! Il calciatore rimane al 100% di proprietà {owner_str}."
 
 
-def add_or_update_loan(player_name, owner_team, borrower_team, loan_fee=0, league_id=None):
+def add_or_update_loan(player_name, owner_team, borrower_team, loan_fee=0, league_id=None, end_matchday=None):
     """
     Registers a new loan:
-    1. Creates loan entry in loans_registry.json.
+    1. Creates loan entry in loans_registry.json with optional end_matchday.
     2. Adds player to borrower_team with InPrestito = True and Costo = loan_fee.
     3. Saves league_rosters.json and syncs active user_roster.json.
     4. Clears Streamlit cache.
@@ -2078,7 +2127,7 @@ def add_or_update_loan(player_name, owner_team, borrower_team, loan_fee=0, leagu
         l for l in registry.get('loans', [])
         if not (l.get('player_name', '').strip().lower() == p_clean.lower() and l.get('borrower_team', '').strip().lower() == b_team.lower())
     ]
-    registry['loans'].append({
+    new_loan_data = {
         'player_name': p_clean,
         'owner_team': o_team,
         'borrower_team': b_team,
@@ -2087,7 +2136,15 @@ def add_or_update_loan(player_name, owner_team, borrower_team, loan_fee=0, leagu
         'status': 'active',
         'notes': 'Prestito registrato',
         'updated_at': datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    })
+    }
+    if end_matchday is not None:
+        try:
+            new_loan_data['end_matchday'] = int(end_matchday)
+            new_loan_data['eDay'] = int(end_matchday)
+            new_loan_data['scadenza_giornata'] = int(end_matchday)
+        except Exception:
+            pass
+    registry['loans'].append(new_loan_data)
     save_loans_registry(registry, lid)
 
     save_league_rosters(rosters, lid)
