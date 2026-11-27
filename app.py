@@ -33,7 +33,7 @@ from engine.fanta_calendar import (
 )
 from engine.models import batch_predict_xfv, calculate_expected_dfactor
 from engine.optimizer import (
-    optimize_best_mantra_lineup, MANTRA_FORMATIONS,
+    optimize_best_mantra_lineup, MANTRA_FORMATIONS, SLOT_ROLE_MAP,
     simulate_master_substitutions, audit_master_bench_coverage, order_bench_master_mode,
     parse_mantra_roles,
     CLASSIC_FORMATIONS, optimize_best_classic_lineup, optimize_best_lineup,
@@ -99,6 +99,52 @@ def clean_html(raw_html: str) -> str:
 def render_html(raw_html: str, *args, **kwargs):
     """Renders raw HTML safely in Streamlit without triggering CommonMark indented code blocks."""
     st.markdown(clean_html(raw_html), unsafe_allow_html=True)
+
+MANTRA_ROLES_ORDER = ["Por", "Dd", "Ds", "Dc", "B", "E", "M", "C", "W", "T", "A", "Pc"]
+
+def get_unique_module_slots(module_name: str) -> list:
+    """Returns unique tactical slots for a Mantra formation preserving tactical order."""
+    if not module_name or module_name not in MANTRA_FORMATIONS:
+        return []
+    seen = set()
+    ordered = []
+    for sl in MANTRA_FORMATIONS[module_name].get('slots', []):
+        if sl not in seen:
+            seen.add(sl)
+            ordered.append(sl)
+    return ordered
+
+def filter_df_by_mantra(df: pd.DataFrame, selected_roles=None, selected_module: str = "TUTTI", selected_slot: str = "TUTTI", role_col: str = "RuoloMantra") -> pd.DataFrame:
+    """Filters a DataFrame of players by Mantra formation, tactical slot, and/or explicit Mantra roles."""
+    if df is None or df.empty or role_col not in df.columns:
+        return df
+
+    allowed_roles = None
+
+    if selected_module and selected_module != "TUTTI" and selected_module in MANTRA_FORMATIONS:
+        if selected_slot and selected_slot != "TUTTI":
+            allowed_roles = set(SLOT_ROLE_MAP.get(selected_slot, set()))
+        else:
+            mod_roles = set()
+            for sl in MANTRA_FORMATIONS[selected_module].get('slots', []):
+                mod_roles.update(SLOT_ROLE_MAP.get(sl, set()))
+            allowed_roles = mod_roles
+
+    if selected_roles:
+        sel_set = set(selected_roles)
+        if allowed_roles is not None:
+            allowed_roles = allowed_roles.intersection(sel_set)
+        else:
+            allowed_roles = sel_set
+
+    if allowed_roles is None:
+        return df
+
+    if not allowed_roles:
+        return df.iloc[0:0]
+
+    mask = df[role_col].apply(lambda r: bool(parse_mantra_roles(r).intersection(allowed_roles)))
+    return df[mask]
 
 from engine.auth_manager import (
     get_current_user, is_current_user_admin, render_login_screen,
@@ -2557,9 +2603,43 @@ with tab_esplora:
 
         # VISTA 1: CLASSIFICA & RICERCA UNIFICATA (INCLUDE FOCUS PORTIERI)
         if scout_view == " Classifica & Ricerca Calciatori":
-            f_c1, f_c2, f_c3, f_c4 = st.columns([1.1, 1.6, 1.1, 1.2])
-            with f_c1:
-                role_classic_filter = st.selectbox("Ruolo:", options=["TUTTI", "P (Portieri)", "D (Difensori)", "C (Centrocampisti)", "A (Attaccanti)"], key="sb_rc_filter")
+            role_classic_filter = "TUTTI"
+            sel_mod_v1 = "TUTTI"
+            sel_slot_v1 = "TUTTI"
+            sel_roles_v1 = []
+
+            if is_classic:
+                f_c1, f_c2, f_c3, f_c4 = st.columns([1.1, 1.6, 1.1, 1.2])
+                with f_c1:
+                    role_classic_filter = st.selectbox("Ruolo:", options=["TUTTI", "P (Portieri)", "D (Difensori)", "C (Centrocampisti)", "A (Attaccanti)"], key="sb_rc_filter")
+            else:
+                m_c1, m_c2, m_c3 = st.columns([1.1, 1.1, 2.2])
+                with m_c1:
+                    sel_mod_v1 = st.selectbox(
+                        "Modulo Mantra:",
+                        options=["TUTTI"] + list(MANTRA_FORMATIONS.keys()),
+                        key="sb_mantra_mod_v1",
+                        help="Filtra i calciatori compatibili con un modulo Mantra specifico (es. 3-4-2-1, 4-3-3)."
+                    )
+                with m_c2:
+                    mod_slots_v1 = ["TUTTI"] + get_unique_module_slots(sel_mod_v1) if sel_mod_v1 != "TUTTI" else ["TUTTI"]
+                    sel_slot_v1 = st.selectbox(
+                        "Slot Tattico del Modulo:",
+                        options=mod_slots_v1,
+                        disabled=(sel_mod_v1 == "TUTTI"),
+                        key=f"sb_mantra_slot_v1_{sel_mod_v1}",
+                        help="Seleziona prima un modulo Mantra per filtrare un singolo slot (es. Dc/B, E/W, T/A, A/Pc)."
+                    )
+                with m_c3:
+                    sel_roles_v1 = st.multiselect(
+                        "Ruoli Mantra:",
+                        options=MANTRA_ROLES_ORDER,
+                        default=[],
+                        placeholder="Tutti i ruoli (Por, Dd, Ds, Dc, B, E, M, C, W, T, A, Pc)",
+                        key="sb_mantra_roles_v1"
+                    )
+                f_c2, f_c3, f_c4 = st.columns([1.6, 1.1, 1.3])
+
             with f_c2:
                 sort_metric = st.selectbox(
                     "Ordina per metrica:",
@@ -2584,23 +2664,38 @@ with tab_esplora:
                 min_minuti = st.slider("Minuti Minimi:", min_value=0, max_value=600, value=90, step=45, key="sb_min_mins")
             with f_c4:
                 search_name = st.text_input(" Cerca Calciatore:", placeholder="es. Lautaro, Pulisic...", key="sb_srch")
-        
+
             df_lb = df_master.copy()
-            if role_classic_filter != "TUTTI":
-                rc_code = role_classic_filter.split()[0]
-                df_lb = df_lb[df_lb['RuoloClassic'] == rc_code]
+            if is_classic:
+                if role_classic_filter != "TUTTI":
+                    rc_code = role_classic_filter.split()[0]
+                    df_lb = df_lb[df_lb['RuoloClassic'] == rc_code]
+            else:
+                df_lb = filter_df_by_mantra(
+                    df_lb,
+                    selected_roles=sel_roles_v1,
+                    selected_module=sel_mod_v1,
+                    selected_slot=sel_slot_v1,
+                    role_col='RuoloMantra'
+                )
+
             if 'Minuti_Reali' in df_lb.columns:
                 df_lb = df_lb[df_lb['Minuti_Reali'] >= min_minuti]
             if search_name:
                 df_lb = df_lb[df_lb['Giocatore'].str.contains(search_name, case=False, na=False)]
-        
+
             sort_col = sort_metric[0]
             sort_asc = True if sort_col == "Delta_xG" else False
             if sort_col in df_lb.columns:
                 df_lb = df_lb.sort_values(sort_col, ascending=sort_asc)
-    
+
             role_col_sc = 'RuoloClassic' if is_classic else 'RuoloMantra'
-            if role_classic_filter == "P (Portieri)" or sort_col in ("Goals_Prevented", "Pct_Parate"):
+            is_gk_filter = (
+                (is_classic and role_classic_filter == "P (Portieri)")
+                or (not is_classic and (sel_roles_v1 == ['Por'] or sel_slot_v1 == 'Por'))
+                or sort_col in ("Goals_Prevented", "Pct_Parate")
+            )
+            if is_gk_filter:
                 display_cols = [
                     'Giocatore', 'Squadra', role_col_sc, 'Presenze', 'MV_Stagione', 'FM_Stagione',
                     'Pct_Sufficienza', 'GS', 'Goals_Prevented', 'Goals_Prevented_90', 'Pct_Parate',
@@ -2613,7 +2708,7 @@ with tab_esplora:
                     'ASS', 'xA_Tot', 'xA_90', 'Tiri_90', 'Key_Passes_90', 'Signal'
                 ]
             display_cols = [c for c in display_cols if c in df_lb.columns]
-            st.caption(" Clicca su qualsiasi calciatore per aprire la scheda profilo dettagliata.")
+            st.caption(f"Mostrati **{len(df_lb)}** calciatori. Clicca su qualsiasi riga per aprire la scheda profilo dettagliata.")
             ev_lb = st.dataframe(
                 df_lb[display_cols].reset_index(drop=True),
                 width='stretch',
@@ -2644,7 +2739,7 @@ with tab_esplora:
             )
             my_team = get_active_my_team(league_id=active_league)
             league_rosters_dict = load_league_rosters(league_id=active_league)
-    
+
             if not league_rosters_dict:
                 st.info("Nessuna rosa di lega caricata.")
             else:
@@ -2673,33 +2768,25 @@ with tab_esplora:
                                 'KP / 90': r.get('Key_Passes_90', 0.0),
                                 'Suggerimento': ' Forte Buy-Low' if d_xg < -1.5 else ' Sottovalutato'
                             })
-        
+
                 if opp_buylow:
                     df_opp_bl = pd.DataFrame(opp_buylow).sort_values('Delta xG (Sfortuna)', ascending=True)
-                    bl_col1, bl_col2 = st.columns(2)
-                    with bl_col1:
-                        filter_rival = st.selectbox(
-                            "Filtra per Squadra Rivale:",
-                            options=["TUTTE LE SQUADRE"] + sorted(list(set(df_opp_bl['Squadra Lega']))),
-                            key=f"bl_rival_sel_{active_league}_{my_team}"
-                        )
-                    with bl_col2:
-                        if is_classic:
+                    if is_classic:
+                        bl_col1, bl_col2 = st.columns(2)
+                        with bl_col1:
+                            filter_rival = st.selectbox(
+                                "Filtra per Squadra Rivale:",
+                                options=["TUTTE LE SQUADRE"] + sorted(list(set(df_opp_bl['Squadra Lega']))),
+                                key=f"bl_rival_sel_{active_league}_{my_team}"
+                            )
+                        with bl_col2:
                             filter_role = st.selectbox(
                                 "Filtra per Reparto:",
                                 options=["TUTTI", "Attaccanti (A)", "Centrocampisti (C)", "Difensori (D)"],
                                 key=f"bl_role_sel_{active_league}_{my_team}"
                             )
-                        else:
-                            filter_role = st.selectbox(
-                                "Filtra per Reparto:",
-                                options=["TUTTI", "Attaccanti (Pc / A)", "Centrocampisti (C / T / W / M / E)", "Difensori (Dc / Dd / Ds / B)"],
-                                key=f"bl_role_sel_{active_league}_{my_team}"
-                            )
-                
-                    if filter_rival != "TUTTE LE SQUADRE":
-                        df_opp_bl = df_opp_bl[df_opp_bl['Squadra Lega'] == filter_rival]
-                    if is_classic:
+                        if filter_rival != "TUTTE LE SQUADRE":
+                            df_opp_bl = df_opp_bl[df_opp_bl['Squadra Lega'] == filter_rival]
                         if filter_role == "Attaccanti (A)":
                             df_opp_bl = df_opp_bl[df_opp_bl['Ruolo'] == 'A']
                         elif filter_role == "Centrocampisti (C)":
@@ -2707,35 +2794,104 @@ with tab_esplora:
                         elif filter_role == "Difensori (D)":
                             df_opp_bl = df_opp_bl[df_opp_bl['Ruolo'] == 'D']
                     else:
-                        if filter_role == "Attaccanti (Pc / A)":
-                            df_opp_bl = df_opp_bl[df_opp_bl['Ruolo'].str.contains('Pc|A', na=False)]
-                        elif filter_role == "Centrocampisti (C / T / W / M / E)":
-                            df_opp_bl = df_opp_bl[df_opp_bl['Ruolo'].str.contains('C|T|W|M|E', na=False)]
-                        elif filter_role == "Difensori (Dc / Dd / Ds / B)":
-                            df_opp_bl = df_opp_bl[df_opp_bl['Ruolo'].str.contains('Dc|Dd|Ds|B', na=False)]
-                
+                        bl_col1, bl_col2, bl_col3, bl_col4 = st.columns([1.3, 1.0, 1.0, 1.6])
+                        with bl_col1:
+                            filter_rival = st.selectbox(
+                                "Squadra Rivale:",
+                                options=["TUTTE LE SQUADRE"] + sorted(list(set(df_opp_bl['Squadra Lega']))),
+                                key=f"bl_rival_sel_{active_league}_{my_team}"
+                            )
+                        with bl_col2:
+                            bl_mod = st.selectbox(
+                                "Modulo Mantra:",
+                                options=["TUTTI"] + list(MANTRA_FORMATIONS.keys()),
+                                key=f"bl_mantra_mod_{active_league}_{my_team}"
+                            )
+                        with bl_col3:
+                            bl_slots = ["TUTTI"] + get_unique_module_slots(bl_mod) if bl_mod != "TUTTI" else ["TUTTI"]
+                            bl_slot = st.selectbox(
+                                "Slot Modulo:",
+                                options=bl_slots,
+                                disabled=(bl_mod == "TUTTI"),
+                                key=f"bl_mantra_slot_{active_league}_{my_team}_{bl_mod}"
+                            )
+                        with bl_col4:
+                            bl_roles = st.multiselect(
+                                "Ruoli Mantra:",
+                                options=MANTRA_ROLES_ORDER,
+                                default=[],
+                                placeholder="Tutti i ruoli...",
+                                key=f"bl_mantra_roles_{active_league}_{my_team}"
+                            )
+                        if filter_rival != "TUTTE LE SQUADRE":
+                            df_opp_bl = df_opp_bl[df_opp_bl['Squadra Lega'] == filter_rival]
+                        df_opp_bl = filter_df_by_mantra(
+                            df_opp_bl,
+                            selected_roles=bl_roles,
+                            selected_module=bl_mod,
+                            selected_slot=bl_slot,
+                            role_col='Ruolo'
+                        )
+
                     st.dataframe(df_opp_bl, width='stretch', hide_index=True)
                 else:
                     st.info("Nessun calciatore con marcata sotto-performance rilevato nelle altre squadre.")
 
         # VISTA 3: GRAFICI BUY-LOW & SELL-HIGH
         elif scout_view == " Grafici xG vs Gol & Segnali":
-            f_col1, f_col2 = st.columns([2, 1])
-            with f_col1:
-                st.caption(" **Passa il cursore sui pallini** per i dettagli. Chi sta **sotto la linea tratteggiata** ha segnato meno di quanto prodotto (*Candidato Buy-Low*).")
-            with f_col2:
+            st.caption(" **Passa il cursore sui pallini** per i dettagli. Chi sta **sotto la linea tratteggiata** ha segnato meno di quanto prodotto (*Candidato Buy-Low*).")
+            sel_scatter_role = "Tutti i Ruoli"
+            sc_mod = "TUTTI"
+            sc_slot = "TUTTI"
+            sc_roles = []
+
+            if is_classic:
                 role_options = ["Tutti i Ruoli", "Attaccanti (A)", "Centrocampisti (C)", "Difensori (D)"]
                 sel_scatter_role = st.selectbox("Filtra per Ruolo:", options=role_options, index=0, key="sel_scat_role")
-        
+            else:
+                sc_m1, sc_m2, sc_m3 = st.columns([1.1, 1.1, 2.2])
+                with sc_m1:
+                    sc_mod = st.selectbox(
+                        "Modulo Mantra:",
+                        options=["TUTTI"] + list(MANTRA_FORMATIONS.keys()),
+                        key="sb_scat_mantra_mod"
+                    )
+                with sc_m2:
+                    sc_slot_opts = ["TUTTI"] + get_unique_module_slots(sc_mod) if sc_mod != "TUTTI" else ["TUTTI"]
+                    sc_slot = st.selectbox(
+                        "Slot Modulo:",
+                        options=sc_slot_opts,
+                        disabled=(sc_mod == "TUTTI"),
+                        key=f"sb_scat_mantra_slot_{sc_mod}"
+                    )
+                with sc_m3:
+                    sc_roles = st.multiselect(
+                        "Ruoli Mantra:",
+                        options=MANTRA_ROLES_ORDER,
+                        default=[],
+                        placeholder="Tutti i ruoli (Por, Dd, Ds, Dc, B, E, M, C, W, T, A, Pc)",
+                        key="sb_scat_mantra_roles"
+                    )
+
             df_plot_base = df_master[df_master['Presenze'] > 0].copy()
-            if sel_scatter_role == "Attaccanti (A)":
-                df_plot_base = df_plot_base[df_plot_base['RuoloClassic'] == 'A']
-            elif sel_scatter_role == "Centrocampisti (C)":
-                df_plot_base = df_plot_base[df_plot_base['RuoloClassic'] == 'C']
-            elif sel_scatter_role == "Difensori (D)":
-                df_plot_base = df_plot_base[df_plot_base['RuoloClassic'] == 'D']
+            if is_classic:
+                if sel_scatter_role == "Attaccanti (A)":
+                    df_plot_base = df_plot_base[df_plot_base['RuoloClassic'] == 'A']
+                elif sel_scatter_role == "Centrocampisti (C)":
+                    df_plot_base = df_plot_base[df_plot_base['RuoloClassic'] == 'C']
+                elif sel_scatter_role == "Difensori (D)":
+                    df_plot_base = df_plot_base[df_plot_base['RuoloClassic'] == 'D']
+            else:
+                df_plot_base = filter_df_by_mantra(
+                    df_plot_base,
+                    selected_roles=sc_roles,
+                    selected_module=sc_mod,
+                    selected_slot=sc_slot,
+                    role_col='RuoloMantra'
+                )
 
             role_scale = alt.Scale(domain=['P', 'D', 'C', 'A'], range=['#f59e0b', '#10b981', '#3b82f6', '#ef4444'])
+            tooltip_role_field = 'RuoloClassic:N' if is_classic else 'RuoloMantra:N'
             sc_c1, sc_c2 = st.columns(2)
             with sc_c1:
                 st.markdown("#####  xG Totali vs Gol Fatti (GF)")
@@ -2745,12 +2901,12 @@ with tab_esplora:
                 points1 = alt.Chart(df_plot_base).mark_circle(opacity=0.75, stroke='#ffffff', strokeWidth=0.6).encode(
                     x=alt.X('xG_Tot:Q', title='xG Totali (Gol Attesi)'),
                     y=alt.Y('GF:Q', title='Gol Fatti (GF Reali)'),
-                    color=alt.Color('RuoloClassic:N', title='Ruolo', scale=role_scale),
+                    color=alt.Color('RuoloClassic:N', title='Reparto', scale=role_scale),
                     size=alt.Size('Presenze:Q', title='Presenze', scale=alt.Scale(range=[40, 260])),
-                    tooltip=['Giocatore:N', 'Squadra:N', 'Presenze:Q', alt.Tooltip('xG_Tot:Q', format='.2f'), 'GF:Q', alt.Tooltip('Delta_xG:Q', format='+.2f'), alt.Tooltip('FM_Stagione:Q', format='.2f')]
+                    tooltip=['Giocatore:N', 'Squadra:N', tooltip_role_field, 'Presenze:Q', alt.Tooltip('xG_Tot:Q', format='.2f'), 'GF:Q', alt.Tooltip('Delta_xG:Q', format='+.2f'), alt.Tooltip('FM_Stagione:Q', format='.2f')]
                 )
                 st.altair_chart((ref_line1 + points1).properties(height=380).interactive(), width='stretch', theme="streamlit")
-        
+
             with sc_c2:
                 st.markdown("#####  xA Totali vs Assist Fatti (ASS)")
                 max_xa = float(max(df_plot_base['xA_Tot'].max() if not df_plot_base.empty else 1.0, df_plot_base['ASS'].max() if not df_plot_base.empty else 1.0) + 1.0)
@@ -2759,9 +2915,9 @@ with tab_esplora:
                 points2 = alt.Chart(df_plot_base).mark_circle(opacity=0.75, stroke='#ffffff', strokeWidth=0.6).encode(
                     x=alt.X('xA_Tot:Q', title='xA Totali (Assist Attesi)'),
                     y=alt.Y('ASS:Q', title='Assist Fatti (ASS Reali)'),
-                    color=alt.Color('RuoloClassic:N', title='Ruolo', scale=role_scale),
+                    color=alt.Color('RuoloClassic:N', title='Reparto', scale=role_scale),
                     size=alt.Size('Presenze:Q', title='Presenze', scale=alt.Scale(range=[40, 260])),
-                    tooltip=['Giocatore:N', 'Squadra:N', 'Presenze:Q', alt.Tooltip('xA_Tot:Q', format='.2f'), 'ASS:Q', alt.Tooltip('Delta_xA:Q', format='+.2f'), alt.Tooltip('FM_Stagione:Q', format='.2f')]
+                    tooltip=['Giocatore:N', 'Squadra:N', tooltip_role_field, 'Presenze:Q', alt.Tooltip('xA_Tot:Q', format='.2f'), 'ASS:Q', alt.Tooltip('Delta_xA:Q', format='+.2f'), alt.Tooltip('FM_Stagione:Q', format='.2f')]
                 )
                 st.altair_chart((ref_line2 + points2).properties(height=380).interactive(), width='stretch', theme="streamlit")
 
@@ -2772,6 +2928,21 @@ with tab_esplora:
                 key="sb_sig_filter"
             )
             df_signals = df_master.copy()
+            if is_classic:
+                if sel_scatter_role == "Attaccanti (A)":
+                    df_signals = df_signals[df_signals['RuoloClassic'] == 'A']
+                elif sel_scatter_role == "Centrocampisti (C)":
+                    df_signals = df_signals[df_signals['RuoloClassic'] == 'C']
+                elif sel_scatter_role == "Difensori (D)":
+                    df_signals = df_signals[df_signals['RuoloClassic'] == 'D']
+            else:
+                df_signals = filter_df_by_mantra(
+                    df_signals,
+                    selected_roles=sc_roles,
+                    selected_module=sc_mod,
+                    selected_slot=sc_slot,
+                    role_col='RuoloMantra'
+                )
             if signal_filter != "TUTTI":
                 df_signals = df_signals[df_signals['Signal'] == signal_filter]
             sig_cols = ['Giocatore', 'Squadra', 'RuoloClassic' if is_classic else 'RuoloMantra', 'Presenze', 'FM_Stagione', 'GF', 'xG_Tot', 'Delta_xG', 'ASS', 'xA_Tot', 'Tiri_90', 'Signal']
