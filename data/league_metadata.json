@@ -1,5 +1,10 @@
 {
-  "last_updated": "23/11/2026 alle ore 20:27",
-  "source": "Risoluzione prestito: Kaiki",
-  "filename": "Rose_Lega_Ufficiale"
+  "last_updated": "27/11/2026 alle ore 16:55",
+  "source": "Fantacalcio.it API Live Sync",
+  "filename": "API_Live_Lega_Piombo_Fuso",
+  "last_imported_file": "Fantacalcio.it Direct API",
+  "teams_count": 12,
+  "players_count": 446,
+  "active_loans_count": 16,
+  "expired_loans_count": 17
 }

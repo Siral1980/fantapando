@@ -27,6 +27,8 @@ from engine.league_manager import (
     save_league_rosters,
     save_league_metadata,
     reconcile_rosters_with_loans,
+    sync_user_roster_from_league,
+    get_active_my_team,
     DATA_DIR
 )
 
@@ -72,6 +74,7 @@ def save_stored_api_token(token: str, league_id=None) -> bool:
 def fetch_raw_league_data(token: str) -> dict:
     """
     Calls the apileague.fantacalcio.it endpoint to fetch all teams, rosters, and loans.
+    Uses exact browser headers to pass WAF verification.
     """
     clean_token = str(token).strip()
     if clean_token.startswith("Bearer "):
@@ -81,31 +84,37 @@ def fetch_raw_league_data(token: str) -> dict:
         raise ValueError("Token API non fornito o vuoto.")
 
     headers = {
-        "app_key": PROD_APP_KEY,
-        "Authorization": f"Bearer {clean_token}",
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Origin": "https://leghe.fantacalcio.it",
-        "Referer": "https://leghe.fantacalcio.it/"
+        'accept': 'application/json, text/plain, */*',
+        'accept-language': 'it-IT,it;q=0.9,en-US;q=0.8,en;q=0.7',
+        'app_key': PROD_APP_KEY,
+        'authorization': f'Bearer {clean_token}',
+        'origin': 'https://leghe.fantacalcio.it',
+        'referer': 'https://leghe.fantacalcio.it/',
+        'sec-ch-ua': '"Chromium";v="158", "Not.A/Brand";v="24", "Google Chrome";v="158"',
+        'sec-ch-ua-mobile': '?0',
+        'sec-ch-ua-platform': '"Windows"',
+        'sec-fetch-dest': 'empty',
+        'sec-fetch-mode': 'cors',
+        'sec-fetch-site': 'same-site',
+        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/158.0.0.0 Safari/537.36'
     }
 
-    # Primary endpoint: onboarding league teams
+    # Primary endpoint: onboarding league teams with pageSize=50 to fetch all teams
     endpoints_to_try = [
-        f"{BASE_API_URL}/onboarding/v1/league/teams",
+        f"{BASE_API_URL}/onboarding/v1/league/teams?page=1&pageSize=50",
         f"{BASE_API_URL}/market/v1/user/action/teamplayers/A"
     ]
 
     last_error = None
     for ep in endpoints_to_try:
         try:
-            resp = requests.get(ep, headers=headers, timeout=12)
+            resp = requests.get(ep, headers=headers, timeout=15)
             if resp.status_code == 200:
                 data = resp.json()
                 if isinstance(data, (dict, list)):
                     return data
             elif resp.status_code == 401 or resp.status_code == 403:
-                last_error = f"Errore autenticazione ({resp.status_code}): Token di sessione scaduto o non valido."
+                last_error = f"Errore autorizzazione ({resp.status_code}): Token di sessione scaduto o non valido."
             else:
                 last_error = f"Errore HTTP {resp.status_code} su endpoint {ep}."
         except Exception as e:
@@ -180,19 +189,28 @@ def sync_league_from_fantacalcio_api(token: str, league_id=None, df_master=None)
     except Exception:
         pass
 
-    # Extract all loans across all teams
-    all_loans_raw = []
+    # Extract all loans across all teams, deduplicating by unique loan identity
+    seen_loan_keys = set()
+    unique_loans_raw = []
     for t in teams_raw:
         pls = t.get('pl') or t.get('loans') or []
         for l in pls:
-            all_loans_raw.append(l)
+            p_cod = l.get('id') or l.get('playerId')
+            t_from = l.get('tFrom') or l.get('from')
+            t_to = l.get('tTo') or l.get('to')
+            s_day = int(l.get('sDay') or 1)
+            e_day = int(l.get('eDay') or 38)
+            key = (p_cod, t_from, t_to, s_day, e_day)
+            if key not in seen_loan_keys:
+                seen_loan_keys.add(key)
+                unique_loans_raw.append(l)
 
     # Process loans: active vs terminated
     active_loans_reg = []
     terminated_loans_reg = []
     loan_lookup_active = {}  # (player_cod, borrower_team_id) -> loan_dict
 
-    for l in all_loans_raw:
+    for l in unique_loans_raw:
         p_cod = l.get('id') or l.get('playerId')
         t_from = l.get('tFrom') or l.get('from')
         t_to = l.get('tTo') or l.get('to')
@@ -348,6 +366,14 @@ def sync_league_from_fantacalcio_api(token: str, league_id=None, df_master=None)
             'expired_loans_count': len(terminated_loans_reg)
         }
     )
+
+    # Sync user squad if applicable
+    try:
+        active_team = get_active_my_team(league_id=lid)
+        if active_team and active_team in parsed_league_rosters:
+            sync_user_roster_from_league(parsed_league_rosters, team_name=active_team, league_id=lid)
+    except Exception:
+        pass
 
     summary_stats = {
         'teams_count': len(parsed_league_rosters),
